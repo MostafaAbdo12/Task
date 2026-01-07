@@ -1,7 +1,7 @@
 
 {
-  "short_name": "إنجاز",
-  "name": "إنجاز - إدارة مهام ذكية",
+  "short_name": "مهام",
+  "name": "مهام - إدارة مهام ذكية",
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#4f46e5",

@@ -1,24 +1,48 @@
 
-import React, { useState } from 'react';
-import { Task, TaskPriority, TaskStatus } from '../types';
-import { CATEGORIES, Icons } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { Task, TaskPriority, TaskStatus, Category } from '../types';
+import { Icons } from '../constants';
 
 interface TaskFormProps {
   onAdd: (task: any) => void;
   onUpdate?: (task: Task) => void;
   onClose: () => void;
   initialTask?: Task | null;
+  categories: Category[];
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTask }) => {
+const PRESET_COLORS = [
+  '#6366f1', // Indigo
+  '#10b981', // Emerald
+  '#f59e0b', // Amber
+  '#f43f5e', // Rose
+  '#0ea5e9', // Sky
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#64748b', // Slate
+  '#f97316', // Orange
+];
+
+const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTask, categories }) => {
   const [title, setTitle] = useState(initialTask?.title || '');
   const [description, setDescription] = useState(initialTask?.description || '');
   const [priority, setPriority] = useState<TaskPriority>(initialTask?.priority || TaskPriority.MEDIUM);
-  const [category, setCategory] = useState(initialTask?.category || CATEGORIES[0]);
-  const [color, setColor] = useState(initialTask?.color || '#6366f1');
+  const [category, setCategory] = useState(initialTask?.category || categories[0]?.name || '');
+  const [color, setColor] = useState(initialTask?.color || categories[0]?.color || '#6366f1');
+  const [icon, setIcon] = useState(initialTask?.icon || categories[0]?.icon || '');
   const [dueDate, setDueDate] = useState(initialTask?.dueDate || '');
+  const [reminderAt, setReminderAt] = useState(initialTask?.reminderAt || '');
 
   const isEditing = !!initialTask;
+
+  const handleCategoryChange = (catName: string) => {
+    setCategory(catName);
+    const selectedCat = categories.find(c => c.name === catName);
+    if (selectedCat) {
+      setColor(selectedCat.color);
+      setIcon(selectedCat.icon || '');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +56,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTa
         priority,
         category,
         color,
+        icon,
         dueDate,
+        reminderAt,
       });
     } else {
       onAdd({
@@ -41,7 +67,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTa
         priority,
         category,
         color,
+        icon,
         dueDate,
+        reminderAt,
         status: TaskStatus.PENDING,
         subTasks: [],
         isPinned: false
@@ -71,16 +99,14 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTa
           {/* Title Input */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1">عنوان المهمة</label>
-            <div className="relative group">
-              <input 
-                required
-                autoFocus
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-300 text-slate-700 dark:text-slate-100 font-semibold placeholder:text-slate-300 dark:placeholder:text-slate-600"
-                placeholder="ما الذي تريد إنجازه؟"
-              />
-            </div>
+            <input 
+              required
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-300 text-slate-700 dark:text-slate-100 font-semibold placeholder:text-slate-300 dark:placeholder:text-slate-600"
+              placeholder="ما الذي تريد إنجازه؟"
+            />
           </div>
 
           {/* Description Input */}
@@ -89,7 +115,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTa
             <textarea 
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-300 text-slate-700 dark:text-slate-100 font-medium placeholder:text-slate-300 dark:placeholder:text-slate-600 min-h-[120px] resize-none"
+              className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-300 text-slate-700 dark:text-slate-100 font-medium placeholder:text-slate-300 dark:placeholder:text-slate-600 min-h-[100px] resize-none"
               placeholder="تفاصيل إضافية..."
             />
           </div>
@@ -109,9 +135,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTa
                   <option value={TaskPriority.HIGH}>عالية</option>
                   <option value={TaskPriority.URGENT}>عاجلة</option>
                 </select>
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                </div>
               </div>
             </div>
             <div className="space-y-2">
@@ -119,41 +142,69 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTa
               <div className="relative">
                 <select 
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
                   className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 appearance-none focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 outline-none transition-all duration-300 text-slate-700 dark:text-slate-100 font-bold cursor-pointer"
                 >
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+          </div>
+
+          {/* New Color Picker Section */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1">اختر لوناً للمهمة</label>
+            <div className="flex flex-wrap gap-3 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-3xl border-2 border-slate-100 dark:border-slate-800">
+              {PRESET_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-10 h-10 rounded-full transition-all duration-300 transform hover:scale-125 hover:rotate-12 ${color === c ? 'ring-4 ring-offset-2 ring-indigo-500 scale-110 rotate-0 z-10' : 'ring-0 shadow-sm'}`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                >
+                  {color === c && (
+                    <div className="w-full h-full flex items-center justify-center text-white">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </div>
+                  )}
+                </button>
+              ))}
+              <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-400 transition-colors">
+                <input 
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full scale-150"
+                  title="لون مخصص"
+                />
+                <div className="w-full h-full flex items-center justify-center text-slate-400">
+                  <Icons.Plus />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Row: Color & Date */}
+          {/* Date & Reminder Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1">لون التصنيف</label>
-              <div className="flex items-center h-[60px] p-1 bg-slate-50/50 dark:bg-slate-800/40 border-2 border-slate-100 dark:border-slate-800 rounded-2xl group transition-all duration-300 focus-within:border-indigo-500 focus-within:bg-white dark:focus-within:bg-slate-800 overflow-hidden">
-                <input 
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="w-full h-full bg-transparent border-none cursor-pointer rounded-xl overflow-hidden scale-[1.3] transform origin-center"
-                />
-              </div>
+              <label className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1">تاريخ الاستحقاق</label>
+              <input 
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 outline-none transition-all duration-300 text-slate-700 dark:text-slate-100 font-bold"
+              />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1">تاريخ الاستحقاق</label>
-              <div className="relative">
-                <input 
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 outline-none transition-all duration-300 text-slate-700 dark:text-slate-100 font-bold"
-                />
-              </div>
+              <label className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1">وقت التذكير</label>
+              <input 
+                type="datetime-local"
+                value={reminderAt}
+                onChange={(e) => setReminderAt(e.target.value)}
+                className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 outline-none transition-all duration-300 text-slate-700 dark:text-slate-100 font-bold"
+              />
             </div>
           </div>
 
@@ -164,9 +215,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTa
               className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 px-6 rounded-[1.5rem] shadow-xl shadow-indigo-200 dark:shadow-indigo-900/40 hover:shadow-indigo-300 transition-all active:scale-95 flex items-center justify-center gap-3"
             >
               <span>{isEditing ? 'تحديث المهمة' : 'حفظ المهمة'}</span>
-              <div className="bg-white/20 p-1 rounded-full">
-                <Icons.CheckCircle />
-              </div>
             </button>
             <button 
               type="button"

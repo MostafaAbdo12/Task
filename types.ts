@@ -18,6 +18,13 @@ export interface SubTask {
   isCompleted: boolean;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+  icon?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -26,7 +33,9 @@ export interface Task {
   status: TaskStatus;
   category: string;
   color: string;
+  icon?: string;
   dueDate: string;
+  reminderAt?: string;
   createdAt: string;
   updatedAt: string;
   subTasks: SubTask[];
