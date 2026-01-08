@@ -2,13 +2,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 const getAIClient = () => {
-  // الاعتماد على process.env الموفر من البيئة بشكل مباشر
-  const apiKey = process.env.API_KEY || "";
-  
-  if (!apiKey) {
+  try {
+    // محاولة الوصول للمفتاح بشكل آمن لتجنب أخطاء ReferenceError
+    const apiKey = (typeof process !== 'undefined' && process.env?.API_KEY) || "";
+    
+    if (!apiKey) {
+      return null;
+    }
+    return new GoogleGenAI({ apiKey });
+  } catch (error) {
+    console.warn("AI Client initialization failed", error);
     return null;
   }
-  return new GoogleGenAI({ apiKey });
 };
 
 export const getSmartSubtasks = async (taskTitle: string, taskDescription: string) => {
@@ -18,7 +23,7 @@ export const getSmartSubtasks = async (taskTitle: string, taskDescription: strin
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `المهمة: "${taskTitle}" (${taskDescription}). اقترح 3 مهام فرعية قصيرة. JSON array strings.`,
+      contents: `بناءً على المهمة: "${taskTitle}" (${taskDescription}). اقترح 3 مهام فرعية ذكية. أجب بصيغة JSON array strings فقط.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -28,9 +33,11 @@ export const getSmartSubtasks = async (taskTitle: string, taskDescription: strin
       }
     });
 
-    const jsonStr = response.text?.trim() || "[]";
+    const text = response.text || "[]";
+    const jsonStr = text.trim();
     return JSON.parse(jsonStr) as string[];
   } catch (error) {
+    console.error("Smart Breakdown Error:", error);
     return [];
   }
 };
@@ -43,7 +50,7 @@ export const getSmartAdvice = async (tasks: any[]) => {
     const summary = tasks.map(t => t.title).slice(0, 5).join(', ');
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `المهام: [${summary}]. قدم نصيحة تشجيعية قصيرة جداً بالعربية.`,
+      contents: `المهام الحالية للمستخدم هي: [${summary}]. قدم نصيحة تشجيعية موجزة جداً ومبدعة باللغة العربية لتحسين يومه.`,
     });
     return response.text || "ابدأ بالمهمة الأكثر إلحاحاً وحقق أهدافك اليوم!";
   } catch (error) {
