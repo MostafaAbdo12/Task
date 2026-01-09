@@ -29,6 +29,8 @@ export interface User {
   username: string;
   password?: string;
   lastLogin: string;
+  xp?: number;
+  level?: number;
 }
 
 export interface Task {
