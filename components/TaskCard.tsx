@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Task, TaskStatus } from '../types';
-import { Icons, PRIORITY_LABELS, CategoryIconMap } from '../constants';
+import { Icons, PRIORITY_LABELS } from '../constants';
 
 interface TaskCardProps {
   task: Task;
@@ -20,88 +20,117 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onToggleSubtask, onBreakdown, onTogglePin, index 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [rotation, setRotation] = useState({ x: 0, y: 0 });
   const isCompleted = task.status === TaskStatus.COMPLETED;
-  
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = (y - centerY) / 25;
+    const rotateY = (centerX - x) / 50;
+    setRotation({ x: rotateX, y: rotateY });
+  };
+
+  const resetRotation = () => setRotation({ x: 0, y: 0 });
+
+  const priorityColor = task.priority === 'URGENT' ? 'cyber-rose' : task.priority === 'HIGH' ? 'cyber-purple' : 'cyber-blue';
+
   return (
     <div 
-      className={`group w-full glass-morphism rounded-[2.5rem] p-8 transition-all duration-700 stagger-item flex flex-col task-card-motion ${isCompleted ? 'opacity-40' : 'opacity-100'}`}
-      style={{ animationDelay: `${index * 0.1}s` }}
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={resetRotation}
+      className={`group crystal-card p-8 flex flex-col transition-all duration-700 relative overflow-hidden rounded-[2.5rem] border-white/5 hover:border-${priorityColor}/30 ${
+        isCompleted ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'
+      }`}
+      style={{
+        transform: `perspective(1000px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) translateY(${rotation.x !== 0 ? '-5px' : '0'})`,
+      }}
     >
-      <div className="flex items-center gap-8">
-        {/* Liquid Checkbox */}
+      {/* Interactive Scan Line */}
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent animate-scan-line opacity-0 group-hover:opacity-100"></div>
+
+      <div className="flex items-center gap-8 relative z-10">
         <button 
           onClick={() => onStatusChange(task.id, isCompleted ? TaskStatus.PENDING : TaskStatus.COMPLETED)}
-          className={`w-10 h-10 rounded-[1.2rem] border-2 transition-all duration-500 flex items-center justify-center shrink-0 ${isCompleted ? 'bg-indigo-500 border-indigo-500 text-white rotate-[15deg] scale-110 shadow-lg shadow-indigo-500/50' : 'border-white/10 hover:border-indigo-500 bg-white/5 hover:scale-105'}`}
+          className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 border ${
+            isCompleted 
+            ? 'bg-cyber-emerald border-cyber-emerald shadow-[0_0_20px_#00ffaa]' 
+            : 'border-white/10 hover:border-cyber-blue/50 bg-black/40'
+          }`}
         >
-          {isCompleted ? <Icons.CheckCircle /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-indigo-400 transition-colors"></div>}
+          {isCompleted && <Icons.CheckCircle className="w-6 h-6 text-black" />}
         </button>
 
-        {/* Title Interaction Area */}
         <div className="flex-1 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
           <div className="flex items-center gap-4 mb-2">
-            <h3 className={`text-xl font-bold transition-all duration-500 ${isCompleted ? 'line-through text-slate-500 translate-x-4' : 'text-slate-100 group-hover:text-indigo-400'}`}>
+            <h3 className={`text-2xl font-black transition-all duration-500 ${isCompleted ? 'line-through text-zinc-700' : 'text-white group-hover:text-cyber-blue'}`}>
               {task.title}
             </h3>
-            {task.isPinned && <div className="text-indigo-400 animate-float"><Icons.Pin filled /></div>}
+            {task.isPinned && <Icons.Pin className="text-cyber-purple w-4 h-4" filled />}
           </div>
-          <div className="flex items-center gap-6">
-             <span className="text-[10px] px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-300 font-black uppercase tracking-[0.2em] border border-white/5 shadow-inner">
-               {task.category}
-             </span>
-             <span className="text-[10px] text-slate-500 font-mono font-bold tracking-widest">{task.dueDate || 'Open Timeline'}</span>
+          
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[9px] font-black text-zinc-600 uppercase tracking-widest">
+            <span className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: task.color, boxShadow: `0 0 8px ${task.color}` }}></span>
+              {task.category}
+            </span>
+            <span className="flex items-center gap-2 opacity-50"><Icons.Calendar className="w-3 h-3" /> {task.dueDate || 'NO_DATE'}</span>
+            <span className={`text-${priorityColor} px-3 py-1 rounded-lg bg-black/40 border border-${priorityColor}/20`}>
+              {PRIORITY_LABELS[task.priority].label}
+            </span>
           </div>
         </div>
 
-        {/* Floating Actions */}
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-8 group-hover:translate-x-0">
-          <button onClick={() => onTogglePin(task.id)} className={`p-3 rounded-2xl transition-all active:scale-75 ${task.isPinned ? 'bg-indigo-500/20 text-indigo-400' : 'hover:bg-white/10'}`}><Icons.Pin filled={task.isPinned} /></button>
-          <button onClick={() => onEdit(task)} className="p-3 hover:bg-white/10 rounded-2xl transition-all active:scale-75"><Icons.Edit /></button>
-          <button onClick={() => onDelete(task.id)} className="p-3 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 rounded-2xl transition-all active:scale-75"><Icons.Trash /></button>
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+           <button onClick={(e) => {e.stopPropagation(); onTogglePin(task.id)}} className={`p-3 rounded-xl hover:bg-white/5 ${task.isPinned ? 'text-cyber-purple' : 'text-zinc-600'}`}>
+             <Icons.Pin filled={task.isPinned} className="w-4 h-4" />
+           </button>
+           <button onClick={(e) => {e.stopPropagation(); onEdit(task)}} className="p-3 rounded-xl hover:bg-white/5 text-zinc-600 hover:text-white">
+             <Icons.Edit className="w-4 h-4" />
+           </button>
+           <button onClick={(e) => {e.stopPropagation(); onDelete(task.id)}} className="p-3 rounded-xl hover:bg-rose-500/10 text-zinc-700 hover:text-rose-500">
+             <Icons.Trash className="w-4 h-4" />
+           </button>
         </div>
       </div>
 
-      {/* Accordion Smooth Expansion */}
-      <div className={`overflow-hidden transition-all duration-700 ease-in-out ${isExpanded ? 'max-h-[600px] mt-8 opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="pt-8 border-t border-white/5 space-y-8">
-          <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/5 shadow-inner">
-             <p className="text-sm text-slate-300 leading-relaxed font-medium italic">"{task.description || 'هذا السجل ينتظر كلماتك ليعبر عن جوهره...'}"</p>
-          </div>
-          
-          <div className="space-y-5">
-            <div className="flex justify-between items-center px-4">
-               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
-                 <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div> الخطة الذكية
-               </span>
-               <button 
-                onClick={(e) => { e.stopPropagation(); onBreakdown(task); }} 
-                className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 flex items-center gap-2 transition-all active:scale-95 px-4 py-2 glass-morphism rounded-xl"
-               >
-                 <Icons.Sparkles /> ذكاء اصطناعي
-               </button>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-3">
-              {task.subTasks.map(sub => (
-                <div 
-                  key={sub.id} 
-                  onClick={(e) => { e.stopPropagation(); onToggleSubtask(task.id, sub.id); }} 
-                  className="flex items-center gap-5 p-5 glass-morphism rounded-[1.5rem] cursor-pointer hover:bg-white/5 transition-all group/sub"
-                >
-                  <div className={`w-5 h-5 rounded-lg border-2 transition-all duration-500 ${sub.isCompleted ? 'bg-indigo-500 border-indigo-500 scale-90' : 'border-slate-700 group-hover/sub:border-indigo-500'}`}></div>
-                  <span className={`text-xs font-bold transition-all ${sub.isCompleted ? 'line-through text-slate-600 translate-x-2' : 'text-slate-300 group-hover/sub:text-white'}`}>{sub.title}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center px-4 py-2">
-             <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                <Icons.Calendar /> تم التعديل: {new Date(task.updatedAt).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})}
-             </div>
-             <div className={`px-6 py-2 rounded-full border border-white/5 text-[10px] font-black uppercase tracking-widest shadow-lg ${PRIORITY_LABELS[task.priority].color}`}>
-               {PRIORITY_LABELS[task.priority].label}
-             </div>
-          </div>
+      <div className={`overflow-hidden transition-all duration-700 ${isExpanded ? 'max-h-[500px] mt-8 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="pt-6 border-t border-white/5 space-y-6">
+           <p className="text-sm text-zinc-400 leading-relaxed font-medium">{task.description || 'لا توجد بيانات وصفية إضافية.'}</p>
+           
+           <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                 <h4 className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">SUB_OPERATIONS</h4>
+                 <button 
+                   onClick={(e) => {e.stopPropagation(); onBreakdown(task)}}
+                   className="text-[8px] font-black text-cyber-blue flex items-center gap-2 hover:scale-105 transition-all"
+                 >
+                   <Icons.Sparkles className="w-3 h-3" /> AI_BREAKDOWN
+                 </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                 {task.subTasks.map(sub => (
+                   <div 
+                    key={sub.id} 
+                    onClick={(e) => {e.stopPropagation(); onToggleSubtask(task.id, sub.id)}}
+                    className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border transition-all ${
+                      sub.isCompleted ? 'bg-cyber-emerald/5 border-cyber-emerald/20' : 'bg-white/5 border-white/5 hover:border-white/20'
+                    }`}
+                   >
+                     <div className={`w-5 h-5 rounded-lg border transition-all flex items-center justify-center ${sub.isCompleted ? 'bg-cyber-emerald border-cyber-emerald shadow-[0_0_10px_#00ffaa]' : 'border-zinc-800'}`}>
+                        {sub.isCompleted && <Icons.CheckCircle className="text-black w-3 h-3" />}
+                     </div>
+                     <span className={`text-xs font-bold ${sub.isCompleted ? 'line-through text-zinc-700' : 'text-zinc-300'}`}>{sub.title}</span>
+                   </div>
+                 ))}
+              </div>
+           </div>
         </div>
       </div>
     </div>

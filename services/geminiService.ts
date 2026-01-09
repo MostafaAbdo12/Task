@@ -37,7 +37,7 @@ export const getSmartAdvice = async (tasks: any[]) => {
     const summary = tasks.map(t => t.title).slice(0, 3).join(', ');
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `بناءً على: [${summary}]. قدم نصيحة إنتاجية واحدة قصيرة جداً (5 كلمات كحد أقصى).`,
+      contents: `بناءً على: [${summary}]. قدم نصيحة إنتاجية واحدة قصيرة جداً باللغة العربية (5 كلمات كحد أقصى).`,
     });
     return response.text?.trim() || "ابدأ بالأهم دائماً.";
   } catch (e) { return "ركز على هدف واحد."; }
@@ -47,7 +47,7 @@ export const getSmartSubtasks = async (taskTitle: string, taskDescription: strin
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `قسم المهمة: "${taskTitle}" إلى 3 خطوات عملية قصيرة جداً. الرد JSON array strings.`,
+        contents: `قسم المهمة: "${taskTitle}" إلى 3 خطوات عملية قصيرة جداً باللغة العربية. الرد JSON array strings.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
