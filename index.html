@@ -116,24 +116,28 @@
     <script>
       // إنشاء جزيئات البيانات برمجياً
       const nodesContainer = document.getElementById('data-nodes');
-      for(let i=0; i<30; i++) {
-        const node = document.createElement('div');
-        node.className = 'absolute bg-cyber-blue rounded-full blur-[2px] animate-float-data';
-        node.style.width = (Math.random() * 3 + 1) + 'px';
-        node.style.height = node.style.width;
-        node.style.left = Math.random() * 100 + '%';
-        node.style.top = Math.random() * 100 + '%';
-        node.style.animationDelay = (Math.random() * 10) + 's';
-        node.style.animationDuration = (Math.random() * 10 + 10) + 's';
-        nodesContainer.appendChild(node);
+      if (nodesContainer) {
+        for(let i=0; i<30; i++) {
+          const node = document.createElement('div');
+          node.className = 'absolute bg-cyber-blue rounded-full blur-[2px] animate-float-data';
+          node.style.width = (Math.random() * 3 + 1) + 'px';
+          node.style.height = node.style.width;
+          node.style.left = Math.random() * 100 + '%';
+          node.style.top = Math.random() * 100 + '%';
+          node.style.animationDelay = (Math.random() * 10) + 's';
+          node.style.animationDuration = (Math.random() * 10 + 10) + 's';
+          nodesContainer.appendChild(node);
+        }
       }
 
       document.addEventListener('mousemove', (e) => {
         const grid = document.getElementById('grid');
-        const x = (e.clientX / window.innerWidth) * 100;
-        const y = (e.clientY / window.innerHeight) * 100;
-        grid.style.setProperty('--cursor-x', `${x}%`);
-        grid.style.setProperty('--cursor-y', `${y}%`);
+        if (grid) {
+          const x = (e.clientX / window.innerWidth) * 100;
+          const y = (e.clientY / window.innerHeight) * 100;
+          grid.style.setProperty('--cursor-x', `${x}%`);
+          grid.style.setProperty('--cursor-y', `${y}%`);
+        }
       });
     </script>
     <script type="module" src="index.tsx"></script>
