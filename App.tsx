@@ -1,23 +1,22 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Task, TaskStatus, Category } from './types';
+import { Task, TaskStatus, Category, User } from './types';
 import { Icons, DEFAULT_CATEGORIES } from './constants';
 import TaskCard from './components/TaskCard';
 import TaskForm from './components/TaskForm';
 import Sidebar from './components/Sidebar';
 import CategoryModal from './components/CategoryModal';
+import Auth from './components/Auth';
 import { getSmartAdvice, getSmartSubtasks } from './services/geminiService';
 
 const App: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem('maham_tasks');
-    return saved ? JSON.parse(saved) : [];
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('maham_active_session');
+    return saved ? JSON.parse(saved) : null;
   });
-  
-  const [categories, setCategories] = useState<Category[]>(() => {
-    const saved = localStorage.getItem('maham_categories');
-    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
-  });
+
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [filter, setFilter] = useState<TaskStatus | 'ALL'>('ALL');
@@ -29,16 +28,35 @@ const App: React.FC = () => {
   const [aiAdvice, setAiAdvice] = useState('نظام الذكاء الاصطناعي متصل...');
   const [toast, setToast] = useState<{ msg: string, type: string } | null>(null);
 
+  // تحميل البيانات عند تسجيل الدخول
   useEffect(() => {
-    localStorage.setItem('maham_tasks', JSON.stringify(tasks));
-    if (tasks.length > 0) updateAiAdvice();
-  }, [tasks]);
+    if (currentUser) {
+      const savedTasks = localStorage.getItem(`tasks_${currentUser.username}`);
+      const savedCats = localStorage.getItem(`categories_${currentUser.username}`);
+      
+      setTasks(savedTasks ? JSON.parse(savedTasks) : []);
+      setCategories(savedCats ? JSON.parse(savedCats) : DEFAULT_CATEGORIES);
+      localStorage.setItem('maham_active_session', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('maham_active_session');
+    }
+  }, [currentUser]);
+
+  // حفظ البيانات عند التغيير
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(`tasks_${currentUser.username}`, JSON.stringify(tasks));
+      if (tasks.length > 0) updateAiAdvice();
+    }
+  }, [tasks, currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('maham_categories', JSON.stringify(categories));
-  }, [categories]);
+    if (currentUser) {
+      localStorage.setItem(`categories_${currentUser.username}`, JSON.stringify(categories));
+    }
+  }, [categories, currentUser]);
 
-  // طلب إذن الإشعارات عند بدء التطبيق
+  // طلب إذن الإشعارات
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
@@ -47,6 +65,8 @@ const App: React.FC = () => {
 
   // مراقب التنبيهات الذكي
   useEffect(() => {
+    if (!currentUser) return;
+    
     const checkReminders = () => {
       const now = new Date();
       let updated = false;
@@ -62,35 +82,18 @@ const App: React.FC = () => {
         return task;
       });
 
-      if (updated) {
-        setTasks(newTasks);
-      }
+      if (updated) setTasks(newTasks);
     };
 
-    const interval = setInterval(checkReminders, 15000); // التحقق كل 15 ثانية
+    const interval = setInterval(checkReminders, 15000);
     return () => clearInterval(interval);
-  }, [tasks]);
+  }, [tasks, currentUser]);
 
   const triggerReminder = (task: Task) => {
-    const message = `تنبيه المهمة: ${task.title}`;
-    
-    // إشعار المتصفح
     if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("تذكير من نظام مهام", {
-        body: task.title,
-        icon: "/favicon.ico"
-      });
+      new Notification("تذكير من نظام مهام", { body: task.title });
     }
-
-    // إشعار داخلي في التطبيق
-    showNotification(message, 'urgent');
-    
-    // صوت تنبيه (اختياري)
-    try {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
-    } catch (e) {}
+    showNotification(`تنبيه المهمة: ${task.title}`, 'urgent');
   };
 
   const updateAiAdvice = async () => {
@@ -101,6 +104,29 @@ const App: React.FC = () => {
   const showNotification = (msg: string, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 5000);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setTasks([]);
+    setCategories(DEFAULT_CATEGORIES);
+    setSelectedCategory('الكل');
+    showNotification('تم إنهاء الجلسة بنجاح');
+  };
+
+  const handleCopyTask = (task: Task) => {
+    const newTask: Task = {
+      ...task,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+      title: `${task.title} (نسخة)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isPinned: false,
+      status: TaskStatus.PENDING,
+      reminderFired: false
+    };
+    setTasks([newTask, ...tasks]);
+    showNotification('تم استنساخ المهمة بنجاح');
   };
 
   const stats = useMemo(() => ({
@@ -118,22 +144,12 @@ const App: React.FC = () => {
     }).sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1));
   }, [tasks, filter, selectedCategory, searchQuery]);
 
-  const handleAddCategory = (newCat: Category) => {
-    setCategories([...categories, newCat]);
-    showNotification('تمت إضافة التصنيف الجديد');
-  };
-
-  const handleDeleteCategory = (id: string) => {
-    const catToDelete = categories.find(c => c.id === id);
-    if (catToDelete) {
-      setCategories(categories.filter(c => c.id !== id));
-      if (selectedCategory === catToDelete.name) setSelectedCategory('الكل');
-      showNotification('تم حذف التصنيف');
-    }
-  };
+  if (!currentUser) {
+    return <Auth onLogin={setCurrentUser} />;
+  }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-cyber-black text-white overflow-hidden selection:bg-cyber-blue selection:text-black">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-cyber-black text-white overflow-hidden selection:bg-cyber-blue selection:text-black animate-fade-in">
       
       <Sidebar 
         isOpen={isSidebarOpen} 
@@ -142,6 +158,8 @@ const App: React.FC = () => {
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
         onManageCategories={() => setShowCatModal(true)}
+        user={currentUser}
+        onLogout={handleLogout}
       />
 
       <main className="flex-1 h-screen overflow-y-auto no-scrollbar relative">
@@ -153,19 +171,12 @@ const App: React.FC = () => {
             <div>
               <h1 className="text-2xl font-black tracking-tighter neon-text flex items-center gap-3">
                 <span className="w-2 h-8 bg-cyber-blue rounded-full"></span>
-                قاعدة البيانات الرئيسية
+                قاعدة بيانات {currentUser.username}
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="hidden md:flex flex-col items-end">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">حالة النظام</span>
-              <span className="text-xs font-black text-cyber-lime flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-cyber-lime rounded-full animate-ping"></span>
-                مستقر ومزامن
-              </span>
-            </div>
             <button onClick={() => setShowForm(true)} className="bg-cyber-blue text-black font-black px-6 py-2.5 rounded-full hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,210,255,0.3)] flex items-center gap-2">
               <Icons.Plus /> إضافة مهمة
             </button>
@@ -179,7 +190,6 @@ const App: React.FC = () => {
                 <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-cyber-blue to-cyber-purple animate-pulse-neon flex items-center justify-center relative z-10">
                   <Icons.Sparkles />
                 </div>
-                <div className="absolute inset-0 bg-cyber-blue/20 blur-2xl animate-orbit rounded-full"></div>
               </div>
               <div className="flex-1 text-center md:text-right">
                 <p className="text-xs font-black text-cyber-purple uppercase tracking-[0.3em] mb-2">توصية الذكاء الاصطناعي</p>
@@ -211,7 +221,7 @@ const App: React.FC = () => {
             <div className="relative w-full md:w-80 group">
               <input 
                 type="text" 
-                placeholder="ابحث في قاعدة البيانات..." 
+                placeholder="ابحث في السجلات..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-cyber-black/50 border border-white/10 rounded-2xl py-2.5 px-10 outline-none focus:border-cyber-blue transition-all font-bold text-sm"
@@ -228,6 +238,7 @@ const App: React.FC = () => {
                 index={idx}
                 onDelete={(id) => setTasks(tasks.filter(t => t.id !== id))}
                 onEdit={(t) => { setEditingTask(t); setShowForm(true); }}
+                onCopy={handleCopyTask}
                 onStatusChange={(id, status) => setTasks(tasks.map(t => t.id === id ? {...t, status} : t))}
                 onTogglePin={(id) => setTasks(tasks.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t))}
                 onBreakdown={async (task) => {
@@ -272,8 +283,8 @@ const App: React.FC = () => {
       {showCatModal && (
         <CategoryModal 
           categories={categories}
-          onAdd={handleAddCategory}
-          onDelete={handleDeleteCategory}
+          onAdd={(c) => setCategories([...categories, c])}
+          onDelete={(id) => setCategories(categories.filter(c => c.id !== id))}
           onClose={() => setShowCatModal(false)}
         />
       )}
@@ -283,7 +294,6 @@ const App: React.FC = () => {
           <div className={`px-8 py-3 rounded-full font-black text-sm shadow-[0_0_30px_rgba(0,0,0,0.5)] flex items-center gap-3 ${
             toast.type === 'urgent' ? 'bg-cyber-rose text-white' : 'bg-cyber-blue text-black'
           }`}>
-            {toast.type === 'urgent' && <Icons.Bell />}
             {toast.msg}
           </div>
         </div>

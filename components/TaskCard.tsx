@@ -7,6 +7,7 @@ interface TaskCardProps {
   task: Task;
   onDelete: (id: string) => void;
   onEdit: (task: Task) => void;
+  onCopy: (task: Task) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
   onBreakdown: (task: Task) => void;
@@ -14,7 +15,7 @@ interface TaskCardProps {
   index: number;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onStatusChange, onToggleSubtask, onBreakdown, onTogglePin, index }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onStatusChange, onToggleSubtask, onBreakdown, onTogglePin, index }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCelebrating, setIsCelebrating] = useState(false);
   const isCompleted = task.status === TaskStatus.COMPLETED;
@@ -105,6 +106,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onStatusCha
           </div>
           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
             <button onClick={() => onTogglePin(task.id)} className={`p-1.5 rounded-lg transition-colors ${task.isPinned ? 'text-cyber-lime' : 'text-slate-600 hover:text-white'}`}><Icons.Pin filled={task.isPinned} /></button>
+            <button onClick={() => onCopy(task)} className="p-1.5 rounded-lg text-slate-600 hover:text-cyber-lime transition-colors" title="نسخ المهمة"><Icons.Copy /></button>
             <button onClick={() => onEdit(task)} className="p-1.5 rounded-lg text-slate-600 hover:text-cyber-blue transition-colors"><Icons.Edit /></button>
             <button onClick={() => onDelete(task.id)} className="p-1.5 rounded-lg text-slate-600 hover:text-cyber-rose transition-colors"><Icons.Trash /></button>
           </div>

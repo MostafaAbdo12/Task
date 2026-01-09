@@ -25,6 +25,12 @@ export interface Category {
   icon?: string;
 }
 
+export interface User {
+  username: string;
+  password?: string;
+  lastLogin: string;
+}
+
 export interface Task {
   id: string;
   title: string;
