@@ -4,67 +4,46 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#00d2ff" />
-    <meta name="description" content="مهام - نظام الإنتاجية السيبراني" />
-    <title>مهام | المستقبل الآن</title>
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="description" content="ENJAZ MOTION - تجربة المهام السائلة" />
+    <title>إنجاز | Motion Max</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
-              cairo: ['Cairo', 'sans-serif'],
-            },
-            colors: {
-              cyber: {
-                black: '#050505',
-                dark: '#0a0a0a',
-                blue: '#00d2ff',
-                purple: '#9d50bb',
-                lime: '#ccff00',
-                rose: '#ff0055',
-                surface: '#121212'
-              },
+              sans: ['IBM Plex Sans Arabic', 'sans-serif'],
             },
             animation: {
-              'orbit': 'orbit 10s linear infinite',
-              'scan': 'scan 3s linear infinite',
-              'glitch': 'glitch 0.3s cubic-bezier(.25,.46,.45,.94) both infinite',
-              'pulse-neon': 'pulse-neon 2s ease-in-out infinite',
-              'confetti': 'confetti 0.8s ease-out forwards',
-              'success-flash': 'success-flash 0.5s ease-out forwards',
+              'blob': 'blob 10s infinite',
+              'float': 'float 3s ease-in-out infinite',
+              'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+              'slide-in': 'slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'reveal-text': 'revealText 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             },
             keyframes: {
-              orbit: {
-                '0%': { transform: 'rotate(0deg) translateX(10px) rotate(0deg)' },
-                '100%': { transform: 'rotate(360deg) translateX(10px) rotate(-360deg)' },
+              blob: {
+                '0%, 100%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(50px, -70px) scale(1.2)' },
+                '66%': { transform: 'translate(-30px, 30px) scale(0.8)' },
               },
-              scan: {
-                '0%': { transform: 'translateY(-100%)', opacity: '0' },
-                '50%': { opacity: '0.5' },
-                '100%': { transform: 'translateY(100%)', opacity: '0' },
+              float: {
+                '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
+                '50%': { transform: 'translateY(-15px) rotate(1deg)' },
               },
-              'pulse-neon': {
-                '0%, 100%': { boxShadow: '0 0 10px rgba(0, 210, 255, 0.2)', borderColor: 'rgba(0, 210, 255, 0.2)' },
-                '50%': { boxShadow: '0 0 25px rgba(0, 210, 255, 0.5)', borderColor: 'rgba(0, 210, 255, 0.8)' },
+              pulseGlow: {
+                '0%, 100%': { opacity: '0.4', filter: 'blur(40px)' },
+                '50%': { opacity: '0.8', filter: 'blur(60px)' },
               },
-              glitch: {
-                '0%': { transform: 'translate(0)' },
-                '20%': { transform: 'translate(-2px, 2px)' },
-                '40%': { transform: 'translate(-2px, -2px)' },
-                '60%': { transform: 'translate(2px, 2px)' },
-                '80%': { transform: 'translate(2px, -2px)' },
-                '100%': { transform: 'translate(0)' },
+              slideIn: {
+                '0%': { opacity: '0', transform: 'translateY(30px) scale(0.95)' },
+                '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
               },
-              confetti: {
-                '0%': { transform: 'translate(0, 0) scale(1)', opacity: '1' },
-                '100%': { transform: 'translate(var(--tw-translate-x), var(--tw-translate-y)) scale(0)', opacity: '0' },
-              },
-              'success-flash': {
-                '0%': { backgroundColor: 'rgba(204, 255, 0, 0.4)', opacity: '1' },
-                '100%': { backgroundColor: 'transparent', opacity: '0' }
+              revealText: {
+                '0%': { opacity: '0', clipPath: 'inset(100% 0 0 0)' },
+                '100%': { opacity: '1', clipPath: 'inset(0 0 0 0)' },
               }
             }
           },
@@ -72,89 +51,81 @@
       }
     </script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
       body {
-        font-family: 'Cairo', sans-serif;
-        background-color: #050505;
-        color: #e5e5e5;
+        font-family: 'IBM Plex Sans Arabic', sans-serif;
+        background-color: #020617;
+        color: #f8fafc;
         overflow-x: hidden;
+        perspective: 1000px;
       }
 
-      .bg-grid {
-        background-image: linear-gradient(rgba(0, 210, 255, 0.05) 1px, transparent 1px),
-                          linear-gradient(90deg, rgba(0, 210, 255, 0.05) 1px, transparent 1px);
-        background-size: 50px 50px;
-        background-position: center center;
+      .glass-morphism {
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
 
-      .cyber-card {
-        background: rgba(15, 15, 15, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .cyber-card::after {
-        content: '';
-        position: absolute;
+      .mesh-container {
+        position: fixed;
         top: 0;
         left: 0;
         width: 100%;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.5), transparent);
-        animation: scan 3s linear infinite;
+        height: 100%;
+        z-index: -1;
+        overflow: hidden;
+        background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
       }
 
-      .neon-text {
-        text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
-      }
-
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      
-      .active-cyber {
-        background: #00d2ff;
-        color: black;
-        box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
-      }
-
-      /* Strike-through animation */
-      .strike-animate {
-        position: relative;
-        display: inline-block;
-      }
-      .strike-animate::after {
-        content: '';
+      .blob-glow {
         position: absolute;
-        bottom: 50%;
-        right: 0;
-        width: 0;
-        height: 2px;
-        background: currentColor;
-        transition: width 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        filter: blur(100px);
+        opacity: 0.2;
       }
-      .is-completed .strike-animate::after {
-        width: 100%;
-        right: 0;
+
+      .stagger-item {
+        opacity: 0;
+        animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      ::-webkit-scrollbar { width: 5px; }
+      ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.4); border-radius: 10px; }
+      
+      .task-card-motion {
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .task-card-motion:hover {
+        transform: translateY(-8px) scale(1.01);
+        border-color: rgba(99, 102, 241, 0.4);
+        box-shadow: 0 20px 40px -20px rgba(99, 102, 241, 0.3);
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
-  }
-}
-</script>
-</head>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+        "vite": "https://esm.sh/vite@^7.3.1",
+        "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+      }
+    }
+    </script>
+  </head>
   <body>
-    <div class="fixed inset-0 bg-grid pointer-events-none"></div>
+    <div class="mesh-container">
+      <div class="blob-glow bg-indigo-600 top-[-10%] left-[-10%] animate-blob"></div>
+      <div class="blob-glow bg-purple-600 bottom-[-10%] right-[-10%] animate-blob" style="animation-delay: -2s"></div>
+      <div class="blob-glow bg-cyan-600 top-[20%] right-[10%] animate-blob" style="animation-delay: -5s"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
   </body>

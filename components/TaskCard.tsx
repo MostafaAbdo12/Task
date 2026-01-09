@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Task, TaskStatus } from '../types';
 import { Icons, PRIORITY_LABELS, CategoryIconMap } from '../constants';
 
@@ -15,158 +15,92 @@ interface TaskCardProps {
   index: number;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onStatusChange, onToggleSubtask, onBreakdown, onTogglePin, index }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ 
+  task, onDelete, onEdit, onCopy, onStatusChange, 
+  onToggleSubtask, onBreakdown, onTogglePin, index 
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isCelebrating, setIsCelebrating] = useState(false);
   const isCompleted = task.status === TaskStatus.COMPLETED;
   
-  const progress = task.subTasks.length 
-    ? Math.round((task.subTasks.filter(s => s.isCompleted).length / task.subTasks.length) * 100)
-    : (isCompleted ? 100 : 0);
-
-  const glowColor = task.color || '#00d2ff';
-
-  const handleStatusToggle = () => {
-    const newStatus = isCompleted ? TaskStatus.PENDING : TaskStatus.COMPLETED;
-    
-    if (newStatus === TaskStatus.COMPLETED) {
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1000);
-    }
-    
-    onStatusChange(task.id, newStatus);
-  };
-
-  // توليد جزيئات عشوائية للاحتفال
-  const particles = Array.from({ length: 12 }).map((_, i) => {
-    const angle = (i / 12) * 360;
-    const distance = 100 + Math.random() * 50;
-    const tx = Math.cos(angle * Math.PI / 180) * distance;
-    const ty = Math.sin(angle * Math.PI / 180) * distance;
-    return { tx, ty, color: i % 2 === 0 ? task.color : '#ccff00' };
-  });
-
   return (
     <div 
-      className={`group cyber-card rounded-2xl p-6 transition-all duration-500 animate-fade-up border-r-4 ${
-        isCompleted 
-          ? 'opacity-60 grayscale-[0.5] border-white/5' 
-          : 'hover:scale-[1.03] hover:border-white/20 active:scale-95'
-      } ${isCompleted ? 'is-completed' : ''}`}
-      style={{ 
-        animationDelay: `${index * 0.05}s`,
-        borderRightColor: isCompleted ? 'rgba(255,255,255,0.1)' : glowColor,
-      }}
+      className={`group w-full glass-morphism rounded-[2.5rem] p-8 transition-all duration-700 stagger-item flex flex-col task-card-motion ${isCompleted ? 'opacity-40' : 'opacity-100'}`}
+      style={{ animationDelay: `${index * 0.1}s` }}
     >
-      {/* تأثير الفلاش عند الإنجاز */}
-      {isCelebrating && (
-        <div className="absolute inset-0 z-50 animate-success-flash pointer-events-none rounded-2xl" />
-      )}
+      <div className="flex items-center gap-8">
+        {/* Liquid Checkbox */}
+        <button 
+          onClick={() => onStatusChange(task.id, isCompleted ? TaskStatus.PENDING : TaskStatus.COMPLETED)}
+          className={`w-10 h-10 rounded-[1.2rem] border-2 transition-all duration-500 flex items-center justify-center shrink-0 ${isCompleted ? 'bg-indigo-500 border-indigo-500 text-white rotate-[15deg] scale-110 shadow-lg shadow-indigo-500/50' : 'border-white/10 hover:border-indigo-500 bg-white/5 hover:scale-105'}`}
+        >
+          {isCompleted ? <Icons.CheckCircle /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-indigo-400 transition-colors"></div>}
+        </button>
 
-      {/* الجزيئات المنفجرة */}
-      {isCelebrating && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
-          {particles.map((p, i) => (
-            <div 
-              key={i}
-              className="absolute w-2 h-2 rounded-full animate-confetti"
-              style={{ 
-                backgroundColor: p.color,
-                '--tw-translate-x': `${p.tx}px`,
-                '--tw-translate-y': `${p.ty}px`
-              } as any}
-            />
-          ))}
+        {/* Title Interaction Area */}
+        <div className="flex-1 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+          <div className="flex items-center gap-4 mb-2">
+            <h3 className={`text-xl font-bold transition-all duration-500 ${isCompleted ? 'line-through text-slate-500 translate-x-4' : 'text-slate-100 group-hover:text-indigo-400'}`}>
+              {task.title}
+            </h3>
+            {task.isPinned && <div className="text-indigo-400 animate-float"><Icons.Pin filled /></div>}
+          </div>
+          <div className="flex items-center gap-6">
+             <span className="text-[10px] px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-300 font-black uppercase tracking-[0.2em] border border-white/5 shadow-inner">
+               {task.category}
+             </span>
+             <span className="text-[10px] text-slate-500 font-mono font-bold tracking-widest">{task.dueDate || 'Open Timeline'}</span>
+          </div>
         </div>
-      )}
 
-      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`}
-           style={{ boxShadow: isCompleted ? 'none' : `inset 0 0 20px ${glowColor}15, 0 10px 40px -10px ${glowColor}30` }} />
+        {/* Floating Actions */}
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-8 group-hover:translate-x-0">
+          <button onClick={() => onTogglePin(task.id)} className={`p-3 rounded-2xl transition-all active:scale-75 ${task.isPinned ? 'bg-indigo-500/20 text-indigo-400' : 'hover:bg-white/10'}`}><Icons.Pin filled={task.isPinned} /></button>
+          <button onClick={() => onEdit(task)} className="p-3 hover:bg-white/10 rounded-2xl transition-all active:scale-75"><Icons.Edit /></button>
+          <button onClick={() => onDelete(task.id)} className="p-3 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 rounded-2xl transition-all active:scale-75"><Icons.Trash /></button>
+        </div>
+      </div>
 
-      <div className="relative z-10">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">محدد الهوية: {task.id.slice(-6)}</span>
-            <div className="flex items-center gap-3">
-               <div 
-                className={`p-2 rounded-xl bg-white/5 transition-all duration-500 ${isCompleted ? 'rotate-[360deg] scale-110 text-cyber-lime' : 'group-hover:rotate-12'}`}
-                style={{ color: isCompleted ? '#ccff00' : glowColor }}
+      {/* Accordion Smooth Expansion */}
+      <div className={`overflow-hidden transition-all duration-700 ease-in-out ${isExpanded ? 'max-h-[600px] mt-8 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="pt-8 border-t border-white/5 space-y-8">
+          <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/5 shadow-inner">
+             <p className="text-sm text-slate-300 leading-relaxed font-medium italic">"{task.description || 'هذا السجل ينتظر كلماتك ليعبر عن جوهره...'}"</p>
+          </div>
+          
+          <div className="space-y-5">
+            <div className="flex justify-between items-center px-4">
+               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
+                 <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div> الخطة الذكية
+               </span>
+               <button 
+                onClick={(e) => { e.stopPropagation(); onBreakdown(task); }} 
+                className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 flex items-center gap-2 transition-all active:scale-95 px-4 py-2 glass-morphism rounded-xl"
                >
-                  {isCompleted ? <Icons.CheckCircle /> : (task.icon && CategoryIconMap[task.icon] ? CategoryIconMap[task.icon] : CategoryIconMap['star'])}
-               </div>
-               <div className="flex flex-col">
-                  <span className="text-xs font-black text-slate-300">{task.category}</span>
-                  {task.reminderAt && !task.reminderFired && (
-                    <span className="text-[8px] text-cyber-purple font-black uppercase tracking-widest flex items-center gap-1">
-                      <Icons.Bell /> مبرمج
-                    </span>
-                  )}
-               </div>
+                 <Icons.Sparkles /> ذكاء اصطناعي
+               </button>
             </div>
-          </div>
-          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-            <button onClick={() => onTogglePin(task.id)} className={`p-1.5 rounded-lg transition-colors ${task.isPinned ? 'text-cyber-lime' : 'text-slate-600 hover:text-white'}`}><Icons.Pin filled={task.isPinned} /></button>
-            <button onClick={() => onCopy(task)} className="p-1.5 rounded-lg text-slate-600 hover:text-cyber-lime transition-colors" title="نسخ المهمة"><Icons.Copy /></button>
-            <button onClick={() => onEdit(task)} className="p-1.5 rounded-lg text-slate-600 hover:text-cyber-blue transition-colors"><Icons.Edit /></button>
-            <button onClick={() => onDelete(task.id)} className="p-1.5 rounded-lg text-slate-600 hover:text-cyber-rose transition-colors"><Icons.Trash /></button>
-          </div>
-        </div>
-
-        <div className="mb-6 space-y-2">
-          <h3 className={`text-xl font-bold tracking-tight transition-colors strike-animate ${isCompleted ? 'text-slate-500' : 'text-white group-hover:text-cyber-blue'}`}>
-            {task.title}
-          </h3>
-          <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">
-            {task.description}
-          </p>
-        </div>
-
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-black text-slate-600 uppercase">تكامل البيانات</span>
-            <span className={`text-xs font-black transition-colors ${isCompleted ? 'text-cyber-lime' : 'text-cyber-blue'}`}>{progress}%</span>
-          </div>
-          <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-            <div 
-              className="h-full transition-all duration-1000 ease-out"
-              style={{ width: `${progress}%`, backgroundColor: isCompleted ? '#ccff00' : task.color }}
-            />
-          </div>
-        </div>
-
-        {isExpanded && task.subTasks.length > 0 && (
-          <div className="mb-6 space-y-2 animate-fade-up">
-            {task.subTasks.map(st => (
-              <div key={st.id} onClick={() => onToggleSubtask(task.id, st.id)} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 cursor-pointer hover:border-cyber-blue/30 group/sub transition-all">
-                <div className={`w-4 h-4 rounded border transition-all ${st.isCompleted ? 'bg-cyber-blue border-cyber-blue' : 'border-slate-700'}`}>
-                  {st.isCompleted && <Icons.CheckCircle />}
+            
+            <div className="grid grid-cols-1 gap-3">
+              {task.subTasks.map(sub => (
+                <div 
+                  key={sub.id} 
+                  onClick={(e) => { e.stopPropagation(); onToggleSubtask(task.id, sub.id); }} 
+                  className="flex items-center gap-5 p-5 glass-morphism rounded-[1.5rem] cursor-pointer hover:bg-white/5 transition-all group/sub"
+                >
+                  <div className={`w-5 h-5 rounded-lg border-2 transition-all duration-500 ${sub.isCompleted ? 'bg-indigo-500 border-indigo-500 scale-90' : 'border-slate-700 group-hover/sub:border-indigo-500'}`}></div>
+                  <span className={`text-xs font-bold transition-all ${sub.isCompleted ? 'line-through text-slate-600 translate-x-2' : 'text-slate-300 group-hover/sub:text-white'}`}>{sub.title}</span>
                 </div>
-                <span className={`text-[11px] font-bold ${st.isCompleted ? 'text-slate-600 line-through' : 'text-slate-300'}`}>{st.title}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-4 border-t border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-600">
-              <Icons.Calendar />
-              {task.dueDate ? new Date(task.dueDate).toLocaleDateString('ar-SA') : 'مفتوح'}
+              ))}
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => onBreakdown(task)} className="p-2 bg-white/5 text-cyber-purple rounded-xl hover:scale-110 active:scale-90 transition-all hover:bg-cyber-purple/10">
-              <Icons.Sparkles />
-            </button>
-            <button 
-              onClick={handleStatusToggle}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all ${isCompleted ? 'bg-cyber-lime text-black shadow-[0_0_15px_rgba(204,255,0,0.4)]' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
-            >
-              {isCompleted ? 'مهمة منجزة ✓' : 'معالجة المهمة'}
-            </button>
-            <button onClick={() => setIsExpanded(!isExpanded)} className={`p-2 transition-transform duration-500 ${isExpanded ? 'rotate-180 text-cyber-blue' : 'text-slate-600'}`}>
-              <Icons.Chevron />
-            </button>
+
+          <div className="flex justify-between items-center px-4 py-2">
+             <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <Icons.Calendar /> تم التعديل: {new Date(task.updatedAt).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})}
+             </div>
+             <div className={`px-6 py-2 rounded-full border border-white/5 text-[10px] font-black uppercase tracking-widest shadow-lg ${PRIORITY_LABELS[task.priority].color}`}>
+               {PRIORITY_LABELS[task.priority].label}
+             </div>
           </div>
         </div>
       </div>

@@ -9,81 +9,63 @@ interface SidebarProps {
   categories: Category[];
   selectedCategory: string;
   onCategorySelect: (cat: string) => void;
-  onManageCategories: () => void;
   user: User;
   onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories, selectedCategory, onCategorySelect, onManageCategories, user, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories, selectedCategory, onCategorySelect, user, onLogout }) => {
   return (
-    <div className={`fixed inset-0 z-[60] lg:relative lg:block transition-all duration-500 ${isOpen ? 'visible' : 'invisible lg:visible'}`}>
-      <div className={`absolute inset-0 bg-cyber-black/80 backdrop-blur-md lg:hidden transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose}></div>
+    <div className={`fixed inset-0 z-[100] transition-all duration-700 ${isOpen ? 'visible' : 'invisible'}`}>
+      <div className={`absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity duration-700 ${isOpen ? 'opacity-100' : 'opacity-0'}`} onClick={onClose}></div>
       
       <aside className={`
-        absolute lg:relative right-0 h-full bg-cyber-dark border-l border-white/5 w-72 transition-transform duration-500 flex flex-col
-        ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        absolute left-0 top-0 h-full w-80 glass-morphism border-r border-white/5 flex flex-col transition-all duration-700 ease-in-out
+        ${isOpen ? 'translate-x-0 skew-y-0' : '-translate-x-full -skew-y-12'}
       `}>
-        <div className="p-8 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-cyber-blue text-black flex items-center justify-center font-black animate-pulse-neon">
-            <Icons.Folder />
-          </div>
-          <div>
-            <h2 className="text-xl font-black neon-text uppercase tracking-tighter">نظام مهام</h2>
-            <p className="text-[10px] font-bold text-slate-500 tracking-[0.2em]">العميل: {user.username}</p>
-          </div>
-        </div>
-
-        <nav className="flex-1 px-6 py-6 space-y-8 overflow-y-auto no-scrollbar">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center px-4">
-              <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">ملفات البيانات</p>
-              <button 
-                onClick={onManageCategories}
-                className="p-1 hover:text-cyber-blue transition-colors text-slate-600"
-                title="إدارة التصنيفات"
-              >
-                <Icons.Edit />
-              </button>
-            </div>
-            
-            <button 
-              onClick={() => { onCategorySelect('الكل'); onClose(); }}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-sm font-bold transition-all ${selectedCategory === 'الكل' ? 'active-cyber' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-            >
-              <Icons.Folder />
-              <span>المخزن الرئيسي</span>
-            </button>
-            
-            {categories.map(cat => (
-              <button 
-                key={cat.id} 
-                onClick={() => { onCategorySelect(cat.name); onClose(); }}
-                className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-sm font-bold transition-all group ${selectedCategory === cat.name ? 'text-white border border-white/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                style={{ backgroundColor: selectedCategory === cat.name ? cat.color + '44' : '' }}
-              >
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }}></div>
-                <span>{cat.name}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        <div className="p-8 border-t border-white/5 flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyber-blue to-cyber-purple flex items-center justify-center font-black text-black">
+        <div className="p-12 flex flex-col h-full">
+           <div className="flex items-center gap-5 mb-16 stagger-item">
+             <div className="w-14 h-14 rounded-3xl bg-white text-black flex items-center justify-center text-xl font-black shadow-2xl animate-float">
                {user.username.charAt(0).toUpperCase()}
              </div>
-             <div>
-               <p className="text-xs font-black truncate w-32">{user.username}</p>
-               <p className="text-[9px] text-slate-600 uppercase font-black">جلسة نشطة</p>
+             <div className="flex flex-col">
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Chief Officer</span>
+                <span className="text-lg font-bold truncate">{user.username}</span>
              </div>
-          </div>
-          <button 
-            onClick={onLogout}
-            className="w-full py-3 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black text-cyber-rose hover:bg-cyber-rose/10 hover:border-cyber-rose/20 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
-          >
-            <Icons.Trash /> إنهاء الجلسة
-          </button>
+           </div>
+
+           <div className="space-y-12 flex-1">
+             <div className="stagger-item" style={{ animationDelay: '0.1s' }}>
+               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-6">القطاعات الرئيسية</p>
+               <nav className="space-y-3">
+                 <button 
+                   onClick={() => { onCategorySelect('الكل'); onClose(); }}
+                   className={`w-full flex items-center gap-5 px-6 py-4 rounded-2xl text-sm font-bold transition-all duration-500 ${selectedCategory === 'الكل' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/30 translate-x-2' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                 >
+                   <Icons.Folder /> الكل
+                 </button>
+                 {categories.map((cat, idx) => (
+                   <button 
+                     key={cat.id} 
+                     onClick={() => { onCategorySelect(cat.name); onClose(); }}
+                     className={`w-full flex items-center gap-5 px-6 py-4 rounded-2xl text-sm font-bold transition-all duration-500 ${selectedCategory === cat.name ? 'bg-white/10 text-white shadow-lg translate-x-2' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                     style={{ animationDelay: `${idx * 0.05}s` }}
+                   >
+                     <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: cat.color, color: cat.color }}></div>
+                     {cat.name}
+                   </button>
+                 ))}
+               </nav>
+             </div>
+           </div>
+
+           <div className="mt-auto stagger-item" style={{ animationDelay: '0.3s' }}>
+             <button 
+               onClick={onLogout}
+               className="w-full flex items-center justify-center gap-4 px-6 py-5 bg-rose-500/10 text-rose-400 font-black text-[11px] uppercase tracking-widest rounded-2xl hover:bg-rose-500 hover:text-white transition-all duration-500 active:scale-90"
+             >
+               <Icons.X /> إغلاق الجلسة
+             </button>
+           </div>
         </div>
       </aside>
     </div>

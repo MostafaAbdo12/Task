@@ -1,13 +1,11 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Task, TaskStatus, Category, User } from './types';
 import { Icons, DEFAULT_CATEGORIES } from './constants';
 import TaskCard from './components/TaskCard';
 import TaskForm from './components/TaskForm';
 import Sidebar from './components/Sidebar';
-import CategoryModal from './components/CategoryModal';
-import Auth from './components/Auth';
-import { getSmartAdvice, getSmartSubtasks } from './services/geminiService';
+import { getSmartAdvice, getSmartSubtasks, getSystemBriefingAudio } from './services/geminiService';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -16,140 +14,71 @@ const App: React.FC = () => {
   });
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
-
+  const [categories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [filter, setFilter] = useState<TaskStatus | 'ALL'>('ALL');
   const [selectedCategory, setSelectedCategory] = useState('الكل');
-  const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [showCatModal, setShowCatModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [aiAdvice, setAiAdvice] = useState('نظام الذكاء الاصطناعي متصل...');
-  const [toast, setToast] = useState<{ msg: string, type: string } | null>(null);
+  const [aiAdvice, setAiAdvice] = useState('جاري استقراء ذكاء المسار...');
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [focusTime, setFocusTime] = useState(25 * 60);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  // تحميل البيانات عند تسجيل الدخول
+  const audioContextRef = useRef<AudioContext | null>(null);
+
   useEffect(() => {
     if (currentUser) {
       const savedTasks = localStorage.getItem(`tasks_${currentUser.username}`);
-      const savedCats = localStorage.getItem(`categories_${currentUser.username}`);
-      
       setTasks(savedTasks ? JSON.parse(savedTasks) : []);
-      setCategories(savedCats ? JSON.parse(savedCats) : DEFAULT_CATEGORIES);
-      localStorage.setItem('maham_active_session', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('maham_active_session');
+      playBriefing();
     }
   }, [currentUser]);
 
-  // حفظ البيانات عند التغيير
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem(`tasks_${currentUser.username}`, JSON.stringify(tasks));
-      if (tasks.length > 0) updateAiAdvice();
+      const tid = setTimeout(updateAiAdvice, 1500);
+      return () => clearTimeout(tid);
     }
-  }, [tasks, currentUser]);
+  }, [tasks]);
 
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(`categories_${currentUser.username}`, JSON.stringify(categories));
+    let interval: any;
+    if (isTimerRunning && focusTime > 0) {
+      interval = setInterval(() => setFocusTime(prev => prev - 1), 1000);
     }
-  }, [categories, currentUser]);
-
-  // طلب إذن الإشعارات
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  // مراقب التنبيهات الذكي
-  useEffect(() => {
-    if (!currentUser) return;
-    
-    const checkReminders = () => {
-      const now = new Date();
-      let updated = false;
-      const newTasks = tasks.map(task => {
-        if (task.reminderAt && !task.reminderFired && task.status !== TaskStatus.COMPLETED) {
-          const reminderTime = new Date(task.reminderAt);
-          if (now >= reminderTime) {
-            triggerReminder(task);
-            updated = true;
-            return { ...task, reminderFired: true };
-          }
-        }
-        return task;
-      });
-
-      if (updated) setTasks(newTasks);
-    };
-
-    const interval = setInterval(checkReminders, 15000);
     return () => clearInterval(interval);
-  }, [tasks, currentUser]);
-
-  const triggerReminder = (task: Task) => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("تذكير من نظام مهام", { body: task.title });
-    }
-    showNotification(`تنبيه المهمة: ${task.title}`, 'urgent');
-  };
+  }, [isTimerRunning, focusTime]);
 
   const updateAiAdvice = async () => {
     const advice = await getSmartAdvice(tasks);
     setAiAdvice(advice);
   };
 
-  const showNotification = (msg: string, type = 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 5000);
+  const playBriefing = async () => {
+    if (!currentUser) return;
+    const base64Audio = await getSystemBriefingAudio(currentUser.username, tasks);
+    if (base64Audio) {
+      if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = audioContextRef.current;
+      const arrayBuffer = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0)).buffer;
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(ctx.destination);
+      source.start();
+    }
   };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setTasks([]);
-    setCategories(DEFAULT_CATEGORIES);
-    setSelectedCategory('الكل');
-    showNotification('تم إنهاء الجلسة بنجاح');
-  };
-
-  const handleCopyTask = (task: Task) => {
-    const newTask: Task = {
-      ...task,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-      title: `${task.title} (نسخة)`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isPinned: false,
-      status: TaskStatus.PENDING,
-      reminderFired: false
-    };
-    setTasks([newTask, ...tasks]);
-    showNotification('تم استنساخ المهمة بنجاح');
-  };
-
-  const stats = useMemo(() => ({
-    total: tasks.length,
-    completed: tasks.filter(t => t.status === TaskStatus.COMPLETED).length,
-    percent: tasks.length ? Math.round((tasks.filter(t => t.status === TaskStatus.COMPLETED).length / tasks.length) * 100) : 0
-  }), [tasks]);
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter(t => {
-      const matchesStatus = filter === 'ALL' || t.status === filter;
-      const matchesCategory = selectedCategory === 'الكل' || t.category === selectedCategory;
-      const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesStatus && matchesCategory && matchesSearch;
-    }).sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1));
-  }, [tasks, filter, selectedCategory, searchQuery]);
+    return tasks.filter(t => selectedCategory === 'الكل' || t.category === selectedCategory)
+      .sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1));
+  }, [tasks, selectedCategory]);
 
-  if (!currentUser) {
-    return <Auth onLogin={setCurrentUser} />;
-  }
+  if (!currentUser) return <Auth onLogin={setCurrentUser} />;
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-cyber-black text-white overflow-hidden selection:bg-cyber-blue selection:text-black animate-fade-in">
+    <div className="h-screen w-full flex overflow-hidden font-sans select-none">
       
       <Sidebar 
         isOpen={isSidebarOpen} 
@@ -157,149 +86,186 @@ const App: React.FC = () => {
         categories={categories}
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
-        onManageCategories={() => setShowCatModal(true)}
         user={currentUser}
-        onLogout={handleLogout}
+        onLogout={() => {
+          localStorage.removeItem('maham_active_session');
+          setCurrentUser(null);
+        }}
       />
 
-      <main className="flex-1 h-screen overflow-y-auto no-scrollbar relative">
-        <header className="sticky top-0 z-40 bg-cyber-black/80 backdrop-blur-xl border-b border-white/5 px-8 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:text-cyber-blue transition-colors lg:hidden">
-              <Icons.Folder />
-            </button>
-            <div>
-              <h1 className="text-2xl font-black tracking-tighter neon-text flex items-center gap-3">
-                <span className="w-2 h-8 bg-cyber-blue rounded-full"></span>
-                قاعدة بيانات {currentUser.username}
-              </h1>
-            </div>
-          </div>
+      <main className={`flex-1 flex flex-col h-full relative transition-all duration-1000 ${isFocusMode ? 'opacity-0 translate-y-20 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+        
+        {/* Transparent Glass Header */}
+        <nav className="h-24 flex items-center justify-between px-8 lg:px-16 border-b border-white/5 backdrop-blur-md sticky top-0 z-40">
+           <div className="flex items-center gap-8">
+             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 hover:bg-white/10 rounded-2xl transition-all active:scale-90">
+               <Icons.Chevron />
+             </button>
+             <div className="flex flex-col">
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-1 animate-pulse">Neural Workspace</span>
+                <h1 className="text-2xl font-bold tracking-tight">{selectedCategory}</h1>
+             </div>
+           </div>
+           
+           <div className="flex items-center gap-4">
+             <button 
+               onClick={() => setIsFocusMode(true)}
+               className="p-4 glass-morphism rounded-2xl hover:bg-white/10 hover:text-indigo-400 transition-all active:scale-95 group"
+             >
+               <div className="group-hover:rotate-45 transition-transform duration-500"><Icons.Eye /></div>
+             </button>
+             <button 
+               onClick={() => setShowForm(true)}
+               className="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-4 rounded-2xl font-black text-sm shadow-[0_15px_30px_-10px_rgba(79,70,229,0.5)] flex items-center gap-3 transition-all hover:scale-105 active:scale-95"
+             >
+               <Icons.Plus /> إضافة مهمة
+             </button>
+           </div>
+        </nav>
 
-          <div className="flex items-center gap-6">
-            <button onClick={() => setShowForm(true)} className="bg-cyber-blue text-black font-black px-6 py-2.5 rounded-full hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,210,255,0.3)] flex items-center gap-2">
-              <Icons.Plus /> إضافة مهمة
-            </button>
-          </div>
-        </header>
-
-        <div className="p-8 lg:p-12 space-y-12 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-3 cyber-card rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 border-l-4 border-l-cyber-purple">
-              <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-cyber-blue to-cyber-purple animate-pulse-neon flex items-center justify-center relative z-10">
-                  <Icons.Sparkles />
-                </div>
+        <div className="flex-1 overflow-y-auto px-6 py-12 lg:px-24 lg:py-20 custom-scrollbar">
+          
+          {/* Animated Hero Header */}
+          <header className="max-w-4xl mx-auto mb-20 stagger-item">
+            <div className="flex items-center gap-6 mb-8">
+              <div className="w-16 h-16 rounded-[2rem] bg-indigo-500/20 flex items-center justify-center text-indigo-400 animate-float shadow-inner">
+                <Icons.Sparkles />
               </div>
-              <div className="flex-1 text-center md:text-right">
-                <p className="text-xs font-black text-cyber-purple uppercase tracking-[0.3em] mb-2">توصية الذكاء الاصطناعي</p>
-                <h3 className="text-lg md:text-xl font-bold leading-relaxed text-slate-200">"{aiAdvice}"</h3>
+              <div>
+                <h2 className="text-4xl lg:text-6xl font-black leading-none mb-2 animate-reveal-text">طاب يومك، {currentUser.username}</h2>
+                <p className="text-slate-500 font-medium tracking-wide">نظامك الإداري جاهز للتحليق.</p>
               </div>
             </div>
+            
+            <div className="glass-morphism p-8 rounded-[2.5rem] border-l-8 border-indigo-500/50 flex items-center gap-6 group hover:border-indigo-400 transition-all duration-700">
+              <div className="text-indigo-400 opacity-60 group-hover:opacity-100 transition-opacity"><Icons.Sparkles /></div>
+              <p className="text-base lg:text-lg font-semibold text-slate-200 italic tracking-tight transition-all group-hover:translate-x-1">"{aiAdvice}"</p>
+            </div>
+          </header>
 
-            <div className="cyber-card rounded-3xl p-8 flex flex-col justify-center items-center text-center border-t-4 border-t-cyber-blue">
-              <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">كفاءة الإنجاز</p>
-              <div className="text-5xl font-black neon-text mb-2">{stats.percent}%</div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-cyber-blue transition-all duration-1000" style={{ width: `${stats.percent}%` }}></div>
+          {/* Grid with stagger */}
+          <div className="max-w-4xl mx-auto space-y-6">
+            {filteredTasks.length > 0 ? (
+              filteredTasks.map((task, idx) => (
+                <TaskCard 
+                  key={task.id}
+                  task={task}
+                  index={idx}
+                  onDelete={(id) => setTasks(tasks.filter(t => t.id !== id))}
+                  onEdit={(t) => { setEditingTask(t); setShowForm(true); }}
+                  onCopy={(t) => setTasks([{...t, id: Date.now().toString(), title: `${t.title} (نسخة)`}, ...tasks])}
+                  onStatusChange={(id, status) => setTasks(tasks.map(t => t.id === id ? {...t, status} : t))}
+                  onTogglePin={(id) => setTasks(tasks.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t))}
+                  onBreakdown={async (task) => {
+                     const subs = await getSmartSubtasks(task.title, task.description);
+                     const newSubs = subs.map(s => ({ id: Math.random().toString(), title: s, isCompleted: false }));
+                     setTasks(tasks.map(t => t.id === task.id ? {...t, subTasks: [...t.subTasks, ...newSubs]} : t));
+                  }}
+                  onToggleSubtask={(tid, sid) => {
+                    setTasks(tasks.map(t => t.id === tid ? {
+                      ...t, subTasks: t.subTasks.map(s => s.id === sid ? {...s, isCompleted: !s.isCompleted} : s)
+                    } : t));
+                  }}
+                />
+              ))
+            ) : (
+              <div className="py-40 text-center opacity-20">
+                <div className="text-8xl mb-6 animate-float"><Icons.Folder /></div>
+                <p className="text-2xl font-black uppercase tracking-[0.3em]">No Records Found</p>
               </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-white/5 p-4 rounded-3xl border border-white/5">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full md:w-auto">
-              {['ALL', TaskStatus.PENDING, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED].map(s => (
-                <button 
-                  key={s} 
-                  onClick={() => setFilter(s as any)}
-                  className={`px-6 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap ${filter === s ? 'active-cyber' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                >
-                  {s === 'ALL' ? 'جميع الملفات' : s === 'PENDING' ? 'في الانتظار' : s === 'IN_PROGRESS' ? 'تحت المعالجة' : 'المهام المؤرشفة'}
-                </button>
-              ))}
-            </div>
-            <div className="relative w-full md:w-80 group">
-              <input 
-                type="text" 
-                placeholder="ابحث في السجلات..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-cyber-black/50 border border-white/10 rounded-2xl py-2.5 px-10 outline-none focus:border-cyber-blue transition-all font-bold text-sm"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 group-hover:text-cyber-blue"><Icons.Search /></span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pb-24">
-            {filteredTasks.map((task, idx) => (
-              <TaskCard 
-                key={task.id}
-                task={task}
-                index={idx}
-                onDelete={(id) => setTasks(tasks.filter(t => t.id !== id))}
-                onEdit={(t) => { setEditingTask(t); setShowForm(true); }}
-                onCopy={handleCopyTask}
-                onStatusChange={(id, status) => setTasks(tasks.map(t => t.id === id ? {...t, status} : t))}
-                onTogglePin={(id) => setTasks(tasks.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t))}
-                onBreakdown={async (task) => {
-                  showNotification('جاري التحليل الرقمي...', 'info');
-                  const subs = await getSmartSubtasks(task.title, task.description);
-                  if (subs.length > 0) {
-                    const newSubs = subs.map(s => ({ id: Math.random().toString(), title: s, isCompleted: false }));
-                    setTasks(tasks.map(t => t.id === task.id ? {...t, subTasks: [...t.subTasks, ...newSubs]} : t));
-                    showNotification('تم تفكيك المهمة بنجاح');
-                  }
-                }}
-                onToggleSubtask={(tid, sid) => {
-                  setTasks(tasks.map(t => t.id === tid ? {
-                    ...t, subTasks: t.subTasks.map(s => s.id === sid ? {...s, isCompleted: !s.isCompleted} : s)
-                  } : t));
-                }}
-              />
-            ))}
+            )}
           </div>
         </div>
       </main>
 
+      {/* Full-Screen Motion Focus Overlay */}
+      {isFocusMode && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 animate-reveal-text backdrop-blur-3xl">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] bg-indigo-500/10 blur-[200px] rounded-full animate-pulse-glow"></div>
+          </div>
+          
+          <div className="relative text-center z-10">
+             <div className="text-[180px] lg:text-[240px] font-thin tracking-tighter leading-none mb-4 font-mono select-none">
+               {Math.floor(focusTime / 60)}<span className={`transition-opacity duration-500 ${focusTime % 2 === 0 ? 'opacity-100' : 'opacity-20'}`}>:</span>{String(focusTime % 60).padStart(2, '0')}
+             </div>
+             <p className="text-xs tracking-[1.5em] uppercase text-indigo-400 mb-20 opacity-50 font-black">Focus State Active</p>
+             
+             <div className="flex gap-8 justify-center">
+               <button 
+                 onClick={() => setIsTimerRunning(!isTimerRunning)} 
+                 className={`w-24 h-24 rounded-[2.5rem] glass-morphism flex items-center justify-center transition-all hover:scale-110 active:scale-90 ${isTimerRunning ? 'bg-indigo-600 text-white' : 'hover:bg-white/10 text-white'}`}
+               >
+                 {isTimerRunning ? <Icons.X /> : <Icons.Plus />}
+               </button>
+               <button 
+                 onClick={() => { setIsFocusMode(false); setIsTimerRunning(false); }} 
+                 className="w-24 h-24 rounded-[2.5rem] glass-morphism flex items-center justify-center hover:bg-rose-500/20 hover:text-rose-400 transition-all hover:scale-110 active:scale-90"
+               >
+                 إلغاء
+               </button>
+             </div>
+          </div>
+        </div>
+      )}
+
       {showForm && (
         <TaskForm 
-          onAdd={(data) => {
-            const newTask = {...data, id: Date.now().toString(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()};
-            setTasks([newTask, ...tasks]);
-            setShowForm(false);
-            showNotification('تم تسجيل البيانات بنجاح');
+          onAdd={(data) => { 
+            const newTask = { ...data, id: Date.now().toString(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+            setTasks([newTask, ...tasks]); 
+            setShowForm(false); 
           }}
-          onUpdate={(task) => {
-            setTasks(tasks.map(t => t.id === task.id ? task : t));
-            setEditingTask(null);
-            setShowForm(false);
+          onUpdate={(task) => { 
+            setTasks(tasks.map(t => t.id === task.id ? { ...task, updatedAt: new Date().toISOString() } : t)); 
+            setEditingTask(null); 
+            setShowForm(false); 
           }}
           onClose={() => { setShowForm(false); setEditingTask(null); }}
           initialTask={editingTask}
           categories={categories}
         />
       )}
-
-      {showCatModal && (
-        <CategoryModal 
-          categories={categories}
-          onAdd={(c) => setCategories([...categories, c])}
-          onDelete={(id) => setCategories(categories.filter(c => c.id !== id))}
-          onClose={() => setShowCatModal(false)}
-        />
-      )}
-
-      {toast && (
-        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] ${toast.type === 'urgent' ? 'animate-bounce' : 'animate-glitch'}`}>
-          <div className={`px-8 py-3 rounded-full font-black text-sm shadow-[0_0_30px_rgba(0,0,0,0.5)] flex items-center gap-3 ${
-            toast.type === 'urgent' ? 'bg-cyber-rose text-white' : 'bg-cyber-blue text-black'
-          }`}>
-            {toast.msg}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+
+// Simplified Auth for demonstration
+const Auth: React.FC<{onLogin: (user: User) => void}> = ({onLogin}) => {
+  const [username, setUsername] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username.trim()) {
+      onLogin({ username, lastLogin: new Date().toISOString() });
+    }
+  };
+
+  return (
+    <div className="h-screen w-full flex items-center justify-center p-6 relative overflow-hidden bg-slate-950">
+       <div className="w-full max-w-md relative z-10 stagger-item">
+          <div className="mb-16 text-center">
+            <div className="inline-block p-8 glass-morphism rounded-[3rem] mb-10 animate-float shadow-2xl">
+              <div className="scale-[2.5] text-indigo-500"><Icons.Sparkles /></div>
+            </div>
+            <h1 className="text-5xl font-black tracking-tighter mb-4">إنجاز <span className="text-indigo-500">Motion</span></h1>
+            <p className="text-slate-400 font-medium tracking-wide">الجيل القادم من الإنتاجية السائلة</p>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="glass-morphism p-12 rounded-[3.5rem] border-white/5 space-y-6">
+            <input 
+              type="text" placeholder="اسم المستخدم العبقري"
+              value={username} onChange={e => setUsername(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-8 outline-none focus:border-indigo-500 transition-all text-base font-bold text-center"
+              required
+            />
+            <button className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/30 active:scale-95 text-lg uppercase tracking-widest">
+              إقلاع النظام
+            </button>
+          </form>
+       </div>
+    </div>
+  )
+}
 
 export default App;

@@ -1,59 +1,61 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Modality } from "@google/genai";
 
-const getAIClient = () => {
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+export const getSystemBriefingAudio = async (username: string, tasks: any[]) => {
   try {
-    // محاولة الوصول للمفتاح بشكل آمن لتجنب أخطاء ReferenceError
-    const apiKey = (typeof process !== 'undefined' && process.env?.API_KEY) || "";
+    const summary = tasks.length > 0 
+      ? tasks.map(t => t.title).slice(0, 3).join('، ')
+      : "لا توجد مهام عاجلة حالياً";
     
-    if (!apiKey) {
-      return null;
-    }
-    return new GoogleGenAI({ apiKey });
-  } catch (error) {
-    console.warn("AI Client initialization failed", error);
-    return null;
-  }
-};
-
-export const getSmartSubtasks = async (taskTitle: string, taskDescription: string) => {
-  try {
-    const ai = getAIClient();
-    if (!ai) return [];
+    const prompt = `أهلاً ${username}. إليك إحاطة موجزة: ${summary}.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `بناءً على المهمة: "${taskTitle}" (${taskDescription}). اقترح 3 مهام فرعية ذكية. أجب بصيغة JSON array strings فقط.`,
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text: prompt }] }],
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING }
-        }
-      }
+        systemInstruction: "أنت مساعد شخصي احترافي، هادئ، وعملي جداً. تحدث باللغة العربية الفصحى البسيطة. كن مقتضباً جداً (أقل من 15 كلمة). لا تستخدم ألقاباً مبالغ فيها، فقط 'أهلاً بك'.",
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
+        },
+      },
     });
 
-    const text = response.text || "[]";
-    const jsonStr = text.trim();
-    return JSON.parse(jsonStr) as string[];
-  } catch (error) {
-    console.error("Smart Breakdown Error:", error);
-    return [];
+    const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    return part?.inlineData?.data || null;
+  } catch (error: any) {
+    return null;
   }
 };
 
 export const getSmartAdvice = async (tasks: any[]) => {
   try {
-    const ai = getAIClient();
-    if (!ai || tasks.length === 0) return "واصل العمل الجاد، الإنتاجية هي مفتاح النجاح.";
-
-    const summary = tasks.map(t => t.title).slice(0, 5).join(', ');
+    const summary = tasks.map(t => t.title).slice(0, 3).join(', ');
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `المهام الحالية للمستخدم هي: [${summary}]. قدم نصيحة تشجيعية موجزة جداً ومبدعة باللغة العربية لتحسين يومه.`,
+      contents: `بناءً على: [${summary}]. قدم نصيحة إنتاجية واحدة قصيرة جداً (5 كلمات كحد أقصى).`,
     });
-    return response.text || "ابدأ بالمهمة الأكثر إلحاحاً وحقق أهدافك اليوم!";
-  } catch (error) {
-    return "واصل العمل الجاد، الإنتاجية هي مفتاح النجاح.";
-  }
+    return response.text?.trim() || "ابدأ بالأهم دائماً.";
+  } catch (e) { return "ركز على هدف واحد."; }
+};
+
+export const getSmartSubtasks = async (taskTitle: string, taskDescription: string) => {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `قسم المهمة: "${taskTitle}" إلى 3 خطوات عملية قصيرة جداً. الرد JSON array strings.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          }
+        }
+      });
+      return JSON.parse(response.text?.trim() || "[]") as string[];
+    } catch (e) { return []; }
 };
