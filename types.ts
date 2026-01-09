@@ -36,6 +36,7 @@ export interface Task {
   icon?: string;
   dueDate: string;
   reminderAt?: string;
+  reminderFired?: boolean;
   createdAt: string;
   updatedAt: string;
   subTasks: SubTask[];
