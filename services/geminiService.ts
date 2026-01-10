@@ -1,11 +1,9 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
-/**
- * دالة مساعدة لإنشاء نسخة جديدة من المحرك لضمان استخدام أحدث الإعدادات/المفاتيح
- */
 const getAIInstance = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = (typeof process !== 'undefined' && process.env?.API_KEY) || "";
+  return new GoogleGenAI({ apiKey });
 };
 
 export const getSystemBriefingAudio = async (username: string, tasks: any[]) => {
@@ -48,7 +46,6 @@ export const getSmartAdvice = async (tasks: any[]) => {
     const ai = getAIInstance();
     const pending = tasks.filter(t => t.status !== 'COMPLETED').map(t => t.title).slice(0, 3).join(', ');
     
-    // استخدام نموذج gemini-3-flash-preview للمهام السريعة
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `قائمة المهام الحالية: [${pending || 'لا توجد مهام'}]. قدم نصيحة إدارية تقنية مقتضبة جداً (3-5 كلمات) باللغة العربية بأسلوب محترف ومستقبلي.`,
@@ -77,7 +74,6 @@ export const getSmartSubtasks = async (taskTitle: string, taskDescription: strin
       });
       
       let rawText = response.text?.trim() || "[]";
-      // تنظيف النص في حال وجود Markdown
       if (rawText.includes("```json")) {
         rawText = rawText.split("```json")[1].split("```")[0].trim();
       } else if (rawText.includes("```")) {

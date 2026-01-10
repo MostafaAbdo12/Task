@@ -4,9 +4,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#080808" />
-    <title>أثير | مركز القيادة العصبي</title>
+    <meta name="theme-color" content="#1e293b" />
+    <title>مهامي | نظام إدارة الأعمال</title>
     
+    <script>
+      // منع أخطاء "process is not defined" في المتصفح
+      window.process = window.process || { env: {} };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -14,34 +18,37 @@
           extend: {
             fontFamily: {
               sans: ['Cairo', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace'],
+              mono: ['Fira Code', 'monospace'],
             },
             colors: {
-              'cmd-bg': '#080808',
-              'cmd-card': '#0f0f0f',
-              'cmd-accent': '#00f2ff',
-              'cmd-border': 'rgba(255, 255, 255, 0.08)',
-              'cmd-text-dim': '#888888',
+              'corp-primary': '#1e293b',
+              'corp-accent': '#2563eb',
+              'corp-bg': '#f8fafc',
+              'corp-surface': '#ffffff',
+              'corp-border': '#e2e8f0',
             },
             animation: {
-              'grid-flow': 'gridFlow 60s linear infinite',
-              'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'scan-line': 'scanLine 8s linear infinite',
-              'blob-float': 'blobFloat 20s infinite alternate',
+              'moving-ltr': 'movingLTR 15s linear infinite',
+              'slide-in': 'slideIn 0.3s ease-out forwards',
+              'gentle-pulse': 'gentlePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'float-slow': 'floatSlow 6s ease-in-out infinite',
             },
             keyframes: {
-              gridFlow: {
-                '0%': { transform: 'perspective(1000px) rotateX(60deg) translateY(0)' },
-                '100%': { transform: 'perspective(1000px) rotateX(60deg) translateY(100px)' },
+              movingLTR: {
+                '0%': { transform: 'translateX(100%)' },
+                '100%': { transform: 'translateX(-100%)' },
               },
-              scanLine: {
-                '0%': { transform: 'translateY(-100%)' },
-                '100%': { transform: 'translateY(100vh)' },
+              slideIn: {
+                '0%': { transform: 'translateY(-20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
               },
-              blobFloat: {
-                '0%': { transform: 'translate(0, 0) scale(1)', opacity: 0.3 },
-                '50%': { transform: 'translate(100px, 50px) scale(1.2)', opacity: 0.5 },
-                '100%': { transform: 'translate(-50px, 100px) scale(0.8)', opacity: 0.3 },
+              gentlePulse: {
+                '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+                '50%': { opacity: '0.9', transform: 'scale(1.03)' },
+              },
+              floatSlow: {
+                '0%, 100%': { transform: 'translate(0, 0)' },
+                '50%': { transform: 'translate(10px, -10px)' },
               }
             }
           },
@@ -49,104 +56,56 @@
       }
     </script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
       body {
         font-family: 'Cairo', sans-serif;
-        background-color: #080808;
-        color: #eeeeee;
+        background-color: #f8fafc;
+        color: #1e293b;
         margin: 0;
-        overflow: hidden;
       }
 
-      /* Animated Background Elements */
-      .bg-animation-container {
-        position: fixed;
-        inset: 0;
-        z-index: -2;
-        background: #080808;
-        overflow: hidden;
+      .corp-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s ease;
       }
 
-      .blob {
-        position: absolute;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(circle, rgba(0, 242, 255, 0.15) 0%, transparent 70%);
-        filter: blur(80px);
-        border-radius: 50%;
-        pointer-events: none;
-      }
-
-      .neural-grid {
-        position: fixed;
-        inset: -100px;
-        z-index: -1;
-        background-image: 
-          linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
-        background-size: 50px 50px;
-        transform: perspective(1000px) rotateX(60deg);
-        animation: grid-flow 20s linear infinite;
-        mask-image: radial-gradient(circle at center, black, transparent 85%);
-      }
-
-      .scan-line {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100px;
-        background: linear-gradient(to bottom, transparent, rgba(0, 242, 255, 0.03), transparent);
-        z-index: 1000;
-        pointer-events: none;
-        animation: scan-line 6s linear infinite;
-      }
-
-      .cmd-glass {
-        background: rgba(15, 15, 15, 0.6);
-        backdrop-filter: blur(25px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      }
-
-      .cmd-button-glow:hover {
-        box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
-        border-color: #00f2ff;
-      }
-
-      #cursor-scanner {
-        position: fixed;
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(circle at center, rgba(0, 242, 255, 0.05) 0%, transparent 70%);
-        border-radius: 50%;
-        pointer-events: none;
-        z-index: 9999;
-        transform: translate(-50%, -50%);
-        transition: transform 0.1s ease-out;
+      .corp-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-color: #cbd5e1;
       }
 
       .no-scrollbar::-webkit-scrollbar { display: none; }
-
-      /* Global Confetti Styles */
-      @keyframes global-confetti-pop {
-        0% { transform: translateY(110vh) rotate(0deg) scale(0); opacity: 1; }
-        25% { transform: translateY(50vh) rotate(90deg) scale(1.2); }
-        50% { transform: translateY(20vh) rotate(180deg) scale(1); }
-        100% { transform: translateY(-20vh) rotate(360deg) scale(0); opacity: 0; }
+      
+      input[type="date"]::-webkit-calendar-picker-indicator,
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        background: transparent;
+        bottom: 0;
+        color: transparent;
+        cursor: pointer;
+        height: auto;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: auto;
       }
 
-      .confetti-global {
-        position: fixed;
-        bottom: -50px;
-        z-index: 9999;
-        animation: global-confetti-pop 2.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+      .glowing-text {
+        background: linear-gradient(135deg, #1e293b 0%, #2563eb 50%, #1e293b 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: textShine 4s linear infinite;
+        display: inline-block;
       }
 
-      .level-bar-fill {
-        transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+      @keyframes textShine {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
       }
     </style>
   <script type="importmap">
@@ -156,6 +115,7 @@
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
     "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+    "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.3",
     "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
@@ -163,28 +123,7 @@
 </script>
 </head>
   <body>
-    <div id="cursor-scanner"></div>
-    
-    <!-- Background Layers -->
-    <div class="bg-animation-container">
-      <div class="blob animate-blob-float" style="top: -10%; left: -10%; background: radial-gradient(circle, rgba(0, 242, 255, 0.1) 0%, transparent 70%);"></div>
-      <div class="blob animate-blob-float" style="bottom: -10%; right: -10%; background: radial-gradient(circle, rgba(112, 0, 255, 0.1) 0%, transparent 70%); animation-delay: -5s;"></div>
-      <div class="blob animate-blob-float" style="top: 40%; left: 30%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0, 242, 255, 0.05) 0%, transparent 70%); animation-delay: -10s;"></div>
-    </div>
-    
-    <div class="neural-grid"></div>
-    <div class="scan-line"></div>
-    <div class="fixed inset-0 pointer-events-none opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-    
     <div id="root"></div>
-    
-    <script>
-      const scanner = document.getElementById('cursor-scanner');
-      document.addEventListener('mousemove', (e) => {
-        scanner.style.left = e.clientX + 'px';
-        scanner.style.top = e.clientY + 'px';
-      });
-    </script>
     <script type="module" src="index.tsx"></script>
   </body>
 </html>

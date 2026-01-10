@@ -1,26 +1,30 @@
 
 import React, { useState } from 'react';
-import { TaskPriority, Category } from '../types';
+import { TaskPriority, Category, TaskStatus } from '../types';
 import { Icons, PRIORITY_LABELS } from '../constants';
 
 interface TaskFormProps {
   onAdd: (task: any) => void;
   onUpdate?: (task: any) => void;
   onClose: () => void;
+  onManageCategories: () => void;
   initialTask?: any;
   categories: Category[];
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTask, categories }) => {
+const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageCategories, initialTask, categories }) => {
   const [title, setTitle] = useState(initialTask?.title || '');
   const [description, setDescription] = useState(initialTask?.description || '');
   const [priority, setPriority] = useState<TaskPriority>(initialTask?.priority || TaskPriority.MEDIUM);
-  const [category, setCategory] = useState(initialTask?.category || categories[0].name);
+  const [category, setCategory] = useState(initialTask?.category || categories[0]?.name || 'أخرى');
   const [dueDate, setDueDate] = useState(initialTask?.dueDate || '');
+  const [reminderAt, setReminderAt] = useState(initialTask?.reminderAt || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+    
+    const selectedCategoryData = categories.find(c => c.name === category);
     
     const taskData = {
       title,
@@ -28,10 +32,13 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTa
       priority,
       category,
       dueDate,
-      color: categories.find(c => c.name === category)?.color || '#ffffff',
-      status: initialTask?.status || 'PENDING',
+      reminderAt,
+      color: selectedCategoryData?.color || '#2563eb',
+      icon: selectedCategoryData?.icon || 'star',
+      status: initialTask?.status || TaskStatus.PENDING,
       subTasks: initialTask?.subTasks || [],
-      isPinned: initialTask?.isPinned || false
+      isPinned: initialTask?.isPinned || false,
+      reminderFired: initialTask?.reminderFired || false
     };
 
     if (initialTask && onUpdate) {
@@ -41,120 +48,148 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, initialTa
     }
   };
 
+  const openPicker = (e: any) => {
+    try {
+      if (typeof e.target.showPicker === 'function') {
+        e.target.showPicker();
+      }
+    } catch (err) {
+      console.warn("showPicker is not supported on this browser", err);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
-      
-      <div className="w-full max-w-2xl bg-cmd-card rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-cmd-border relative">
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="w-full max-w-xl bg-white rounded-[40px] overflow-hidden shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] border border-slate-200 animate-in zoom-in-95">
         
-        {/* System Header */}
-        <header className="px-10 py-8 border-b border-cmd-border flex justify-between items-center bg-white/[0.02]">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-cmd-accent/10 flex items-center justify-center">
-               <Icons.Plus className="w-5 h-5 text-cmd-accent" />
-            </div>
-            <div>
-              <h2 className="text-white text-xl font-bold tracking-tight italic">
-                {initialTask ? 'تعديل سجل البيانات' : 'بروتوكول مهمة جديدة'}
-              </h2>
-              <p className="text-[9px] text-cmd-text-dim uppercase font-mono tracking-[0.4em]">system_registry // input_mode</p>
-            </div>
+        <header className="px-10 py-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              {initialTask ? 'تعديل المهمة' : 'إضافة مهمة جديدة'}
+            </h2>
+            <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">تخطيط وتنفيذ المهام</p>
           </div>
           <button 
+            type="button"
             onClick={onClose} 
-            className="p-3 hover:bg-white/5 rounded-xl transition-all text-white/30 hover:text-white"
+            className="p-3 text-slate-400 hover:text-slate-900 hover:bg-white rounded-2xl border border-transparent hover:border-slate-200 transition-all shadow-sm"
           >
             <Icons.X className="w-6 h-6" />
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="p-10 space-y-10">
+        <form onSubmit={handleSubmit} className="p-10 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar">
           
-          {/* Main Identity Input */}
-          <div className="space-y-4">
-            <label className="text-[10px] text-cmd-text-dim font-black uppercase tracking-[0.4em] px-2 flex items-center gap-2">
-               <div className="w-1 h-1 bg-cmd-accent rounded-full"></div> 1. تعريف الكيان
-            </label>
-            <div className="relative group">
-              <input 
-                required
-                autoFocus
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-white/[0.03] border border-cmd-border rounded-2xl px-6 py-5 text-xl font-bold text-white outline-none focus:border-cmd-accent/50 transition-all placeholder:text-white/5"
-                placeholder="أدخل مسمى المهمة هنا..."
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-[10px] text-cmd-text-dim font-black uppercase tracking-[0.4em] px-2 flex items-center gap-2">
-               <div className="w-1 h-1 bg-cmd-accent rounded-full"></div> 2. الوصف التقني
-            </label>
-            <textarea 
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-white/[0.03] border border-cmd-border rounded-2xl p-6 text-sm text-white/70 outline-none focus:border-cmd-accent/30 min-h-[120px] resize-none leading-relaxed transition-all placeholder:text-white/5"
-              placeholder="تفاصيل إضافية للبروتوكول..."
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">عنوان المهمة</label>
+            <input 
+              required
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-[20px] px-6 py-4 text-base font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 transition-all shadow-sm placeholder:text-slate-300"
+              placeholder="ما الذي تريد إنجازه؟"
             />
           </div>
 
-          {/* Configuration Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <label className="text-[10px] text-cmd-text-dim font-black uppercase tracking-[0.4em] px-2">3. مستوى الأولوية</label>
-              <div className="relative group">
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">التفاصيل</label>
+            <textarea 
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-[20px] p-6 text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 min-h-[120px] resize-none transition-all shadow-sm placeholder:text-slate-300"
+              placeholder="اكتب وصفاً مختصراً للمهمة..."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">الأولوية</label>
+              <div className="relative">
                 <select 
                   value={priority}
                   onChange={e => setPriority(e.target.value as TaskPriority)}
-                  className="w-full bg-white/[0.03] border border-cmd-border rounded-2xl px-6 py-4 text-xs font-mono font-bold text-white outline-none focus:border-cmd-accent/30 appearance-none cursor-pointer uppercase tracking-widest"
+                  className="w-full bg-white border border-slate-200 rounded-[20px] px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 appearance-none cursor-pointer shadow-sm"
                 >
                   {Object.keys(TaskPriority).map(p => (
-                    <option key={p} value={p} className="bg-cmd-card text-white">{PRIORITY_LABELS[p].label}</option>
+                    <option key={p} value={p}>{PRIORITY_LABELS[p].label}</option>
                   ))}
                 </select>
-                <Icons.Chevron className="absolute left-6 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+                <Icons.Chevron className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5" />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <label className="text-[10px] text-cmd-text-dim font-black uppercase tracking-[0.4em] px-2">4. مجال العمل</label>
-              <div className="relative group">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">التصنيف</label>
+                <button 
+                  type="button"
+                  onClick={onManageCategories}
+                  className="text-[10px] font-black text-blue-600 hover:underline"
+                >
+                  تعديل التصنيفات
+                </button>
+              </div>
+              <div className="relative">
                 <select 
                   value={category}
                   onChange={e => setCategory(e.target.value)}
-                  className="w-full bg-white/[0.03] border border-cmd-border rounded-2xl px-6 py-4 text-xs font-mono font-bold text-white outline-none focus:border-cmd-accent/30 appearance-none cursor-pointer uppercase tracking-widest"
+                  className="w-full bg-white border border-slate-200 rounded-[20px] px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 appearance-none cursor-pointer shadow-sm"
                 >
-                  {categories.map(c => <option key={c.id} value={c.name} className="bg-cmd-card text-white">{c.name}</option>)}
+                  {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
-                <Icons.Chevron className="absolute left-6 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+                <Icons.Chevron className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5" />
               </div>
             </div>
           </div>
 
-          {/* Deadline & Submit */}
-          <div className="pt-8 border-t border-cmd-border flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-4 bg-white/[0.02] px-6 py-4 rounded-2xl border border-cmd-border w-full md:w-auto">
-              <Icons.Calendar className="text-cmd-accent w-4 h-4" />
-              <input 
-                type="date"
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
-                className="bg-transparent text-[11px] font-mono font-bold text-white/60 outline-none cursor-pointer uppercase tracking-tighter"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1 text-center md:text-right">موعد التسليم</label>
+              <div className="relative group">
+                <Icons.Calendar className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
+                <input 
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  onClick={openPicker}
+                  className="w-full bg-white border border-slate-200 rounded-full pr-14 pl-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 cursor-pointer shadow-sm text-center md:text-right"
+                />
+              </div>
             </div>
-            
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1 text-center md:text-right">تذكير ذكي</label>
+              <div className="relative group">
+                <Icons.AlarmClock className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
+                <input 
+                  type="datetime-local"
+                  value={reminderAt}
+                  onChange={e => setReminderAt(e.target.value)}
+                  onClick={openPicker}
+                  className="w-full bg-white border border-slate-200 rounded-full pr-14 pl-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 cursor-pointer shadow-sm text-center md:text-right"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-8 flex gap-4">
+            <button 
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-8 py-4 border border-slate-200 text-slate-600 text-[13px] font-black rounded-[22px] hover:bg-slate-50 transition-all active:scale-95"
+            >
+              تجاهل
+            </button>
             <button 
               type="submit"
-              className="w-full md:w-auto px-12 py-4 bg-white text-black text-xs font-black rounded-2xl hover:bg-cmd-accent transition-all active:scale-95 uppercase tracking-widest flex items-center justify-center gap-4 cmd-button-glow"
+              className="flex-[2] px-8 py-4 bg-[#2563eb] text-white text-[13px] font-black rounded-[22px] hover:bg-blue-700 shadow-[0_15px_30px_-10px_rgba(37,99,235,0.4)] active:scale-95 transition-all flex items-center justify-center gap-3"
             >
-              <span>{initialTask ? 'تحديث السجل' : 'حفظ المهمة'}</span>
+              <span>{initialTask ? 'حفظ التعديلات' : 'إنشاء المهمة'}</span>
               <Icons.CheckCircle className="w-5 h-5" />
             </button>
           </div>
         </form>
-
-        {/* Decorative Element */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-cmd-accent/5 blur-[80px] pointer-events-none"></div>
       </div>
     </div>
   );

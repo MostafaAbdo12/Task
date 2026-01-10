@@ -1,90 +1,137 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Task, TaskStatus, Category, User } from './types';
 import { Icons, DEFAULT_CATEGORIES } from './constants';
 import TaskCard from './components/TaskCard';
 import TaskForm from './components/TaskForm';
 import Sidebar from './components/Sidebar';
 import Auth from './components/Auth';
-import { getSmartAdvice, getSystemBriefingAudio } from './services/geminiService';
-
-// Audio decoding helpers
-function decode(base64: string) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
-async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
-  }
-  return buffer;
-}
+import CategoryModal from './components/CategoryModal';
+import { getSmartAdvice } from './services/geminiService';
+import confetti from 'canvas-confetti';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('maham_active_session');
-    if (!saved) return null;
-    const user = JSON.parse(saved);
-    return { ...user, xp: user.xp || 0, level: user.level || 1 };
+    try {
+      const saved = localStorage.getItem('maham_active_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error("Failed to parse session", e);
+      return null;
+    }
   });
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [categories, setCategories] = useState<Category[]>(() => {
+    try {
+      const saved = localStorage.getItem('maham_categories');
+      return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
+    } catch (e) {
+      return DEFAULT_CATEGORIES;
+    }
+  });
+  
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [showForm, setShowForm] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [systemAdvice, setSystemAdvice] = useState('جارٍ معايرة النظم...');
+  const [systemAdvice, setSystemAdvice] = useState('تحليل الأداء جارٍ...');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [fullScreenConfetti, setFullScreenConfetti] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
   
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const reminderIntervalRef = useRef<number | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToast({ message: msg, visible: true });
+    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
+  }, []);
+
+  const requestNotificationPermission = useCallback(async () => {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "default") {
+      try {
+        await Notification.requestPermission();
+      } catch (e) {
+        console.warn("Notification permission error", e);
+      }
+    }
+  }, []);
+
+  const sendNotification = useCallback((task: Task) => {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    
+    try {
+      new Notification("تذكير بمهمة: " + task.title, {
+        body: task.description || "اقترب موعد تنفيذ هذه المهمة.",
+        icon: "/favicon.ico", 
+        dir: 'rtl',
+        lang: 'ar'
+      });
+    } catch (e) {
+      console.error("Notification failed", e);
+    }
+  }, []);
+
+  const checkReminders = useCallback(() => {
+    const now = new Date();
+    let hasUpdates = false;
+    
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.map(task => {
+        if (task.status !== TaskStatus.COMPLETED && task.reminderAt && !task.reminderFired) {
+          const reminderDate = new Date(task.reminderAt);
+          if (reminderDate <= now) {
+            sendNotification(task);
+            hasUpdates = true;
+            return { ...task, reminderFired: true };
+          }
+        }
+        return task;
+      });
+      
+      return hasUpdates ? updatedTasks : prevTasks;
+    });
+  }, [sendNotification]);
+
+  useEffect(() => {
+    const authStatus = sessionStorage.getItem('auth_success_msg');
+    if (authStatus && currentUser) {
+      showToast(authStatus);
+      sessionStorage.removeItem('auth_success_msg');
+      requestNotificationPermission();
+    }
+  }, [currentUser, showToast, requestNotificationPermission]);
 
   useEffect(() => {
     if (currentUser) {
-      const saved = localStorage.getItem(`tasks_${currentUser.username}`);
-      if (saved) setTasks(JSON.parse(saved));
+      try {
+        const savedTasks = localStorage.getItem(`tasks_${currentUser.username}`);
+        if (savedTasks) setTasks(JSON.parse(savedTasks));
+      } catch (e) {
+        console.error("Failed to load tasks", e);
+      }
       
-      const refreshSystem = async () => {
-        const advice = await getSmartAdvice(tasks);
-        setSystemAdvice(advice);
-      };
-      refreshSystem();
-
-      const playBriefing = async () => {
-        const audioBase64 = await getSystemBriefingAudio(currentUser.username, tasks);
-        if (audioBase64) {
-          if (!audioContextRef.current) {
-            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-          }
-          const ctx = audioContextRef.current;
-          const audioBytes = decode(audioBase64);
-          const buffer = await decodeAudioData(audioBytes, ctx, 24000, 1);
-          const source = ctx.createBufferSource();
-          source.buffer = buffer;
-          source.connect(ctx.destination);
-          source.start();
+      const refreshAdvice = async () => {
+        try {
+          const advice = await getSmartAdvice(tasks);
+          setSystemAdvice(advice);
+        } catch (e) {
+          setSystemAdvice("النظام جاهز للعمل.");
         }
       };
-      
-      const handleFirstInteraction = () => {
-        playBriefing();
-        window.removeEventListener('click', handleFirstInteraction);
-      };
-      window.addEventListener('click', handleFirstInteraction);
+      refreshAdvice();
+      setTimeout(() => setIsLoaded(true), 500);
+
+      reminderIntervalRef.current = window.setInterval(checkReminders, 60000);
+      checkReminders();
     }
-  }, [currentUser]);
+
+    return () => {
+      if (reminderIntervalRef.current) clearInterval(reminderIntervalRef.current);
+    };
+  }, [currentUser, checkReminders]);
 
   useEffect(() => {
     if (currentUser) {
@@ -93,28 +140,25 @@ const App: React.FC = () => {
     }
   }, [tasks, currentUser]);
 
+  useEffect(() => {
+    localStorage.setItem('maham_categories', JSON.stringify(categories));
+  }, [categories]);
+
   const handleStatusChange = (id: string, status: TaskStatus) => {
-    const prevStatus = tasks.find(t => t.id === id)?.status;
-    
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
-
-    // إذا تحولت المهمة إلى مكتملة
-    if (status === TaskStatus.COMPLETED && prevStatus !== TaskStatus.COMPLETED) {
-      triggerCelebration();
-    }
-  };
-
-  const triggerCelebration = () => {
-    // 1. تفعيل المفرقعات
-    setFullScreenConfetti(true);
-    setTimeout(() => setFullScreenConfetti(false), 3000);
-
-    // 2. تحديث المستوى و XP
-    setCurrentUser(prev => {
-      if (!prev) return null;
-      const newXp = (prev.xp || 0) + 20;
-      const newLevel = Math.floor(newXp / 100) + 1;
-      return { ...prev, xp: newXp, level: newLevel };
+    setTasks(prev => {
+      const newTasks = prev.map(t => t.id === id ? { ...t, status } : t);
+      if (status === TaskStatus.COMPLETED) {
+        try {
+          confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#2563eb', '#10b981', '#ffffff']
+          });
+        } catch (e) {}
+        showToast("تم انجاز مهامك بنجاح");
+      }
+      return newTasks;
     });
   };
 
@@ -125,121 +169,105 @@ const App: React.FC = () => {
       .sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1));
   }, [tasks, selectedCategory, searchQuery]);
 
-  const stats = useMemo(() => ({
-    total: tasks.length,
-    completed: tasks.filter(t => t.status === TaskStatus.COMPLETED).length,
-    pending: tasks.filter(t => t.status !== TaskStatus.COMPLETED).length
-  }), [tasks]);
-
   if (!currentUser) return <Auth onLogin={setCurrentUser} />;
 
   return (
-    <div className="h-screen w-full flex bg-transparent overflow-hidden relative selection:bg-cmd-accent/30">
+    <div className={`h-screen w-full flex bg-corp-bg transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       
-      {/* Global Full-Screen Confetti Particles */}
-      {fullScreenConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-[9999]">
-          {[...Array(50)].map((_, i) => (
-            <div 
-              key={i}
-              className="confetti-global rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                backgroundColor: ['#00f2ff', '#7000ff', '#ffffff', '#00ffaa'][Math.floor(Math.random() * 4)],
-                width: `${Math.random() * 10 + 5}px`,
-                height: `${Math.random() * 10 + 5}px`,
-                animationDelay: `${Math.random() * 1}s`,
-              }}
-            />
-          ))}
+      {toast.visible && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[1000] animate-slide-in">
+          <div className="bg-emerald-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-500/50">
+            <Icons.CheckCircle className="w-5 h-5" />
+            <span className="text-sm font-bold">{toast.message}</span>
+          </div>
         </div>
       )}
 
       <Sidebar 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
-        categories={DEFAULT_CATEGORIES}
+        categories={categories}
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
         user={currentUser}
-        onLogout={() => {
-          localStorage.removeItem('maham_active_session');
-          setCurrentUser(null);
-        }}
+        onLogout={() => { localStorage.removeItem('maham_active_session'); setCurrentUser(null); }}
       />
 
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative z-10 border-r border-cmd-border bg-transparent">
-        
-        {/* Universal Command Bar */}
-        <header className="h-24 px-8 border-b border-cmd-border flex items-center justify-between bg-black/20 backdrop-blur-md">
-          <div className="flex items-center gap-8">
-            <button 
-              onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 hover:bg-white/5 rounded-lg text-white/60"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      <main className="flex-1 flex flex-col h-full overflow-hidden p-6 lg:p-10 relative">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:bg-slate-50 transition-all">
+               <Icons.Chevron className="w-5 h-5 rotate-90" />
             </button>
-            <div className="hidden md:flex items-center gap-4 text-cmd-text-dim font-mono text-xs tracking-tighter uppercase">
-              <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-cmd-accent animate-pulse"></div> نظام القيادة نشط</span>
-              <span className="w-1 h-1 rounded-full bg-white/20"></span>
-              <span>{new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <div>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight glowing-text">مهام | نظرة عامة</h1>
+              <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">إدارة الإنتاجية والنتائج</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="flex items-center bg-white/5 border border-white/5 rounded-full px-5 py-2 group focus-within:border-cmd-accent/30 transition-all">
-              <Icons.Search className="w-4 h-4 text-white/30 group-focus-within:text-cmd-accent" />
-              <input 
-                placeholder="ابحث في قاعدة البيانات..." 
-                className="bg-transparent border-none outline-none px-4 text-xs font-medium w-64 text-white placeholder:text-white/20"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <button 
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-3 bg-white text-black px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest hover:bg-cmd-accent transition-all cmd-button-glow"
-            >
-              <Icons.Plus className="w-4 h-4" />
-              <span>مهمة جديدة</span>
-            </button>
+          <div className="flex items-center gap-4">
+             <div className="relative flex-1 md:w-80 group">
+                <Icons.Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                <input 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="ابحث عن مهمة أو مشروع..."
+                  className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 pr-12 pl-6 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-corp-accent transition-all shadow-sm"
+                />
+             </div>
+             <div className="flex gap-3">
+               <button 
+                  onClick={() => setShowCategoryModal(true)}
+                  className="p-3.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center"
+                  title="إدارة التصنيفات"
+                >
+                  <Icons.Folder className="w-6 h-6" />
+                </button>
+               <button 
+                  onClick={() => setShowForm(true)}
+                  className="flex items-center gap-3 bg-corp-accent text-white px-6 py-3.5 rounded-2xl text-[13px] font-black shadow-[0_15px_30px_-10px_rgba(37,99,235,0.4)] hover:brightness-110 active:scale-95 transition-all animate-gentle-pulse"
+                >
+                  <Icons.Plus className="w-5 h-5" />
+                  <span>إضافة مهمة</span>
+                </button>
+             </div>
           </div>
         </header>
 
-        {/* Dashboard Content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar p-8">
-          <div className="max-w-6xl mx-auto space-y-12">
-            
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { label: 'إجمالي المهام', value: stats.total, icon: Icons.Folder, color: 'text-white' },
-                { label: 'قيد الإنجاز', value: stats.pending, icon: Icons.AlarmClock, color: 'text-cmd-accent' },
-                { label: 'تمت أرشفتها', value: stats.completed, icon: Icons.CheckCircle, color: 'text-emerald-400' }
-              ].map((item, i) => (
-                <div key={i} className="cmd-glass p-6 rounded-3xl border border-cmd-border flex items-center justify-between group hover:border-white/10 transition-all">
-                   <div>
-                      <p className="text-[10px] text-cmd-text-dim uppercase font-black tracking-widest mb-2">{item.label}</p>
-                      <h4 className={`text-4xl font-mono font-black ${item.color}`}>{String(item.value).padStart(2, '0')}</h4>
-                   </div>
-                   <item.icon className={`w-8 h-8 ${item.color} opacity-20 group-hover:opacity-100 transition-opacity`} />
+        <div className="flex-1 overflow-y-auto no-scrollbar space-y-10 pb-20">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+             <div className="p-8 rounded-[32px] bg-gradient-to-br from-[#1e293b] to-[#0f172a] text-white border-none shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-10 transition-transform group-hover:scale-125 duration-700">
+                  <Icons.Folder className="w-20 h-20" />
                 </div>
-              ))}
-            </div>
-
-            {/* AI Advisor Banner */}
-            <div className="cmd-glass p-6 rounded-[2rem] flex items-center gap-6 border-l-4 border-l-cmd-accent">
-               <div className="w-12 h-12 rounded-full bg-cmd-accent/10 flex items-center justify-center shrink-0">
-                  <Icons.Sparkles className="w-6 h-6 text-cmd-accent" />
+                <p className="text-[10px] font-black opacity-60 mb-3 uppercase tracking-[0.2em] relative z-10">إجمالي العمليات</p>
+                <p className="text-4xl font-black relative z-10">{tasks.length}</p>
+             </div>
+             {[
+               { label: 'مكتملة', val: tasks.filter(t => t.status === TaskStatus.COMPLETED).length, color: 'text-emerald-600', icon: <Icons.CheckCircle /> },
+               { label: 'نشطة', val: tasks.filter(t => t.status !== TaskStatus.COMPLETED).length, color: 'text-blue-600', icon: <Icons.LayoutDashboard /> },
+               { label: 'التوجيه الذكي', val: systemAdvice, color: 'text-slate-800', isAdvice: true, icon: <Icons.Sparkles /> }
+             ].map((stat, i) => (
+               <div key={i} className={`p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow ${stat.isAdvice ? 'md:col-span-2' : ''}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`${stat.color} opacity-40 scale-75`}>{stat.icon}</div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{stat.label}</p>
+                  </div>
+                  <p className={`text-xl font-black truncate ${stat.color}`}>{stat.val}</p>
                </div>
-               <div>
-                  <p className="text-[10px] text-cmd-accent font-black uppercase tracking-widest mb-1">توصية الذكاء الاصطناعي</p>
-                  <p className="text-sm font-medium text-white/80 italic">{systemAdvice}</p>
-               </div>
-            </div>
+             ))}
+          </div>
 
-            {/* Task List */}
-            <div className="space-y-6">
+          <div>
+            <div className="flex items-center justify-between mb-8 px-2">
+               <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
+                 <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                 <span>سجل العمليات والمهام</span>
+               </h2>
+               <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">آخر تحديث: {new Date().toLocaleTimeString('ar-EG')}</div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {filteredTasks.length > 0 ? (
                 filteredTasks.map((task, idx) => (
                   <TaskCard 
@@ -253,9 +281,12 @@ const App: React.FC = () => {
                   />
                 ))
               ) : (
-                <div className="h-64 flex flex-col items-center justify-center text-center space-y-4 opacity-30">
-                  <Icons.Folder className="w-16 h-16" />
-                  <p className="text-sm font-black uppercase tracking-[0.4em]">لا يوجد سجل بيانات متاح</p>
+                <div className="col-span-full py-24 bg-white border border-dashed border-slate-200 rounded-[40px] flex flex-col items-center text-center shadow-sm">
+                   <div className="w-20 h-20 bg-slate-50 rounded-[24px] flex items-center justify-center mb-6 shadow-inner">
+                      <Icons.Folder className="w-10 h-10 text-slate-200" />
+                   </div>
+                   <h3 className="text-xl font-black text-slate-400">نظامك خالي من المهام</h3>
+                   <p className="text-[13px] font-bold text-slate-300 mt-2">ابدأ بإدراج مهمة جديدة لضبط جدول أعمالك.</p>
                 </div>
               )}
             </div>
@@ -265,18 +296,39 @@ const App: React.FC = () => {
 
       {showForm && (
         <TaskForm 
-          onAdd={data => {
-            setTasks([{...data, id: Date.now().toString(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()}, ...tasks]);
-            setShowForm(false);
+          onAdd={data => { 
+            setTasks([{...data, id: Date.now().toString(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()}, ...tasks]); 
+            setShowForm(false); 
+            showToast("تم إضافة مهامك بنجاح");
           }}
-          onUpdate={task => {
-            setTasks(tasks.map(t => t.id === task.id ? {...task, updatedAt: new Date().toISOString()} : t));
-            setShowForm(false);
-            setEditingTask(null);
+          onUpdate={task => { 
+            setTasks(tasks.map(t => t.id === task.id ? {...task, updatedAt: new Date().toISOString(), reminderFired: false} : t)); 
+            setShowForm(false); 
+            setEditingTask(null); 
           }}
           onClose={() => { setShowForm(false); setEditingTask(null); }}
+          onManageCategories={() => setShowCategoryModal(true)}
           initialTask={editingTask}
-          categories={DEFAULT_CATEGORIES}
+          categories={categories}
+        />
+      )}
+
+      {showCategoryModal && (
+        <CategoryModal
+          categories={categories}
+          onAdd={cat => {
+            setCategories([...categories, cat]);
+            showToast("تم إضافة التصنيف الجديد بنجاح");
+          }}
+          onUpdate={updatedCat => {
+            setCategories(categories.map(c => c.id === updatedCat.id ? updatedCat : c));
+            showToast("تم تحديث التصنيف بنجاح");
+          }}
+          onDelete={id => {
+            setCategories(categories.filter(c => c.id !== id));
+            showToast("تم حذف التصنيف");
+          }}
+          onClose={() => setShowCategoryModal(false)}
         />
       )}
     </div>
