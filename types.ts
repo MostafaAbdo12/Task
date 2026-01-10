@@ -51,6 +51,7 @@ export interface Task {
   updatedAt: string;
   subTasks: SubTask[];
   isPinned: boolean;
+  isFavorite?: boolean;
 }
 
 export interface TaskStats {

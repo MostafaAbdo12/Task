@@ -8,7 +8,6 @@ import Sidebar from './components/Sidebar';
 import Auth from './components/Auth';
 import Settings from './components/Settings';
 import CategoryModal from './components/CategoryModal';
-import { getSmartAdvice } from './services/geminiService';
 import { storageService } from './services/storageService';
 import confetti from 'canvas-confetti';
 
@@ -26,7 +25,6 @@ const App: React.FC = () => {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [systemAdvice, setSystemAdvice] = useState('تحليل الأداء جارٍ...');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [toast, setToast] = useState<{ message: string; visible: boolean; type: ToastType }>({ 
@@ -47,12 +45,6 @@ const App: React.FC = () => {
       
       setTasks(userTasks);
       setCategories(userCats);
-      
-      const refreshAdvice = async () => {
-        const advice = await getSmartAdvice(userTasks);
-        setSystemAdvice(advice);
-      };
-      refreshAdvice();
       
       setTimeout(() => setIsLoaded(true), 300);
 
@@ -99,6 +91,25 @@ const App: React.FC = () => {
     showToast("تم حذف المهمة بنجاح", 'danger');
   };
 
+  const handleToggleFavorite = (id: string) => {
+    setTasks(prev => {
+      const task = prev.find(t => t.id === id);
+      const isNowFavorite = !task?.isFavorite;
+      if (isNowFavorite) {
+        showToast("تمت إضافة المهمة إلى المفضلة ❤️", 'success');
+      }
+      return prev.map(t => t.id === id ? { ...t, isFavorite: isNowFavorite } : t);
+    });
+  };
+
+  const stats = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.status === TaskStatus.COMPLETED).length;
+    const active = total - completed;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, active, percentage };
+  }, [tasks]);
+
   const filteredTasks = useMemo(() => {
     return tasks
       .filter(t => (selectedCategory === 'الكل' || t.category === selectedCategory))
@@ -109,7 +120,11 @@ const App: React.FC = () => {
         return true;
       })
       .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
-      .sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1));
+      .sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+        if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
+        return 0;
+      });
   }, [tasks, selectedCategory, searchQuery, statusFilter]);
 
   if (!currentUser) return <Auth onLogin={setCurrentUser} />;
@@ -117,7 +132,6 @@ const App: React.FC = () => {
   return (
     <div className={`h-screen w-full flex bg-corp-bg transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       
-      {/* Enhanced Animated Gowing Toast System */}
       {toast.visible && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[2000] animate-[slideIn_0.5s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
           <div className={`
@@ -194,42 +208,89 @@ const App: React.FC = () => {
           </div>
 
           {currentView === 'tasks' && (
-            <div className="flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex flex-col md:flex-row items-center gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="relative flex-1 w-full group">
-                  <Icons.Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                  <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="ابحث في سجلاتك الشخصية..." className="w-full bg-white border border-slate-200 rounded-2xl py-4 pr-12 pl-6 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" />
+                  <Icons.Search className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                  <input 
+                    value={searchQuery} 
+                    onChange={e => setSearchQuery(e.target.value)} 
+                    placeholder="ابحث في سجلاتك الشخصية..." 
+                    className="w-full bg-white border-2 border-slate-100 rounded-[32px] py-6 pr-14 pl-8 text-base font-bold outline-none focus:ring-12 focus:ring-blue-500/5 focus:border-blue-400 transition-all shadow-[0_10px_40px_-10px_rgba(0,0,0,0.03)]" 
+                  />
               </div>
-              <button onClick={() => setShowCategoryModal(true)} className="w-full md:w-auto p-4 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-3 font-bold text-sm">
-                  <Icons.Folder className="w-5 h-5" />
-                  <span className="md:hidden">إدارة التصنيفات</span>
-                </button>
+              <button 
+                onClick={() => setShowCategoryModal(true)} 
+                className="w-full md:w-auto px-10 py-6 bg-white border-2 border-slate-100 text-slate-800 rounded-[32px] hover:border-blue-500 hover:bg-blue-50/20 transition-all shadow-[0_10px_40px_-10px_rgba(0,0,0,0.03)] flex items-center justify-center gap-4 font-black text-base group active:scale-95"
+              >
+                  <div className="bg-slate-50 p-2 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                    <Icons.Folder className="w-6 h-6 text-slate-500 group-hover:text-white" />
+                  </div>
+                  <span>إضافة تصنيف جديد</span>
+              </button>
             </div>
           )}
         </header>
 
         {currentView === 'tasks' ? (
           <div className="flex-1 overflow-y-auto no-scrollbar space-y-10 pb-20">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="p-8 rounded-[32px] bg-gradient-to-br from-[#1e293b] to-[#0f172a] text-white border-none shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              {/* إجمالي العمليات */}
+              <div className="p-8 rounded-[32px] bg-[#0f172a] text-white border-none shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
                   <div className="absolute top-0 right-0 p-8 opacity-10 transition-transform group-hover:scale-125 duration-700">
                     <Icons.LayoutDashboard className="w-20 h-20" />
                   </div>
-                  <p className="text-[10px] font-black opacity-60 mb-3 uppercase tracking-[0.2em] relative z-10">إجمالي العمليات</p>
-                  <p className="text-4xl font-black relative z-10">{tasks.length}</p>
-              </div>
-              {[
-                { label: 'مكتملة', val: tasks.filter(t => t.status === TaskStatus.COMPLETED).length, color: 'text-emerald-600', icon: <Icons.CheckCircle /> },
-                { label: 'نشطة', val: tasks.filter(t => t.status !== TaskStatus.COMPLETED).length, color: 'text-blue-600', icon: <Icons.LayoutDashboard /> },
-                { label: 'التوجيه الذكي', val: systemAdvice, color: 'text-slate-800', isAdvice: true, icon: <Icons.Sparkles /> }
-              ].map((stat, i) => (
-                <div key={i} className={`p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300 ${stat.isAdvice ? 'md:col-span-2' : ''}`}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className={`${stat.color} opacity-40 scale-75`}>{stat.icon}</div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{stat.label}</p>
+                  <div className="flex justify-between items-start mb-3 relative z-10">
+                    <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em]">إجمالي العمليات</p>
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                      <Icons.LayoutDashboard className="w-4 h-4 opacity-60" />
                     </div>
-                    <p className={`text-xl font-black truncate ${stat.color}`}>{stat.val}</p>
-                </div>
-              ))}
+                  </div>
+                  <p className="text-4xl font-black relative z-10">{stats.total}</p>
+              </div>
+
+              {/* مكتملة */}
+              <div className="p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">مكتملة</p>
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <Icons.CheckCircle className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-emerald-600">{stats.completed}</p>
+              </div>
+
+              {/* نشطة */}
+              <div className="p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">نشطة</p>
+                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <Icons.LayoutDashboard className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-blue-600">{stats.active}</p>
+              </div>
+
+              {/* نسبة الإنجاز */}
+              <div className="p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-between shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300 group overflow-hidden relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">نسبة الإنجاز</p>
+                    <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <Icons.Sparkles className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <p className="text-3xl font-black text-indigo-600 transition-all duration-1000 group-hover:scale-110">{stats.percentage}%</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">مكتمل</p>
+                  </div>
+                  
+                  {/* شريط التقدم النحيف */}
+                  <div className="absolute bottom-0 left-0 w-full h-2 bg-slate-50">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-1000 ease-out"
+                      style={{ width: `${stats.percentage}%` }}
+                    ></div>
+                  </div>
+              </div>
             </div>
 
             <div>
@@ -244,6 +305,7 @@ const App: React.FC = () => {
                       onEdit={t => { setEditingTask(t); setShowForm(true); }} 
                       onStatusChange={handleStatusChange} 
                       onTogglePin={id => setTasks(tasks.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t))} 
+                      onToggleFavorite={handleToggleFavorite}
                     />
                   ))
                 ) : (

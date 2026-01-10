@@ -122,23 +122,26 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">التصنيف</label>
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <select 
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-[20px] px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 appearance-none cursor-pointer shadow-sm"
+                  >
+                    {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  </select>
+                  <Icons.Chevron className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5" />
+                </div>
                 <button 
                   type="button"
                   onClick={onManageCategories}
-                  className="text-[10px] font-black text-blue-600 hover:underline"
+                  className="p-4 bg-blue-50 text-blue-600 border border-blue-100 rounded-[20px] hover:bg-blue-600 hover:text-white transition-all shadow-sm group"
+                  title="إضافة تصنيف جديد"
                 >
-                  تعديل التصنيفات
+                  <Icons.Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
                 </button>
-              </div>
-              <div className="relative">
-                <select 
-                  value={category}
-                  onChange={e => setCategory(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-[20px] px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 appearance-none cursor-pointer shadow-sm"
-                >
-                  {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                </select>
-                <Icons.Chevron className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5" />
               </div>
             </div>
           </div>
