@@ -105,9 +105,10 @@ const App: React.FC = () => {
   const stats = useMemo(() => {
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === TaskStatus.COMPLETED).length;
+    const favorites = tasks.filter(t => t.isFavorite).length;
     const active = total - completed;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { total, completed, active, percentage };
+    return { total, completed, active, percentage, favorites };
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
@@ -233,14 +234,14 @@ const App: React.FC = () => {
 
         {currentView === 'tasks' ? (
           <div className="flex-1 overflow-y-auto no-scrollbar space-y-10 pb-20">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-              {/* إجمالي العمليات */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+              {/* عدد المهام */}
               <div className="p-8 rounded-[32px] bg-[#0f172a] text-white border-none shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
                   <div className="absolute top-0 right-0 p-8 opacity-10 transition-transform group-hover:scale-125 duration-700">
                     <Icons.LayoutDashboard className="w-20 h-20" />
                   </div>
                   <div className="flex justify-between items-start mb-3 relative z-10">
-                    <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em]">إجمالي العمليات</p>
+                    <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em]">عدد المهام</p>
                     <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                       <Icons.LayoutDashboard className="w-4 h-4 opacity-60" />
                     </div>
@@ -248,15 +249,26 @@ const App: React.FC = () => {
                   <p className="text-4xl font-black relative z-10">{stats.total}</p>
               </div>
 
-              {/* مكتملة */}
+              {/* منجزة */}
               <div className="p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">مكتملة</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">منجزة</p>
                     <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                       <Icons.CheckCircle className="w-4 h-4" />
                     </div>
                   </div>
                   <p className="text-3xl font-black text-emerald-600">{stats.completed}</p>
+              </div>
+
+              {/* المفضلة */}
+              <div className="p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">المفضلة</p>
+                    <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-rose-600">{stats.favorites}</p>
               </div>
 
               {/* نشطة */}

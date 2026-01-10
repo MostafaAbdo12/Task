@@ -30,6 +30,7 @@ export interface User {
   password?: string;
   email?: string;
   phone?: string;
+  avatar?: string; // إضافة حقل الصورة الشخصية
   lastLogin: string;
   xp?: number;
   level?: number;

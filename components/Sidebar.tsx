@@ -122,8 +122,12 @@ const Sidebar: React.FC<SidebarProps> = ({
               {/* User Profile */}
               <div className="bg-[#1e293b]/40 border border-slate-700/40 p-4 rounded-[28px] flex items-center gap-4 hover:bg-[#1e293b]/60 transition-colors">
                  <div className="relative">
-                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-lg font-black text-white shadow-lg">
-                     {user.username.charAt(0).toUpperCase()}
+                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center overflow-hidden shadow-lg border-2 border-white/10">
+                     {user.avatar ? (
+                       <img src={user.avatar} alt="User" className="w-full h-full object-cover" />
+                     ) : (
+                       <span className="text-lg font-black text-white">{user.username.charAt(0).toUpperCase()}</span>
+                     )}
                    </div>
                    <div className="absolute -bottom-1 -left-1 w-4 h-4 bg-emerald-500 border-2 border-[#0f172a] rounded-full"></div>
                  </div>
