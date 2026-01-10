@@ -250,55 +250,55 @@ const App: React.FC = () => {
               </div>
 
               {/* منجزة */}
-              <div className="p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
+              <div className="p-8 rounded-[32px] bg-emerald-600 text-white border-none shadow-lg shadow-emerald-200/50 flex flex-col justify-center hover:scale-[1.02] transition-transform duration-300">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">منجزة</p>
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">منجزة</p>
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                       <Icons.CheckCircle className="w-4 h-4" />
                     </div>
                   </div>
-                  <p className="text-3xl font-black text-emerald-600">{stats.completed}</p>
+                  <p className="text-3xl font-black">{stats.completed}</p>
               </div>
 
               {/* المفضلة */}
-              <div className="p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
+              <div className="p-8 rounded-[32px] bg-rose-600 text-white border-none shadow-lg shadow-rose-200/50 flex flex-col justify-center hover:scale-[1.02] transition-transform duration-300">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">المفضلة</p>
-                    <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">المفضلة</p>
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
                     </div>
                   </div>
-                  <p className="text-3xl font-black text-rose-600">{stats.favorites}</p>
+                  <p className="text-3xl font-black">{stats.favorites}</p>
               </div>
 
               {/* نشطة */}
-              <div className="p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
+              <div className="p-8 rounded-[32px] bg-blue-600 text-white border-none shadow-lg shadow-blue-200/50 flex flex-col justify-center hover:scale-[1.02] transition-transform duration-300">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">نشطة</p>
-                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">نشطة</p>
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                       <Icons.LayoutDashboard className="w-4 h-4" />
                     </div>
                   </div>
-                  <p className="text-3xl font-black text-blue-600">{stats.active}</p>
+                  <p className="text-3xl font-black">{stats.active}</p>
               </div>
 
               {/* نسبة الإنجاز */}
-              <div className="p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-between shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300 group overflow-hidden relative">
+              <div className="p-8 rounded-[32px] bg-orange-500 text-white border-none shadow-lg shadow-orange-200/50 flex flex-col justify-between hover:scale-[1.02] transition-transform duration-300 group overflow-hidden relative">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">نسبة الإنجاز</p>
-                    <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">نسبة الإنجاز</p>
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                       <Icons.Sparkles className="w-4 h-4" />
                     </div>
                   </div>
-                  <div className="flex items-baseline gap-1">
-                    <p className="text-3xl font-black text-indigo-600 transition-all duration-1000 group-hover:scale-110">{stats.percentage}%</p>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">مكتمل</p>
+                  <div className="flex items-baseline gap-1 relative z-10">
+                    <p className="text-3xl font-black">{stats.percentage}%</p>
+                    <p className="text-[10px] font-black opacity-70 uppercase tracking-widest">مكتمل</p>
                   </div>
                   
                   {/* شريط التقدم النحيف */}
-                  <div className="absolute bottom-0 left-0 w-full h-2 bg-slate-50">
+                  <div className="absolute bottom-0 left-0 w-full h-2 bg-black/10">
                     <div 
-                      className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-1000 ease-out"
+                      className="h-full bg-white transition-all duration-1000 ease-out"
                       style={{ width: `${stats.percentage}%` }}
                     ></div>
                   </div>

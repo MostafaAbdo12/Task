@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1e293b" />
-    <title>منصة مهامي | منصة الأعمال الذكية</title>
+    <title>منصة مهامي | تجربة الإدارة الفائقة</title>
     
     <script>
       window.process = window.process || { env: {} };
@@ -17,64 +17,24 @@
           extend: {
             fontFamily: {
               sans: ['Cairo', 'sans-serif'],
-              mono: ['Fira Code', 'monospace'],
-            },
-            colors: {
-              'corp-primary': '#1e293b',
-              'corp-accent': '#2563eb',
-              'corp-bg': '#f8fafc',
-              'corp-surface': '#ffffff',
-              'corp-border': '#e2e8f0',
             },
             animation: {
-              'moving-ltr': 'movingLTR 15s linear infinite',
-              'slide-in': 'slideIn 0.3s ease-out forwards',
-              'gentle-pulse': 'gentlePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'float-slow': 'floatSlow 6s ease-in-out infinite',
-              'kinetic-glow': 'kineticGlow 3s ease-in-out infinite',
-              'sparkle-pop': 'sparklePop 0.8s ease-out forwards',
-              'state-pop': 'statePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
-              'strike-draw': 'strikeDraw 0.5s ease-out forwards',
-              'text-shimmer': 'textShimmer 3s ease-in-out infinite',
+              'border-beam': 'borderBeam 4s linear infinite',
+              'glass-shine': 'glassShine 3s ease-in-out infinite',
+              'float': 'float 6s ease-in-out infinite',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             },
             keyframes: {
-              movingLTR: {
-                '0%': { transform: 'translateX(100%)' },
-                '100%': { transform: 'translateX(-100%)' },
+              borderBeam: {
+                '100%': { 'offset-distance': '100%' },
               },
-              slideIn: {
-                '0%': { transform: 'translateY(-20px)', opacity: '0' },
-                '100%': { transform: 'translateY(0)', opacity: '1' },
+              glassShine: {
+                '0%': { transform: 'translateX(-100%) skewX(-15deg)' },
+                '100%': { transform: 'translateX(200%) skewX(-15deg)' },
               },
-              gentlePulse: {
-                '0%, 100%': { opacity: '1', transform: 'scale(1)' },
-                '50%': { opacity: '0.9', transform: 'scale(1.03)' },
-              },
-              floatSlow: {
-                '0%, 100%': { transform: 'translate(0, 0)' },
-                '50%': { transform: 'translate(10px, -10px)' },
-              },
-              kineticGlow: {
-                '0%, 100%': { filter: 'drop-shadow(0 0 5px rgba(37, 99, 235, 0.3))', transform: 'scale(1)' },
-                '50%': { filter: 'drop-shadow(0 0 15px rgba(37, 99, 235, 0.6))', transform: 'scale(1.02)' },
-              },
-              sparklePop: {
-                '0%': { transform: 'scale(0) rotate(0deg)', opacity: '0' },
-                '50%': { opacity: '1' },
-                '100%': { transform: 'scale(1.5) rotate(180deg)', opacity: '0' },
-              },
-              statePop: {
-                '0%': { transform: 'scale(0.8)', opacity: '0.5' },
-                '50%': { transform: 'scale(1.15)' },
-                '100%': { transform: 'scale(1)', opacity: '1' },
-              },
-              strikeDraw: {
-                '0%': { width: '0%', left: '0%' },
-                '100%': { width: '100%', left: '0%' },
-              },
-              textShimmer: {
-                '0%, 100%': { backgroundPosition: '200% center', filter: 'brightness(1)' },
-                '50%': { backgroundPosition: '0% center', filter: 'brightness(1.3)' },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
               }
             }
           },
@@ -82,63 +42,47 @@
       }
     </script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
       body {
         font-family: 'Cairo', sans-serif;
-        background-color: #f8fafc;
-        color: #1e293b;
-        margin: 0;
+        background: radial-gradient(circle at top right, #f8fafc, #eff6ff);
+        min-height: 100vh;
       }
 
-      /* شريط تمرير مستقبلي ونحيف */
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(30, 41, 59, 0.1);
-        border-radius: 10px;
-        transition: all 0.3s;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgba(37, 99, 235, 0.4);
+      .premium-glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.4);
       }
 
-      .corp-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        transition: all 0.3s ease;
-      }
-
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      
       .glowing-text {
-        background: linear-gradient(90deg, #1e293b 0%, #2563eb 25%, #4f46e5 50%, #2563eb 75%, #1e293b 100%);
+        background: linear-gradient(to right, #1e293b, #2563eb, #7c3aed, #2563eb, #1e293b);
         background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        animation: textShimmer 4s infinite linear;
-        display: inline-block;
+        animation: shine 5s linear infinite;
       }
 
-      .heart-beat {
-        animation: heartBeat 1.5s ease-in-out infinite;
-        display: inline-block;
+      @keyframes shine {
+        to { background-position: 200% center; }
       }
 
-      @keyframes heartBeat {
-        0% { transform: scale(1); }
-        14% { transform: scale(1.3); }
-        28% { transform: scale(1); }
-        42% { transform: scale(1.3); }
-        70% { transform: scale(1); }
+      .card-3d-effect {
+        transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        transform-style: preserve-3d;
       }
+
+      .card-3d-effect:hover {
+        transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) scale(1.02);
+      }
+
+      /* Custom thin scrollbar */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.05); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(37, 99, 235, 0.2); }
     </style>
   <script type="importmap">
 {
@@ -147,7 +91,7 @@
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
     "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
-    "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.3",
+    "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.4",
     "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
