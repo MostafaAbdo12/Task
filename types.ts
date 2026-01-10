@@ -28,6 +28,8 @@ export interface Category {
 export interface User {
   username: string;
   password?: string;
+  email?: string;
+  phone?: string;
   lastLogin: string;
   xp?: number;
   level?: number;

@@ -6,10 +6,13 @@ import TaskCard from './components/TaskCard';
 import TaskForm from './components/TaskForm';
 import Sidebar from './components/Sidebar';
 import Auth from './components/Auth';
+import Settings from './components/Settings';
 import CategoryModal from './components/CategoryModal';
 import { getSmartAdvice } from './services/geminiService';
 import { storageService } from './services/storageService';
 import confetti from 'canvas-confetti';
+
+type ToastType = 'success' | 'danger' | 'info';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => storageService.getSession());
@@ -17,6 +20,8 @@ const App: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE'>('ALL');
+  const [currentView, setCurrentView] = useState<'tasks' | 'settings'>('tasks');
+  
   const [showForm, setShowForm] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -24,11 +29,15 @@ const App: React.FC = () => {
   const [systemAdvice, setSystemAdvice] = useState('تحليل الأداء جارٍ...');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+  const [toast, setToast] = useState<{ message: string; visible: boolean; type: ToastType }>({ 
+    message: '', 
+    visible: false,
+    type: 'success'
+  });
 
-  const showToast = useCallback((msg: string) => {
-    setToast({ message: msg, visible: true });
-    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
+  const showToast = useCallback((msg: string, type: ToastType = 'success') => {
+    setToast({ message: msg, visible: true, type });
+    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 4000);
   }, []);
 
   useEffect(() => {
@@ -49,7 +58,7 @@ const App: React.FC = () => {
 
       const welcomeMsg = sessionStorage.getItem('auth_success_msg');
       if (welcomeMsg) {
-        showToast(welcomeMsg);
+        showToast(welcomeMsg, 'success');
         sessionStorage.removeItem('auth_success_msg');
       }
     } else {
@@ -79,10 +88,15 @@ const App: React.FC = () => {
           origin: { y: 0.6 },
           colors: ['#2563eb', '#10b981', '#f59e0b']
         });
-        showToast("إنجاز رائع! تم تحديث سجلاتك بنجاح.");
+        showToast("إنجاز رائع! تم تحديث سجلاتك بنجاح.", 'success');
       }
       return newTasks;
     });
+  };
+
+  const handleDeleteTask = (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    showToast("تم حذف المهمة بنجاح", 'danger');
   };
 
   const filteredTasks = useMemo(() => {
@@ -103,11 +117,24 @@ const App: React.FC = () => {
   return (
     <div className={`h-screen w-full flex bg-corp-bg transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       
+      {/* Enhanced Animated Gowing Toast System */}
       {toast.visible && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[1000] animate-slide-in">
-          <div className="bg-emerald-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-500/50">
-            <Icons.CheckCircle className="w-5 h-5" />
-            <span className="text-sm font-bold">{toast.message}</span>
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[2000] animate-[slideIn_0.5s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
+          <div className={`
+            px-8 py-4 rounded-[24px] flex items-center gap-4 border shadow-2xl transition-all duration-500
+            ${toast.type === 'success' 
+              ? 'bg-emerald-600 border-emerald-400 shadow-[0_20px_50px_-10px_rgba(16,185,129,0.5)]' 
+              : toast.type === 'danger'
+              ? 'bg-rose-600 border-rose-400 shadow-[0_20px_50px_-10px_rgba(225,29,72,0.5)]'
+              : 'bg-blue-600 border-blue-400 shadow-[0_20px_50px_-10px_rgba(37,99,235,0.5)]'}
+          `}>
+            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center animate-gentle-pulse">
+              {toast.type === 'danger' ? <Icons.Trash className="w-5 h-5 text-white" /> : <Icons.CheckCircle className="w-5 h-5 text-white" />}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-white text-[15px] font-black tracking-tight">{toast.message}</span>
+              <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-0.5">تحديث النظام الذكي</span>
+            </div>
           </div>
         </div>
       )}
@@ -118,6 +145,8 @@ const App: React.FC = () => {
         categories={categories}
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
+        currentView={currentView}
+        onViewChange={setCurrentView}
         user={currentUser}
         onLogout={() => { storageService.clearSession(); setCurrentUser(null); }}
       />
@@ -130,104 +159,116 @@ const App: React.FC = () => {
                  <Icons.Chevron className="w-5 h-5 rotate-90 text-slate-600" />
               </button>
               <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight glowing-text">مهامي الذكية</h1>
-                <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">إدارة الإنتاجية والنتائج</p>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight glowing-text">
+                  {currentView === 'tasks' ? 'مهامي الذكية' : 'إعدادات الحساب'}
+                </h1>
+                <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">
+                  {currentView === 'tasks' ? 'إدارة الإنتاجية والنتائج' : 'تخصيص الهوية الرقمية'}
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-               <div className="bg-white p-1 rounded-2xl border border-slate-200 flex shadow-sm">
-                  <button 
-                    onClick={() => setStatusFilter('ALL')}
-                    className={`px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 ${statusFilter === 'ALL' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    الكل
+            {currentView === 'tasks' && (
+              <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="bg-white p-1 rounded-2xl border border-slate-200 flex shadow-sm">
+                    <button 
+                      onClick={() => setStatusFilter('ALL')}
+                      className={`px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 ${statusFilter === 'ALL' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      الكل
+                    </button>
+                    <button 
+                      onClick={() => setStatusFilter('ACTIVE')}
+                      className={`px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 ${statusFilter === 'ACTIVE' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      النشطة
+                    </button>
+                </div>
+                
+                <button onClick={() => setShowForm(true)} className="flex items-center gap-3 bg-blue-600 text-white px-6 py-3 rounded-2xl text-[13px] font-black shadow-[0_10px_25px_rgba(37,99,235,0.4)] hover:brightness-110 active:scale-95 transition-all">
+                    <Icons.Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">مهمة جديدة</span>
                   </button>
-                  <button 
-                    onClick={() => setStatusFilter('ACTIVE')}
-                    className={`px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 ${statusFilter === 'ACTIVE' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    النشطة
-                  </button>
-               </div>
-               
-               <button onClick={() => setShowForm(true)} className="flex items-center gap-3 bg-blue-600 text-white px-6 py-3 rounded-2xl text-[13px] font-black shadow-[0_10px_25px_rgba(37,99,235,0.4)] hover:brightness-110 active:scale-95 transition-all">
-                  <Icons.Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">مهمة جديدة</span>
+              </div>
+            )}
+          </div>
+
+          {currentView === 'tasks' && (
+            <div className="flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="relative flex-1 w-full group">
+                  <Icons.Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                  <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="ابحث في سجلاتك الشخصية..." className="w-full bg-white border border-slate-200 rounded-2xl py-4 pr-12 pl-6 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" />
+              </div>
+              <button onClick={() => setShowCategoryModal(true)} className="w-full md:w-auto p-4 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-3 font-bold text-sm">
+                  <Icons.Folder className="w-5 h-5" />
+                  <span className="md:hidden">إدارة التصنيفات</span>
                 </button>
             </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-4">
-             <div className="relative flex-1 w-full group">
-                <Icons.Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="ابحث في سجلاتك الشخصية..." className="w-full bg-white border border-slate-200 rounded-2xl py-4 pr-12 pl-6 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" />
-             </div>
-             <button onClick={() => setShowCategoryModal(true)} className="w-full md:w-auto p-4 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-3 font-bold text-sm">
-                <Icons.Folder className="w-5 h-5" />
-                <span className="md:hidden">إدارة التصنيفات</span>
-              </button>
-          </div>
+          )}
         </header>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar space-y-10 pb-20">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-             <div className="p-8 rounded-[32px] bg-gradient-to-br from-[#1e293b] to-[#0f172a] text-white border-none shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
-                <div className="absolute top-0 right-0 p-8 opacity-10 transition-transform group-hover:scale-125 duration-700">
-                  <Icons.LayoutDashboard className="w-20 h-20" />
-                </div>
-                <p className="text-[10px] font-black opacity-60 mb-3 uppercase tracking-[0.2em] relative z-10">إجمالي العمليات</p>
-                <p className="text-4xl font-black relative z-10">{tasks.length}</p>
-             </div>
-             {[
-               { label: 'مكتملة', val: tasks.filter(t => t.status === TaskStatus.COMPLETED).length, color: 'text-emerald-600', icon: <Icons.CheckCircle /> },
-               { label: 'نشطة', val: tasks.filter(t => t.status !== TaskStatus.COMPLETED).length, color: 'text-blue-600', icon: <Icons.LayoutDashboard /> },
-               { label: 'التوجيه الذكي', val: systemAdvice, color: 'text-slate-800', isAdvice: true, icon: <Icons.Sparkles /> }
-             ].map((stat, i) => (
-               <div key={i} className={`p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300 ${stat.isAdvice ? 'md:col-span-2' : ''}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className={`${stat.color} opacity-40 scale-75`}>{stat.icon}</div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{stat.label}</p>
+        {currentView === 'tasks' ? (
+          <div className="flex-1 overflow-y-auto no-scrollbar space-y-10 pb-20">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="p-8 rounded-[32px] bg-gradient-to-br from-[#1e293b] to-[#0f172a] text-white border-none shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+                  <div className="absolute top-0 right-0 p-8 opacity-10 transition-transform group-hover:scale-125 duration-700">
+                    <Icons.LayoutDashboard className="w-20 h-20" />
                   </div>
-                  <p className={`text-xl font-black truncate ${stat.color}`}>{stat.val}</p>
-               </div>
-             ))}
-          </div>
-
-          <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-              {filteredTasks.length > 0 ? (
-                filteredTasks.map((task, idx) => (
-                  <TaskCard 
-                    key={task.id} 
-                    task={task} 
-                    index={idx} 
-                    onDelete={id => setTasks(tasks.filter(t => t.id !== id))} 
-                    onEdit={t => { setEditingTask(t); setShowForm(true); }} 
-                    onStatusChange={handleStatusChange} 
-                    onTogglePin={id => setTasks(tasks.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t))} 
-                  />
-                ))
-              ) : (
-                <div className="col-span-full py-24 bg-white border border-dashed border-slate-200 rounded-[40px] flex flex-col items-center text-center">
-                   <div className="w-20 h-20 bg-slate-50 rounded-[24px] flex items-center justify-center mb-6 shadow-inner animate-pulse">
-                      <Icons.Folder className="w-10 h-10 text-slate-200" />
-                   </div>
-                   <h3 className="text-xl font-black text-slate-400">لا توجد سجلات مطابقة</h3>
-                   <p className="text-[13px] font-bold text-slate-300 mt-2">قم بتغيير خيارات التصفية أو أضف مهمة جديدة للبدء.</p>
+                  <p className="text-[10px] font-black opacity-60 mb-3 uppercase tracking-[0.2em] relative z-10">إجمالي العمليات</p>
+                  <p className="text-4xl font-black relative z-10">{tasks.length}</p>
+              </div>
+              {[
+                { label: 'مكتملة', val: tasks.filter(t => t.status === TaskStatus.COMPLETED).length, color: 'text-emerald-600', icon: <Icons.CheckCircle /> },
+                { label: 'نشطة', val: tasks.filter(t => t.status !== TaskStatus.COMPLETED).length, color: 'text-blue-600', icon: <Icons.LayoutDashboard /> },
+                { label: 'التوجيه الذكي', val: systemAdvice, color: 'text-slate-800', isAdvice: true, icon: <Icons.Sparkles /> }
+              ].map((stat, i) => (
+                <div key={i} className={`p-8 rounded-[32px] bg-white border border-slate-100 flex flex-col justify-center shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 duration-300 ${stat.isAdvice ? 'md:col-span-2' : ''}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className={`${stat.color} opacity-40 scale-75`}>{stat.icon}</div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{stat.label}</p>
+                    </div>
+                    <p className={`text-xl font-black truncate ${stat.color}`}>{stat.val}</p>
                 </div>
-              )}
+              ))}
+            </div>
+
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {filteredTasks.length > 0 ? (
+                  filteredTasks.map((task, idx) => (
+                    <TaskCard 
+                      key={task.id} 
+                      task={task} 
+                      index={idx} 
+                      onDelete={handleDeleteTask} 
+                      onEdit={t => { setEditingTask(t); setShowForm(true); }} 
+                      onStatusChange={handleStatusChange} 
+                      onTogglePin={id => setTasks(tasks.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t))} 
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full py-24 bg-white border border-dashed border-slate-200 rounded-[40px] flex flex-col items-center text-center">
+                    <div className="w-20 h-20 bg-slate-50 rounded-[24px] flex items-center justify-center mb-6 shadow-inner animate-pulse">
+                        <Icons.Folder className="w-10 h-10 text-slate-200" />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-400">لا توجد سجلات مطابقة</h3>
+                    <p className="text-[13px] font-bold text-slate-300 mt-2">قم بتغيير خيارات التصفية أو أضف مهمة جديدة للبدء.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <Settings user={currentUser} onUpdate={setCurrentUser} showToast={showToast} />
+        )}
       </main>
 
       {showForm && (
-        <TaskForm onAdd={data => { setTasks([{...data, id: Date.now().toString(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()}, ...tasks]); setShowForm(false); showToast("تم الحفظ بنجاح"); }} onUpdate={task => { setTasks(tasks.map(t => t.id === task.id ? {...task, updatedAt: new Date().toISOString()} : t)); setShowForm(false); setEditingTask(null); }} onClose={() => { setShowForm(false); setEditingTask(null); }} onManageCategories={() => setShowCategoryModal(true)} initialTask={editingTask} categories={categories} />
+        <TaskForm onAdd={data => { setTasks([{...data, id: Date.now().toString(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()}, ...tasks]); setShowForm(false); showToast("تم إضافة المهمة بنجاح", 'success'); }} onUpdate={task => { setTasks(tasks.map(t => t.id === task.id ? {...task, updatedAt: new Date().toISOString()} : t)); setShowForm(false); setEditingTask(null); showToast("تم تحديث المهمة بنجاح", 'info'); }} onClose={() => { setShowForm(false); setEditingTask(null); }} onManageCategories={() => setShowCategoryModal(true)} initialTask={editingTask} categories={categories} />
       )}
 
       {showCategoryModal && (
-        <CategoryModal categories={categories} onAdd={cat => setCategories([...categories, cat])} onUpdate={updatedCat => setCategories(categories.map(c => c.id === updatedCat.id ? updatedCat : c))} onDelete={id => setCategories(categories.filter(c => c.id !== id))} onClose={() => setShowCategoryModal(false)} />
+        <CategoryModal categories={categories} onAdd={cat => { setCategories([...categories, cat]); showToast("تم إضافة التصنيف بنجاح", 'success'); }} onUpdate={updatedCat => { setCategories(categories.map(c => c.id === updatedCat.id ? updatedCat : c)); showToast("تم تحديث التصنيف بنجاح", 'info'); }} onDelete={id => { setCategories(categories.filter(c => c.id !== id)); showToast("تم حذف التصنيف", 'danger'); }} onClose={() => setShowCategoryModal(false)} />
       )}
     </div>
   );

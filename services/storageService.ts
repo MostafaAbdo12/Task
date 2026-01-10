@@ -2,11 +2,6 @@
 import { User, Task, Category, TaskStatus, TaskPriority } from '../types';
 import { DEFAULT_CATEGORIES } from '../constants';
 
-/**
- * خدمة إدارة التخزين المحلي (Local Storage Service)
- * تعمل كطبقة قاعدة بيانات (Database Layer) لتنظيم بيانات المستخدمين والمهام والتصنيفات.
- */
-
 const STORAGE_KEYS = {
   USERS: 'maham_database_users',
   SESSION: 'maham_active_session',
@@ -15,9 +10,6 @@ const STORAGE_KEYS = {
 };
 
 export const storageService = {
-  // --- إدارة سجل المستخدمين العام ---
-  
-  /** الحصول على قائمة جميع المستخدمين المسجلين */
   getUsers: (): any[] => {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.USERS);
@@ -28,14 +20,41 @@ export const storageService = {
     }
   },
 
-  /** إضافة مستخدم جديد للسجل */
   registerUser: (userData: any): void => {
     const users = storageService.getUsers();
     users.push(userData);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
   },
 
-  // --- إدارة الجلسة النشطة ---
+  updateUser: (oldUsername: string, updatedData: Partial<User>): boolean => {
+    const users = storageService.getUsers();
+    const index = users.findIndex(u => u.username === oldUsername);
+    if (index !== -1) {
+      users[index] = { ...users[index], ...updatedData };
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      
+      // إذا تغير اسم المستخدم، يجب نقل المهام والتصنيفات
+      if (updatedData.username && updatedData.username !== oldUsername) {
+        const oldTasksKey = STORAGE_KEYS.USER_TASKS_PREFIX + oldUsername.toLowerCase();
+        const newTasksKey = STORAGE_KEYS.USER_TASKS_PREFIX + updatedData.username.toLowerCase();
+        const tasks = localStorage.getItem(oldTasksKey);
+        if (tasks) {
+          localStorage.setItem(newTasksKey, tasks);
+          localStorage.removeItem(oldTasksKey);
+        }
+
+        const oldCatsKey = STORAGE_KEYS.USER_CATS_PREFIX + oldUsername.toLowerCase();
+        const newCatsKey = STORAGE_KEYS.USER_CATS_PREFIX + updatedData.username.toLowerCase();
+        const cats = localStorage.getItem(oldCatsKey);
+        if (cats) {
+          localStorage.setItem(newCatsKey, cats);
+          localStorage.removeItem(oldCatsKey);
+        }
+      }
+      return true;
+    }
+    return false;
+  },
 
   setSession: (user: User): void => {
     localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(user));
@@ -44,7 +63,13 @@ export const storageService = {
   getSession: (): User | null => {
     try {
       const session = localStorage.getItem(STORAGE_KEYS.SESSION);
-      return session ? JSON.parse(session) : null;
+      if (!session) return null;
+      const parsed = JSON.parse(session);
+      
+      // التأكد من جلب البيانات الكاملة من السجل
+      const users = storageService.getUsers();
+      const fullData = users.find(u => u.username === parsed.username);
+      return fullData ? { ...fullData, lastLogin: parsed.lastLogin } : parsed;
     } catch {
       return null;
     }
@@ -54,9 +79,6 @@ export const storageService = {
     localStorage.removeItem(STORAGE_KEYS.SESSION);
   },
 
-  // --- إدارة بيانات المستخدم المعزولة ---
-
-  /** الحصول على مهام مستخدم معين */
   getUserTasks: (username: string): Task[] => {
     try {
       const key = STORAGE_KEYS.USER_TASKS_PREFIX + username.toLowerCase();
@@ -67,13 +89,11 @@ export const storageService = {
     }
   },
 
-  /** حفظ مهام مستخدم معين */
   saveUserTasks: (username: string, tasks: Task[]): void => {
     const key = STORAGE_KEYS.USER_TASKS_PREFIX + username.toLowerCase();
     localStorage.setItem(key, JSON.stringify(tasks));
   },
 
-  /** الحصول على تصنيفات مستخدم معين */
   getUserCategories: (username: string): Category[] => {
     try {
       const key = STORAGE_KEYS.USER_CATS_PREFIX + username.toLowerCase();
@@ -84,15 +104,11 @@ export const storageService = {
     }
   },
 
-  /** حفظ تصنيفات مستخدم معين */
   saveUserCategories: (username: string, categories: Category[]): void => {
     const key = STORAGE_KEYS.USER_CATS_PREFIX + username.toLowerCase();
     localStorage.setItem(key, JSON.stringify(categories));
   },
 
-  // --- تهيئة الحساب الجديد ---
-
-  /** إنشاء بيئة عمل نظيفة ومحترفة للمستخدم الجديد */
   initializeNewAccount: (username: string): void => {
     const welcomeTask: Task = {
       id: 'welcome-' + Date.now(),
