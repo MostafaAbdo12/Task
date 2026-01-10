@@ -8,16 +8,63 @@ interface AuthProps {
   onLogin: (user: User) => void;
 }
 
-const COUNTRY_CODES = [
-  { code: '+966', flag: '🇸🇦', name: 'المملكة العربية السعودية', short: 'SA', placeholder: '5xxxxxxxx' },
-  { code: '+20', flag: '🇪🇬', name: 'جمهورية مصر العربية', short: 'EG', placeholder: '1xxxxxxxxx' },
-  { code: '+971', flag: '🇦🇪', name: 'الإمارات العربية المتحدة', short: 'AE', placeholder: '5xxxxxxxx' },
-  { code: '+965', flag: '🇰🇼', name: 'دولة الكويت', short: 'KW', placeholder: '9xxxxxxx' },
-  { code: '+974', flag: '🇶🇦', name: 'دولة قطر', short: 'QA', placeholder: '7xxxxxxxx' },
-  { code: '+968', flag: '🇴🇲', name: 'سلطنة عمان', short: 'OM', placeholder: '5xxxxxxx' },
-  { code: '+973', flag: '🇧🇭', name: 'مملكة البحرين', short: 'BH', placeholder: '5xxxxxxx' },
-  { code: '+962', flag: '🇯🇴', name: 'المملكة الأردنية الهاشمية', short: 'JO', placeholder: '7xxxxxxxx' },
-  { code: '+212', flag: '🇲🇦', name: 'المملكة المغربية', short: 'MA', placeholder: '6xxxxxxxx' },
+interface CountryConfig {
+  code: string;
+  flag: string;
+  name: string;
+  short: string;
+  placeholder: string;
+  pattern: RegExp;
+  maxLength: number;
+  errorMessage: string;
+}
+
+const COUNTRY_CODES: CountryConfig[] = [
+  { 
+    code: '+966', flag: '🇸🇦', name: 'المملكة العربية السعودية', short: 'SA', 
+    placeholder: '5xxxxxxxx', pattern: /^5\d*$/, maxLength: 9,
+    errorMessage: 'رقم الجوال السعودي يجب أن يبدأ بـ 5 ويتكون من 9 أرقام.'
+  },
+  { 
+    code: '+20', flag: '🇪🇬', name: 'جمهورية مصر العربية', short: 'EG', 
+    placeholder: '1xxxxxxxxx', pattern: /^1\d*$/, maxLength: 10,
+    errorMessage: 'رقم الجوال المصري يجب أن يبدأ بـ 1 ويتكون من 10 أرقام.'
+  },
+  { 
+    code: '+971', flag: '🇦🇪', name: 'الإمارات العربية المتحدة', short: 'AE', 
+    placeholder: '5xxxxxxxx', pattern: /^5\d*$/, maxLength: 9,
+    errorMessage: 'رقم الجوال الإماراتي يجب أن يبدأ بـ 5 ويتكون من 9 أرقام.'
+  },
+  { 
+    code: '+965', flag: '🇰🇼', name: 'دولة الكويت', short: 'KW', 
+    placeholder: 'xxxxxxxx', pattern: /^\d*$/, maxLength: 8,
+    errorMessage: 'رقم الجوال الكويتي يتكون من 8 أرقام.'
+  },
+  { 
+    code: '+974', flag: '🇶🇦', name: 'دولة قطر', short: 'QA', 
+    placeholder: 'xxxxxxxx', pattern: /^\d*$/, maxLength: 8,
+    errorMessage: 'رقم الجوال القطري يتكون من 8 أرقام.'
+  },
+  { 
+    code: '+968', flag: '🇴🇲', name: 'سلطنة عمان', short: 'OM', 
+    placeholder: 'xxxxxxxx', pattern: /^\d*$/, maxLength: 8,
+    errorMessage: 'رقم الجوال العماني يتكون من 8 أرقام.'
+  },
+  { 
+    code: '+973', flag: '🇧🇭', name: 'مملكة البحرين', short: 'BH', 
+    placeholder: 'xxxxxxxx', pattern: /^\d*$/, maxLength: 8,
+    errorMessage: 'رقم الجوال البحريني يتكون من 8 أرقام.'
+  },
+  { 
+    code: '+962', flag: '🇯🇴', name: 'المملكة الأردنية الهاشمية', short: 'JO', 
+    placeholder: '7xxxxxxxx', pattern: /^7\d*$/, maxLength: 9,
+    errorMessage: 'رقم الجوال الأردني يجب أن يبدأ بـ 7 ويتكون من 9 أرقام.'
+  },
+  { 
+    code: '+212', flag: '🇲🇦', name: 'المملكة المغربية', short: 'MA', 
+    placeholder: 'xxxxxxxxx', pattern: /^\d*$/, maxLength: 9,
+    errorMessage: 'رقم الجوال المغربي يتكون من 9 أرقام.'
+  },
 ];
 
 const Auth: React.FC<AuthProps> = ({ onLogin }) => {
@@ -32,7 +79,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [isCountryListOpen, setIsCountryListOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -42,6 +88,20 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handlePhoneChange = (val: string) => {
+    const numericVal = val.replace(/\D/g, '');
+    
+    // منع الكتابة إذا كان الرقم لا يطابق النمط أو تجاوز الطول
+    if (numericVal === '' || selectedCountry.pattern.test(numericVal)) {
+      if (numericVal.length <= selectedCountry.maxLength) {
+        setPhone(numericVal);
+        setError('');
+      }
+    } else {
+      setError(selectedCountry.errorMessage);
+    }
+  };
 
   const validateEmail = (email: string) => {
     return String(email)
@@ -55,7 +115,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
     const cleanUsername = username.trim().toLowerCase();
     
-    // التحقق من الحقول الإجبارية
     if (!cleanUsername) {
       setError('اسم المستخدم مطلوب لبناء قاعدة بياناتك.');
       return;
@@ -70,8 +129,10 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         setError('يرجى إدخال بريد إلكتروني صالح (مثال: name@domain.com).');
         return;
       }
-      if (!phone || phone.length < 7) {
-        setError('يرجى إدخال رقم جوال صحيح لإرسال تنبيهات واتساب.');
+      
+      // التحقق النهائي من رقم الجوال
+      if (!phone || phone.length !== selectedCountry.maxLength) {
+        setError(selectedCountry.errorMessage);
         return;
       }
     }
@@ -134,7 +195,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen w-full flex bg-corp-bg font-sans overflow-hidden">
-      {/* الجانب الأيمن (لوحة التصميم المظلمة) */}
       <div className="hidden lg:flex w-1/2 bg-[#0a0f1d] relative items-center justify-center p-20 overflow-hidden shadow-2xl">
          <div className="absolute inset-0 z-0">
             <div className="stars-container absolute inset-0">
@@ -156,7 +216,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             </div>
          </div>
 
-         {/* التوقيع الذهبي للمصمم */}
          <div className="absolute bottom-12 right-12 z-20 animate-kinetic-glow">
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 group hover:scale-105 transition-all duration-500">
               <div className="flex items-center gap-2 text-[11px] font-bold text-slate-300">
@@ -172,119 +231,115 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
          </div>
       </div>
 
-      {/* الجانب الأيسر (النماذج) */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative z-20 shadow-inner">
-        <div className="w-full max-w-[440px] space-y-8 animate-in slide-in-from-bottom-8 duration-700">
+        <div className="w-full max-w-[480px] space-y-8 animate-in slide-in-from-bottom-8 duration-700">
           <div className="text-center">
             <h2 className="text-4xl font-black text-[#0f172a] mb-2">{isLoginMode ? 'تسجيل الدخول' : 'إنشاء حساب'}</h2>
-            <p className="text-[#64748b] text-sm font-medium">ابدأ الآن بتنظيم أعمالك باحترافية</p>
+            <p className="text-[#64748b] text-sm font-black tracking-wide uppercase">نظام إدارة المهام الفائق</p>
           </div>
 
-          <form onSubmit={handleAuth} className="space-y-5">
-            {/* اسم المستخدم */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center px-1">
-                <label className="text-[12px] font-bold text-[#64748b]">اسم المستخدم <span className="text-rose-500">*</span></label>
-              </div>
+          <form onSubmit={handleAuth} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[14px] font-black text-[#0f172a] px-1 block">اسم المستخدم <span className="text-rose-500">*</span></label>
               <input 
                 required 
                 value={username} 
                 onChange={e => setUsername(e.target.value)} 
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-[22px] px-6 py-[16px] text-slate-900 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-[#2563eb] transition-all text-sm font-bold shadow-sm" 
-                placeholder="أدخل اسمك" 
+                className="w-full bg-[#f8fafc] border-[3px] border-[#e2e8f0] rounded-full px-8 py-5 text-slate-900 outline-none focus:ring-12 focus:ring-blue-500/5 focus:border-[#2563eb] transition-all text-base font-black shadow-sm" 
+                placeholder="أدخل اسمك البرمجي" 
               />
             </div>
 
             {!isLoginMode && (
               <>
-                {/* البريد الإلكتروني */}
-                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2">
-                  <label className="text-[12px] font-bold text-[#64748b] block px-1">البريد الإلكتروني <span className="text-rose-500">*</span></label>
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <label className="text-[14px] font-black text-[#0f172a] block px-1">البريد الإلكتروني <span className="text-rose-500">*</span></label>
                   <input 
                     type="email" 
                     required 
                     value={email} 
                     onChange={e => setEmail(e.target.value)} 
-                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-[22px] px-6 py-[16px] text-slate-900 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-[#2563eb] transition-all text-sm font-bold shadow-sm" 
+                    className="w-full bg-[#f8fafc] border-[3px] border-[#e2e8f0] rounded-full px-8 py-5 text-slate-900 outline-none focus:ring-12 focus:ring-blue-500/5 focus:border-[#2563eb] transition-all text-base font-black shadow-sm" 
                     placeholder="name@domain.com" 
                   />
                 </div>
 
-                {/* رقم الجوال المطور (مطابق للصورة) */}
-                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-4">
-                  <label className="text-[12px] font-bold text-[#64748b] block px-1">رقم الجوال (للتذكير عبر واتساب) <span className="text-rose-500">*</span></label>
-                  <div className="flex gap-3 relative h-[58px]">
-                    {/* جزء الرقم (على اليمين في RTL) */}
-                    <input 
-                      type="tel" 
-                      required 
-                      value={phone} 
-                      onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} 
-                      className="flex-1 bg-[#f8fafc] border border-[#e2e8f0] rounded-[22px] px-6 text-slate-900 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-[#2563eb] transition-all text-sm font-bold shadow-sm" 
-                      placeholder={selectedCountry.placeholder} 
-                    />
-                    
-                    {/* جزء اختيار الدولة (على اليسار في RTL) */}
-                    <div ref={dropdownRef} className="relative w-[130px] shrink-0">
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
+                  <label className="text-[14px] font-black text-[#0f172a] block px-1">رقم الجوال (للتذكير عبر واتساب) <span className="text-rose-500">*</span></label>
+                  <div className="flex gap-4 relative h-[65px]">
+                    <div ref={dropdownRef} className="relative w-[140px] shrink-0 h-full">
                       <button 
                         type="button"
                         onClick={() => setIsCountryListOpen(!isCountryListOpen)}
-                        className="w-full h-full bg-[#f8fafc] border border-[#e2e8f0] rounded-[22px] px-4 flex items-center justify-between gap-2 hover:bg-white transition-all shadow-sm focus:ring-4 focus:ring-blue-500/10 active:border-blue-500"
+                        className="w-full h-full bg-[#f8fafc] border-[3px] border-[#e2e8f0] rounded-full px-5 flex items-center justify-between gap-2 hover:bg-white transition-all shadow-sm focus:border-blue-500 active:scale-95"
                       >
-                        <Icons.Chevron className={`w-3 h-3 text-slate-400 transition-transform ${isCountryListOpen ? 'rotate-180' : ''}`} />
-                        <span className="text-[13px] font-black text-slate-700">{selectedCountry.code.replace('+', '')}+</span>
-                        <span className="text-xs font-black text-slate-500 uppercase">{selectedCountry.short}</span>
+                        <Icons.Chevron className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isCountryListOpen ? 'rotate-180' : ''}`} />
+                        <span className="text-[15px] font-black text-slate-900">{selectedCountry.code.replace('+', '')}+</span>
                         <span className="text-lg">{selectedCountry.flag}</span>
                       </button>
 
                       {isCountryListOpen && (
-                        <div className="absolute bottom-full mb-3 left-0 w-[260px] bg-white border border-slate-200 rounded-[28px] shadow-2xl py-4 z-[100] max-h-[300px] overflow-y-auto no-scrollbar animate-in zoom-in-95 fade-in">
-                          <p className="px-6 py-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">اختيار الدولة</p>
+                        <div className="absolute bottom-full mb-4 left-0 w-[280px] bg-white border border-slate-200 rounded-[35px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] py-5 z-[100] max-h-[320px] overflow-y-auto no-scrollbar animate-in zoom-in-95 fade-in">
+                          <p className="px-6 py-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-center mb-2">تحديد الدولة</p>
                           {COUNTRY_CODES.map((c) => (
                             <button 
                               key={c.code}
                               type="button"
-                              onClick={() => { setSelectedCountry(c); setIsCountryListOpen(false); setPhone(''); }}
-                              className={`w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors text-right ${selectedCountry.code === c.code ? 'bg-blue-50' : ''}`}
+                              onClick={() => { setSelectedCountry(c); setIsCountryListOpen(false); setPhone(''); setError(''); }}
+                              className={`w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors text-right ${selectedCountry.code === c.code ? 'bg-blue-50/50' : ''}`}
                             >
                               <span className="text-2xl">{c.flag}</span>
                               <div className="flex-1 flex flex-col">
-                                <span className="text-xs font-black text-slate-800 leading-none mb-1">{c.name}</span>
-                                <span className="text-[10px] font-bold text-blue-500">{c.code}</span>
+                                <span className="text-[13px] font-black text-slate-800 leading-none mb-1">{c.name}</span>
+                                <span className="text-[11px] font-bold text-blue-600">{c.code}</span>
                               </div>
-                              {selectedCountry.code === c.code && <Icons.CheckCircle className="w-4 h-4 text-blue-600" />}
+                              {selectedCountry.code === c.code && <Icons.CheckCircle className="w-5 h-5 text-blue-600" />}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
+
+                    <input 
+                      type="tel" 
+                      required 
+                      value={phone} 
+                      onChange={e => handlePhoneChange(e.target.value)} 
+                      className="flex-1 bg-[#f8fafc] border-[3px] border-[#e2e8f0] rounded-full px-8 text-slate-900 outline-none focus:ring-12 focus:ring-blue-500/5 focus:border-[#2563eb] transition-all text-base font-black shadow-sm text-left" 
+                      placeholder={selectedCountry.placeholder} 
+                    />
                   </div>
                 </div>
               </>
             )}
 
-            {/* كلمة المرور */}
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-bold text-[#64748b] block px-1">كلمة المرور <span className="text-rose-500">*</span></label>
+            <div className="space-y-2">
+              <label className="text-[14px] font-black text-[#0f172a] block px-1">كلمة المرور <span className="text-rose-500">*</span></label>
               <input 
                 required 
                 type="password" 
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-[22px] px-6 py-[16px] text-slate-900 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-[#2563eb] transition-all text-sm font-bold shadow-sm" 
+                className="w-full bg-[#f8fafc] border-[3px] border-[#e2e8f0] rounded-full px-8 py-5 text-slate-900 outline-none focus:ring-12 focus:ring-blue-500/5 focus:border-[#2563eb] transition-all text-base font-black shadow-sm" 
                 placeholder="••••••••" 
               />
             </div>
 
-            {error && <div className="p-4 bg-rose-50 border border-rose-100 rounded-[22px] text-rose-600 text-xs font-bold text-center animate-in slide-in-from-top-2">{error}</div>}
+            {error && (
+              <div className="p-5 bg-rose-50 border-2 border-rose-100 rounded-[28px] text-rose-600 text-[13px] font-black text-center animate-in slide-in-from-top-2 flex items-center justify-center gap-3">
+                <Icons.X className="w-5 h-5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
-            <button disabled={isLoading} className="w-full bg-[#2563eb] text-white font-black py-[20px] rounded-[26px] text-lg hover:bg-blue-700 shadow-xl transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 mt-4">
-              {isLoading ? <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : <span>{isLoginMode ? 'سجل دخولك الآن' : 'إنشاء حسابك الآن'}</span>}
+            <button disabled={isLoading} className="w-full bg-[#2563eb] text-white font-black py-6 rounded-full text-lg hover:bg-blue-700 shadow-[0_20px_40px_-10px_rgba(37,99,235,0.4)] transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 mt-6 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              {isLoading ? <div className="w-7 h-7 border-4 border-white/20 border-t-white rounded-full animate-spin"></div> : <span>{isLoginMode ? 'سجل دخولك الآن' : 'تفعيل الحساب والبدء'}</span>}
             </button>
           </form>
 
           <button onClick={() => { setIsLoginMode(!isLoginMode); setError(''); setUsername(''); setPassword(''); setEmail(''); setPhone(''); }} className="w-full group">
-            <div className="inline-flex items-center gap-3 border border-slate-200 rounded-full px-10 py-4 text-[#2563eb] text-sm font-black hover:bg-slate-50 transition-all group-active:scale-95 shadow-sm">
+            <div className="inline-flex items-center gap-3 border-2 border-slate-100 rounded-full px-12 py-5 text-[#2563eb] text-sm font-black hover:bg-slate-50 transition-all group-active:scale-95 shadow-sm">
                <span>{isLoginMode ? 'لا تملك حساباً؟ أنشئ واحداً الآن' : 'لديك حساب بالفعل؟ سجل دخولك'}</span>
                <Icons.Chevron className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${isLoginMode ? 'rotate-90' : '-rotate-90'}`} />
             </div>

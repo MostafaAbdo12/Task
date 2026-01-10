@@ -9,7 +9,6 @@ import Auth from './components/Auth';
 import Settings from './components/Settings';
 import CategoryModal from './components/CategoryModal';
 import { storageService } from './services/storageService';
-import confetti from 'canvas-confetti';
 
 type ToastType = 'success' | 'danger' | 'info';
 
@@ -74,12 +73,6 @@ const App: React.FC = () => {
     setTasks(prev => {
       const newTasks = prev.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t);
       if (status === TaskStatus.COMPLETED) {
-        confetti({ 
-          particleCount: 150, 
-          spread: 70, 
-          origin: { y: 0.6 },
-          colors: ['#2563eb', '#10b981', '#f59e0b']
-        });
         showToast("إنجاز رائع! تم تحديث سجلاتك بنجاح.", 'success');
       }
       return newTasks;
@@ -89,6 +82,20 @@ const App: React.FC = () => {
   const handleDeleteTask = (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
     showToast("تم حذف المهمة بنجاح", 'danger');
+  };
+
+  const handleCopyTask = (task: Task) => {
+    const newTask: Task = {
+      ...task,
+      id: Date.now().toString(),
+      title: `${task.title} (نسخة)`,
+      status: TaskStatus.PENDING,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isPinned: false
+    };
+    setTasks([newTask, ...tasks]);
+    showToast("تم نسخ المهمة بنجاح 📋", 'success');
   };
 
   const handleToggleFavorite = (id: string) => {
@@ -141,7 +148,7 @@ const App: React.FC = () => {
               ? 'bg-emerald-600 border-emerald-400 shadow-[0_20px_50px_-10px_rgba(16,185,129,0.5)]' 
               : toast.type === 'danger'
               ? 'bg-rose-600 border-rose-400 shadow-[0_20px_50px_-10px_rgba(225,29,72,0.5)]'
-              : 'bg-blue-600 border-blue-400 shadow-[0_20px_50px_-10px_rgba(37,99,235,0.5)]'}
+              : 'bg-blue-600 border-blue-400 shadow-[0_20px_50px_-10_rgba(37,99,235,0.5)]'}
           `}>
             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center animate-gentle-pulse">
               {toast.type === 'danger' ? <Icons.Trash className="w-5 h-5 text-white" /> : <Icons.CheckCircle className="w-5 h-5 text-white" />}
@@ -235,72 +242,99 @@ const App: React.FC = () => {
         {currentView === 'tasks' ? (
           <div className="flex-1 overflow-y-auto no-scrollbar space-y-10 pb-20">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+              
               {/* عدد المهام */}
               <div className="p-8 rounded-[32px] bg-[#0f172a] text-white border-none shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
-                  <div className="absolute top-0 right-0 p-8 opacity-10 transition-transform group-hover:scale-125 duration-700">
-                    <Icons.LayoutDashboard className="w-20 h-20" />
+                  <div className="absolute -bottom-2 -right-2 p-4 opacity-10 transition-transform group-hover:scale-125 group-hover:-rotate-12 duration-700">
+                    <Icons.LayoutDashboard className="w-24 h-24" />
                   </div>
                   <div className="flex justify-between items-start mb-3 relative z-10">
-                    <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em]">عدد المهام</p>
                     <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                       <Icons.LayoutDashboard className="w-4 h-4 opacity-60" />
                     </div>
+                    <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em]">عدد المهام</p>
                   </div>
-                  <p className="text-4xl font-black relative z-10">{stats.total}</p>
+                  <p className="text-4xl font-black relative z-10 text-left">{stats.total}</p>
               </div>
 
               {/* منجزة */}
-              <div className="p-8 rounded-[32px] bg-emerald-600 text-white border-none shadow-lg shadow-emerald-200/50 flex flex-col justify-center hover:scale-[1.02] transition-transform duration-300">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">منجزة</p>
+              <div className="p-8 rounded-[32px] bg-emerald-600 text-white border-none shadow-lg shadow-emerald-200/50 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+                  <div className="absolute -bottom-2 -right-2 p-4 opacity-10 transition-transform group-hover:scale-125 group-hover:rotate-6 duration-700">
+                    <Icons.CheckCircle className="w-24 h-24" />
+                  </div>
+                  <div className="flex items-center justify-between mb-3 relative z-10">
                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                       <Icons.CheckCircle className="w-4 h-4" />
                     </div>
+                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">منجزة</p>
                   </div>
-                  <p className="text-3xl font-black">{stats.completed}</p>
+                  <p className="text-3xl font-black relative z-10 text-left">{stats.completed}</p>
               </div>
 
               {/* المفضلة */}
-              <div className="p-8 rounded-[32px] bg-rose-600 text-white border-none shadow-lg shadow-rose-200/50 flex flex-col justify-center hover:scale-[1.02] transition-transform duration-300">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">المفضلة</p>
+              <div className="p-8 rounded-[32px] bg-rose-600 text-white border-none shadow-lg shadow-rose-200/50 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+                  <div className="absolute -bottom-2 -right-2 p-4 opacity-10 transition-transform group-hover:scale-125 group-hover:-rotate-12 duration-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                  </div>
+                  <div className="flex items-center justify-between mb-3 relative z-10">
                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
                     </div>
+                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">المفضلة</p>
                   </div>
-                  <p className="text-3xl font-black">{stats.favorites}</p>
+                  <p className="text-3xl font-black relative z-10 text-left">{stats.favorites}</p>
               </div>
 
               {/* نشطة */}
-              <div className="p-8 rounded-[32px] bg-blue-600 text-white border-none shadow-lg shadow-blue-200/50 flex flex-col justify-center hover:scale-[1.02] transition-transform duration-300">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">نشطة</p>
+              <div className="p-8 rounded-[32px] bg-blue-600 text-white border-none shadow-lg shadow-blue-200/50 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+                  <div className="absolute -bottom-2 -right-2 p-4 opacity-10 transition-transform group-hover:scale-125 duration-700">
+                    <Icons.Sparkles className="w-24 h-24" />
+                  </div>
+                  <div className="flex items-center justify-between mb-3 relative z-10">
                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                       <Icons.LayoutDashboard className="w-4 h-4" />
                     </div>
+                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">نشطة</p>
                   </div>
-                  <p className="text-3xl font-black">{stats.active}</p>
+                  <p className="text-3xl font-black relative z-10 text-left">{stats.active}</p>
               </div>
 
               {/* نسبة الإنجاز */}
-              <div className="p-8 rounded-[32px] bg-orange-500 text-white border-none shadow-lg shadow-orange-200/50 flex flex-col justify-between hover:scale-[1.02] transition-transform duration-300 group overflow-hidden relative">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">نسبة الإنجاز</p>
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+              <div className={`p-8 rounded-[32px] text-white border-none shadow-lg flex flex-col justify-between hover:scale-[1.02] transition-all duration-700 group overflow-hidden relative
+                ${stats.percentage === 100 ? 'bg-indigo-600 shadow-indigo-400 animate-[pulseGlow_3s_infinite]' : 'bg-orange-500 shadow-orange-200/50'}
+              `}>
+                  <style>{`
+                    @keyframes pulseGlow {
+                      0%, 100% { box-shadow: 0 0 20px rgba(79, 70, 229, 0.4); transform: scale(1.02); }
+                      50% { box-shadow: 0 0 50px rgba(79, 70, 229, 0.8); transform: scale(1.05); }
+                    }
+                    @keyframes shimmer {
+                      100% { transform: translateX(100%); }
+                    }
+                  `}</style>
+                  <div className="absolute -bottom-2 -right-2 p-4 opacity-10 transition-transform group-hover:scale-125 group-hover:rotate-12 duration-700">
+                    <Icons.Sparkles className="w-24 h-24" />
+                  </div>
+                  <div className="flex items-center justify-between mb-3 relative z-10">
+                    <div className={`w-8 h-8 rounded-full bg-white/20 flex items-center justify-center ${stats.percentage === 100 ? 'animate-bounce' : ''}`}>
                       <Icons.Sparkles className="w-4 h-4" />
                     </div>
+                    <p className="text-[10px] font-black opacity-80 uppercase tracking-[0.2em]">نسبة الإنجاز</p>
                   </div>
-                  <div className="flex items-baseline gap-1 relative z-10">
-                    <p className="text-3xl font-black">{stats.percentage}%</p>
-                    <p className="text-[10px] font-black opacity-70 uppercase tracking-widest">مكتمل</p>
+                  <div className="flex items-baseline gap-1 relative z-10 transition-transform duration-500 group-hover:scale-110 text-left">
+                    <p className="text-4xl font-black">{stats.percentage}%</p>
+                    <p className="text-[10px] font-black opacity-70 uppercase tracking-widest mr-1">مكتمل</p>
                   </div>
                   
-                  {/* شريط التقدم النحيف */}
-                  <div className="absolute bottom-0 left-0 w-full h-2 bg-black/10">
+                  <div className="absolute bottom-0 left-0 w-full h-3 bg-black/10 overflow-hidden">
                     <div 
-                      className="h-full bg-white transition-all duration-1000 ease-out"
+                      className={`h-full bg-white transition-all duration-[1.5s] cubic-bezier(0.34, 1.56, 0.64, 1) relative
+                        ${stats.percentage === 100 ? 'bg-emerald-400' : ''}
+                      `}
                       style={{ width: `${stats.percentage}%` }}
-                    ></div>
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_2s_infinite] pointer-events-none"></div>
+                    </div>
                   </div>
               </div>
             </div>
@@ -315,6 +349,7 @@ const App: React.FC = () => {
                       index={idx} 
                       onDelete={handleDeleteTask} 
                       onEdit={t => { setEditingTask(t); setShowForm(true); }} 
+                      onCopy={handleCopyTask}
                       onStatusChange={handleStatusChange} 
                       onTogglePin={id => setTasks(tasks.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t))} 
                       onToggleFavorite={handleToggleFavorite}
