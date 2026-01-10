@@ -98,8 +98,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories, selected
               </div>
            </div>
 
-           {/* User Profile & Credit Section */}
-           <div className="p-6 mt-auto space-y-6">
+           {/* Footer Section */}
+           <div className="p-6 mt-auto space-y-5">
+              {/* User Profile */}
               <div className="bg-[#1e293b]/40 border border-slate-700/40 p-4 rounded-[28px] flex items-center gap-4 hover:bg-[#1e293b]/60 transition-colors">
                  <div className="relative">
                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-lg font-black text-white shadow-lg">
@@ -109,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories, selected
                  </div>
                  <div className="flex-1 min-w-0">
                    <p className="text-sm font-bold text-white truncate">{user.username}</p>
-                   <p className="text-[10px] text-slate-500 font-medium tracking-wide">الخطة الاحترافية</p>
+                   <p className="text-[10px] text-slate-500 font-medium tracking-wide">الحساب النشط</p>
                  </div>
                  <button 
                    onClick={onLogout} 
@@ -120,14 +121,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories, selected
                  </button>
               </div>
 
-              {/* Credit Footer Moved Here */}
-              <div className="flex flex-col items-center gap-2 pb-2">
-                <div className="text-[11px] font-black tracking-wide flex items-center justify-center gap-2 text-slate-500">
-                   <span>صنع بكل</span>
-                   <span className="text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.7)] animate-pulse scale-125">❤️</span>
-                   <span>من قبل</span>
+              {/* Kinetic Glow Credit Tag */}
+              <div className="px-1 animate-kinetic-glow">
+                <div className="bg-white px-5 py-3 rounded-full shadow-[0_0_30px_rgba(37,99,235,0.2)] flex items-center justify-between gap-3 border border-blue-50/50">
+                  {/* النص الترحيبي على اليمين */}
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 shrink-0">
+                    <span>صنع بكل</span>
+                    <span className="heart-beat text-red-500 text-base drop-shadow-[0_0_5px_rgba(239,68,68,0.4)]">❤️</span>
+                    <span>من قبل</span>
+                  </div>
+                  
+                  <div className="h-4 w-[1px] bg-slate-200"></div>
+                  
+                  {/* اسم المصطفى باللون الأزرق على اليسار */}
+                  <div className="text-[12px] font-black tracking-widest text-blue-600 uppercase select-none flex-1 text-center animate-pulse drop-shadow-[0_0_8px_rgba(37,99,235,0.3)]">
+                    MOSTAFA ABDO
+                  </div>
                 </div>
-                <div className="text-[12px] text-white glowing-text font-black tracking-[0.1em]">MOSTAFA ABDO</div>
               </div>
            </div>
         </div>

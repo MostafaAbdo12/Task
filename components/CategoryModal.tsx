@@ -12,7 +12,9 @@ interface CategoryModalProps {
 }
 
 const CORP_COLORS = [
-  '#2563eb', '#1e293b', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#4b5563', '#0891b2', '#10b981', '#f59e0b', '#8b5cf6'
+  '#2563eb', '#1e293b', '#059669', '#d97706', '#dc2626', '#7c3aed', 
+  '#db2777', '#4b5563', '#0891b2', '#10b981', '#f59e0b', '#8b5cf6',
+  '#ec4899', '#f97316', '#14b8a6', '#06b6d4', '#6366f1', '#64748b'
 ];
 
 const CategoryModal: React.FC<CategoryModalProps> = ({ categories, onAdd, onUpdate, onDelete, onClose }) => {
@@ -67,62 +69,62 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ categories, onAdd, onUpda
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
       <div className="absolute inset-0" onClick={onClose}></div>
       
-      <div className="relative w-full max-w-3xl bg-white rounded-[40px] border border-slate-200 overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] animate-in zoom-in-95">
-        <div className="flex flex-col md:flex-row h-full">
+      <div className="relative w-full max-w-4xl bg-white rounded-[45px] border border-slate-200 overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] animate-in zoom-in-95 flex flex-col md:flex-row h-[90vh] md:h-auto max-h-[90vh]">
           
-          {/* Editor Form */}
-          <div className="flex-1 p-10 space-y-8 bg-slate-50/50">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                  {editingId ? 'تعديل التصنيف' : 'تصنيف جديد'}
-                </h2>
-                <p className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-widest">تخصيص الهوية والرمز</p>
-              </div>
+          {/* Editor Form - Right Side in RTL */}
+          <div className="flex-1 p-8 md:p-12 space-y-10 bg-slate-50/30 overflow-y-auto no-scrollbar order-1 md:order-2">
+            <div className="text-right">
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                {editingId ? 'تعديل التصنيف' : 'تصنيف جديد'}
+              </h2>
+              <p className="text-sm text-slate-500 font-bold mt-2 uppercase tracking-widest">تخصيص الهوية والرمز</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-10">
+              {/* Name Input */}
               <div className="space-y-3">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">الاسم</label>
+                <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">الاسم</label>
                 <input 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-[22px] py-4 px-6 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 transition-all shadow-sm"
+                  className="w-full bg-white border border-slate-200 rounded-[28px] py-5 px-8 text-base font-bold outline-none focus:ring-8 focus:ring-blue-500/5 focus:border-blue-600 transition-all shadow-sm placeholder:text-slate-300"
                   placeholder="أدخل اسم التصنيف..."
                   required
                 />
               </div>
 
+              {/* Icon Selection - Match Design from Screenshot */}
               <div className="space-y-4">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">اختر أيقونة</label>
-                <div className="grid grid-cols-6 md:grid-cols-7 gap-3">
+                <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">اختر أيقونة</label>
+                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 gap-3">
                   {Object.keys(CategoryIconMap).map(iconKey => (
                     <button
                       key={iconKey}
                       type="button"
                       onClick={() => setSelectedIcon(iconKey)}
-                      className={`w-11 h-11 rounded-2xl border-2 transition-all flex items-center justify-center ${
+                      className={`aspect-square rounded-[22px] border transition-all flex items-center justify-center ${
                         selectedIcon === iconKey 
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-[0_8px_20px_-5px_rgba(37,99,235,0.6)] scale-110' 
-                        : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)] scale-110 z-10' 
+                        : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
-                      {CategoryIconMap[iconKey]}
+                      <div className="scale-90">{CategoryIconMap[iconKey]}</div>
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* Color Selection */}
               <div className="space-y-4">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">اختر لوناً</label>
-                <div className="flex flex-wrap gap-3">
+                <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">اختر لوناً</label>
+                <div className="flex flex-wrap gap-4 justify-start">
                   {CORP_COLORS.map(color => (
                     <button
                       key={color}
                       type="button"
                       onClick={() => setSelectedColor(color)}
-                      className={`w-9 h-9 rounded-full border-4 transition-all shadow-sm hover:scale-110 ${
-                        selectedColor === color ? 'border-white ring-4 ring-blue-100 scale-125' : 'border-transparent'
+                      className={`w-10 h-10 rounded-full border-4 transition-all shadow-md hover:scale-125 ${
+                        selectedColor === color ? 'border-blue-100 ring-4 ring-blue-500/20 scale-125' : 'border-white'
                       }`}
                       style={{ backgroundColor: color }}
                     />
@@ -130,19 +132,19 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ categories, onAdd, onUpda
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-4 pt-6">
                  <button 
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white font-black py-4 rounded-[22px] hover:bg-blue-700 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
+                  className="flex-1 bg-blue-600 text-white font-black py-5 rounded-[30px] text-lg hover:bg-blue-700 transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-3 group"
                 >
-                  {editingId ? <Icons.CheckCircle className="w-5 h-5" /> : <Icons.Plus className="w-5 h-5" />}
+                  <Icons.Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
                   <span>{editingId ? 'حفظ التعديلات' : 'إضافة التصنيف'}</span>
                 </button>
                 {editingId && (
                   <button 
                     type="button"
                     onClick={() => setEditingId(null)}
-                    className="px-6 py-4 bg-slate-200 text-slate-700 font-bold rounded-[22px] hover:bg-slate-300 transition-all"
+                    className="px-8 py-5 bg-slate-100 text-slate-600 font-bold rounded-[30px] hover:bg-slate-200 transition-all"
                   >
                     إلغاء
                   </button>
@@ -151,32 +153,36 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ categories, onAdd, onUpda
             </form>
           </div>
 
-          {/* List Sidebar */}
-          <div className="w-full md:w-[320px] p-10 bg-white border-r border-slate-100 flex flex-col">
-            <div className="flex items-center justify-between mb-8">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">التصنيفات الحالية</label>
+          {/* List Sidebar - Left Side in RTL */}
+          <div className="w-full md:w-[360px] p-8 md:p-10 bg-white border-l border-slate-100 flex flex-col order-2 md:order-1">
+            <div className="flex items-center justify-between mb-8 px-2">
+              <span className="bg-slate-100 text-slate-400 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">{categories.length} تصنيفاً</span>
+              <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest">التصنيفات الحالية</label>
             </div>
             
-            <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-6">
+            <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-6">
               {categories.map(cat => (
-                <div key={cat.id} className={`flex items-center justify-between p-4 rounded-[22px] group border transition-all duration-300 ${editingId === cat.id ? 'bg-blue-50 border-blue-200' : 'bg-slate-50/50 border-slate-100 hover:border-slate-200'}`}>
+                <div key={cat.id} className={`flex items-center justify-between p-5 rounded-[28px] group border transition-all duration-500 ${editingId === cat.id ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-slate-100 hover:border-slate-200 hover:shadow-lg hover:-translate-y-1'}`}>
                   <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-xl text-white flex items-center justify-center shadow-md" style={{ backgroundColor: cat.color }}>
-                      {cat.icon && CategoryIconMap[cat.icon]}
+                    {/* Visual container for category icon */}
+                    <div className="w-11 h-11 rounded-2xl text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-110" style={{ backgroundColor: cat.color }}>
+                      <div className="scale-75">
+                        {cat.icon && CategoryIconMap[cat.icon] ? CategoryIconMap[cat.icon] : null}
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-slate-800 truncate max-w-[100px]">{cat.name}</span>
+                    <span className="text-[15px] font-black text-slate-800 truncate max-w-[120px]">{cat.name}</span>
                   </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
                     <button 
                       onClick={() => setEditingId(cat.id)}
-                      className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                      className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                       title="تعديل"
                     >
                       <Icons.Edit className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => onDelete(cat.id)}
-                      className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                      className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                       title="حذف"
                     >
                       <Icons.Trash className="w-4 h-4" />
@@ -188,13 +194,12 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ categories, onAdd, onUpda
 
             <button 
               onClick={onClose}
-              className="mt-6 w-full py-4 bg-slate-900 text-white rounded-[22px] text-sm font-black hover:bg-slate-800 transition-all"
+              className="mt-6 w-full py-5 bg-[#0f172a] text-white rounded-[30px] text-base font-black hover:bg-slate-800 transition-all shadow-xl active:scale-95"
             >
               إغلاق
             </button>
           </div>
         </div>
-      </div>
     </div>
   );
 };

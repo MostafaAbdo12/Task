@@ -1,14 +1,14 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
-const getAIInstance = () => {
-  const apiKey = (typeof process !== 'undefined' && process.env?.API_KEY) || "";
-  return new GoogleGenAI({ apiKey });
-};
+/**
+ * خدمات الذكاء الاصطناعي لإدارة المهام.
+ * يتم إنشاء مثيل جديد من GoogleGenAI عند كل طلب لضمان استخدام أحدث مفتاح API.
+ */
 
 export const getSystemBriefingAudio = async (username: string, tasks: any[]) => {
   try {
-    const ai = getAIInstance();
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const pendingCount = tasks.filter(t => t.status !== 'COMPLETED').length;
     let message = "";
     
@@ -43,7 +43,7 @@ export const getSystemBriefingAudio = async (username: string, tasks: any[]) => 
 
 export const getSmartAdvice = async (tasks: any[]) => {
   try {
-    const ai = getAIInstance();
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const pending = tasks.filter(t => t.status !== 'COMPLETED').map(t => t.title).slice(0, 3).join(', ');
     
     const response = await ai.models.generateContent({
@@ -60,7 +60,7 @@ export const getSmartAdvice = async (tasks: any[]) => {
 
 export const getSmartSubtasks = async (taskTitle: string, taskDescription: string) => {
     try {
-      const ai = getAIInstance();
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `قم بتفكيك المهمة التقنية التالية إلى 3 خطوات تنفيذية دقيقة ومختصرة: "${taskTitle}". الرد بصيغة JSON array strings حصراً.`,

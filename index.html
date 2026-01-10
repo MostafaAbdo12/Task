@@ -8,7 +8,6 @@
     <title>مهامي | نظام إدارة الأعمال</title>
     
     <script>
-      // منع أخطاء "process is not defined" في المتصفح
       window.process = window.process || { env: {} };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,6 +31,8 @@
               'slide-in': 'slideIn 0.3s ease-out forwards',
               'gentle-pulse': 'gentlePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'float-slow': 'floatSlow 6s ease-in-out infinite',
+              'kinetic-glow': 'kineticGlow 3s ease-in-out infinite',
+              'sparkle-pop': 'sparklePop 0.8s ease-out forwards',
             },
             keyframes: {
               movingLTR: {
@@ -49,6 +50,15 @@
               floatSlow: {
                 '0%, 100%': { transform: 'translate(0, 0)' },
                 '50%': { transform: 'translate(10px, -10px)' },
+              },
+              kineticGlow: {
+                '0%, 100%': { filter: 'drop-shadow(0 0 5px rgba(37, 99, 235, 0.3))', transform: 'scale(1)' },
+                '50%': { filter: 'drop-shadow(0 0 15px rgba(37, 99, 235, 0.6))', transform: 'scale(1.02)' },
+              },
+              sparklePop: {
+                '0%': { transform: 'scale(0) rotate(0deg)', opacity: '0' },
+                '50%': { opacity: '1' },
+                '100%': { transform: 'scale(1.5) rotate(180deg)', opacity: '0' },
               }
             }
           },
@@ -80,20 +90,6 @@
 
       .no-scrollbar::-webkit-scrollbar { display: none; }
       
-      input[type="date"]::-webkit-calendar-picker-indicator,
-      input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-        background: transparent;
-        bottom: 0;
-        color: transparent;
-        cursor: pointer;
-        height: auto;
-        left: 0;
-        position: absolute;
-        right: 0;
-        top: 0;
-        width: auto;
-      }
-
       .glowing-text {
         background: linear-gradient(135deg, #1e293b 0%, #2563eb 50%, #1e293b 100%);
         background-size: 200% auto;
@@ -106,6 +102,19 @@
       @keyframes textShine {
         0% { background-position: 0% 50%; }
         100% { background-position: 200% 50%; }
+      }
+
+      .heart-beat {
+        animation: heartBeat 1.5s ease-in-out infinite;
+        display: inline-block;
+      }
+
+      @keyframes heartBeat {
+        0% { transform: scale(1); }
+        14% { transform: scale(1.3); }
+        28% { transform: scale(1); }
+        42% { transform: scale(1.3); }
+        70% { transform: scale(1); }
       }
     </style>
   <script type="importmap">
