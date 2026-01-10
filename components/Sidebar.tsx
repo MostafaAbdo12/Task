@@ -21,6 +21,39 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   return (
     <>
+      <style>{`
+        @keyframes heartBeat {
+          0% { transform: scale(1); }
+          15% { transform: scale(1.3); }
+          30% { transform: scale(1); }
+          45% { transform: scale(1.15); }
+          60% { transform: scale(1); }
+        }
+        .animate-heart-beat {
+          animation: heartBeat 1.5s infinite;
+        }
+        @keyframes kineticGlow {
+          0%, 100% { box-shadow: 0 0 15px rgba(37, 99, 235, 0.2), 0 0 5px rgba(37, 99, 235, 0.1); }
+          50% { box-shadow: 0 0 30px rgba(37, 99, 235, 0.5), 0 0 10px rgba(37, 99, 235, 0.3); }
+        }
+        .kinetic-glow-card {
+          animation: kineticGlow 3s ease-in-out infinite;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+        }
+        @keyframes textShimmer {
+          0% { opacity: 0.8; filter: drop-shadow(0 0 2px rgba(37, 99, 235, 0.5)); }
+          50% { opacity: 1; filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.8)); }
+          100% { opacity: 0.8; filter: drop-shadow(0 0 2px rgba(37, 99, 235, 0.5)); }
+        }
+        .neon-text-pro {
+          animation: textShimmer 2s ease-in-out infinite;
+          background: linear-gradient(90deg, #2563eb, #60a5fa);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+      `}</style>
+
       <div 
         className={`fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
         onClick={onClose}
@@ -144,16 +177,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                  </button>
               </div>
 
-              {/* Kinetic Glow Credit Tag */}
-              <div className="px-1 animate-kinetic-glow">
-                <div className="bg-white px-5 py-3 rounded-full shadow-[0_0_30px_rgba(37,99,235,0.2)] flex items-center justify-between gap-3 border border-blue-50/50">
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 shrink-0">
+              {/* Kinetic Glow Credit Tag - ENHANCED VERSION */}
+              <div className="px-1 transform transition-transform hover:scale-105">
+                <div className="kinetic-glow-card px-5 py-4 rounded-[30px] flex flex-col items-center gap-2 border border-blue-100/50 shadow-2xl">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                     <span>صنع بكل</span>
-                    <span className="heart-beat text-red-500 text-base drop-shadow-[0_0_5px_rgba(239,68,68,0.4)]">❤️</span>
+                    <span className="animate-heart-beat inline-block text-rose-500 text-lg drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]">❤️</span>
                     <span>من قبل</span>
                   </div>
-                  <div className="h-4 w-[1px] bg-slate-200"></div>
-                  <div className="text-[12px] font-black tracking-widest text-blue-600 uppercase select-none flex-1 text-center animate-pulse drop-shadow-[0_0_8px_rgba(37,99,235,0.3)]">
+                  <div className="h-[1px] w-12 bg-gradient-to-r from-transparent via-blue-100 to-transparent"></div>
+                  <div className="neon-text-pro text-[14px] font-black tracking-[0.2em] uppercase select-none cursor-default drop-shadow-sm">
                     MOSTAFA ABDO
                   </div>
                 </div>

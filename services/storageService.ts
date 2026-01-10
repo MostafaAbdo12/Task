@@ -20,6 +20,23 @@ export const storageService = {
     }
   },
 
+  // فحص هل البيانات مكررة أم لا
+  checkDuplicate: (username: string, email: string, phone: string): { exists: boolean, field?: string } => {
+    const users = storageService.getUsers();
+    
+    if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+      return { exists: true, field: 'اسم المستخدم' };
+    }
+    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+      return { exists: true, field: 'البريد الإلكتروني' };
+    }
+    if (users.some(u => u.phone === phone)) {
+      return { exists: true, field: 'رقم الجوال' };
+    }
+    
+    return { exists: false };
+  },
+
   registerUser: (userData: any): void => {
     const users = storageService.getUsers();
     users.push(userData);
@@ -33,7 +50,6 @@ export const storageService = {
       users[index] = { ...users[index], ...updatedData };
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
       
-      // إذا تغير اسم المستخدم، يجب نقل المهام والتصنيفات
       if (updatedData.username && updatedData.username !== oldUsername) {
         const oldTasksKey = STORAGE_KEYS.USER_TASKS_PREFIX + oldUsername.toLowerCase();
         const newTasksKey = STORAGE_KEYS.USER_TASKS_PREFIX + updatedData.username.toLowerCase();
@@ -66,7 +82,6 @@ export const storageService = {
       if (!session) return null;
       const parsed = JSON.parse(session);
       
-      // التأكد من جلب البيانات الكاملة من السجل
       const users = storageService.getUsers();
       const fullData = users.find(u => u.username === parsed.username);
       return fullData ? { ...fullData, lastLogin: parsed.lastLogin } : parsed;

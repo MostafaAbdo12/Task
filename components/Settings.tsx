@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { User } from '../types';
 import { Icons } from '../constants';
 import { storageService } from '../services/storageService';
@@ -17,22 +17,9 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
   const [avatar, setAvatar] = useState(user.avatar || '');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  
-  const [otpMode, setOtpMode] = useState(false);
-  const [otpValue, setOtpValue] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [timer, setTimer] = useState(0);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    let interval: any;
-    if (timer > 0) {
-      interval = setInterval(() => setTimer(t => t - 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [timer]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,7 +38,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
     }
   };
 
-  const handleInitUpdate = (e: React.FormEvent) => {
+  const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     const users = storageService.getUsers();
     const currentUserData = users.find(u => u.username === user.username);
@@ -61,20 +48,8 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
       return;
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(code);
-    setOtpMode(true);
-    setTimer(60);
-    showToast("تم إرسال رمز التحقق لتأكيد التغييرات", 'info');
-  };
-
-  const verifyAndSave = () => {
-    if (otpValue !== generatedOtp) {
-      showToast("رمز التحقق غير صحيح", 'danger');
-      return;
-    }
-
-    setIsVerifying(true);
+    setIsUpdating(true);
+    
     setTimeout(() => {
       const updatedFields: Partial<User> = {
         username,
@@ -93,14 +68,13 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
         storageService.setSession(updatedUserSession);
         onUpdate(updatedUserSession);
         showToast("تم تحديث هويتك الرقمية بنجاح", 'success');
-        setOtpMode(false);
         setPassword('');
         setNewPassword('');
       } else {
         showToast("خطأ في تحديث البيانات", 'danger');
       }
-      setIsVerifying(false);
-    }, 1200);
+      setIsUpdating(false);
+    }, 800);
   };
 
   return (
@@ -108,222 +82,171 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
       <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-1000">
         
         {/* Hero Section / Profile Header */}
-        {!otpMode && (
-          <div className="relative">
-            <div className="h-64 w-full rounded-[60px] bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] overflow-hidden relative shadow-2xl border border-white/5">
-              {/* Abstract Pattern Overlay */}
-              <div className="absolute inset-0 opacity-20 pointer-events-none">
-                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full blur-[150px] -translate-y-1/2 translate-x-1/2"></div>
-                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500 rounded-full blur-[150px] translate-y-1/2 -translate-x-1/2"></div>
-              </div>
-              
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10">
-                <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tighter mb-4 drop-shadow-2xl">تخصيص الهوية الرقمية</h2>
-                <div className="flex items-center gap-3 bg-white/5 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
-                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                   <span className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">نظام التشفير النشط: 256-Bit</span>
-                </div>
-              </div>
+        <div className="relative">
+          <div className="h-64 w-full rounded-[60px] bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] overflow-hidden relative shadow-2xl border border-white/5">
+            {/* Abstract Pattern Overlay */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none">
+               <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full blur-[150px] -translate-y-1/2 translate-x-1/2"></div>
+               <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500 rounded-full blur-[150px] translate-y-1/2 -translate-x-1/2"></div>
             </div>
-
-            {/* Floating Profile Image Card */}
-            <div className="relative -mt-20 flex justify-center px-4">
-              <div className="bg-white/80 backdrop-blur-3xl p-3 rounded-[50px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 group">
-                <div className="relative">
-                  <div className="w-36 h-36 lg:w-44 lg:h-44 rounded-[42px] overflow-hidden bg-slate-100 border-4 border-white shadow-inner flex items-center justify-center">
-                    {avatar ? (
-                      <img src={avatar} alt="Profile" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-5xl font-black text-white">
-                        {username.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Upload Trigger Button */}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-2 -right-2 w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-blue-600 border border-slate-100 hover:scale-110 active:scale-95 transition-all group/cam"
-                    title="تغيير الصورة"
-                  >
-                     <Icons.Eye className="w-6 h-6 group-hover/cam:rotate-12 transition-transform" />
-                     <input 
-                       ref={fileInputRef}
-                       type="file" 
-                       className="hidden" 
-                       accept="image/*"
-                       onChange={handleImageUpload}
-                     />
-                  </button>
-                </div>
+            
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10">
+              <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tighter mb-4 drop-shadow-2xl">تخصيص الهوية الرقمية</h2>
+              <div className="flex items-center gap-3 bg-white/5 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                 <span className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">نظام التشفير النشط: 256-Bit</span>
               </div>
             </div>
           </div>
-        )}
 
-        {!otpMode ? (
-          <form onSubmit={handleInitUpdate} className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-             
-             {/* Left Card: Account Details */}
-             <div className="bg-white/70 backdrop-blur-xl p-10 rounded-[50px] border border-white/50 shadow-2xl shadow-slate-200/50 space-y-10">
-                <div className="flex items-center gap-4 mb-2">
-                   <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm">
-                      <Icons.User className="w-6 h-6" />
-                   </div>
-                   <div>
-                      <h4 className="text-lg font-black text-slate-900 tracking-tight">البيانات العامة</h4>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">معلومات الحساب الأساسية</p>
-                   </div>
+          {/* Floating Profile Image Card */}
+          <div className="relative -mt-20 flex justify-center px-4">
+            <div className="bg-white/80 backdrop-blur-3xl p-3 rounded-[50px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 group">
+              <div className="relative">
+                <div className="w-36 h-36 lg:w-44 lg:h-44 rounded-[42px] overflow-hidden bg-slate-100 border-4 border-white shadow-inner flex items-center justify-center">
+                  {avatar ? (
+                    <img src={avatar} alt="Profile" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-5xl font-black text-white">
+                      {username.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
-
-                <div className="space-y-6">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">الاسم البرمجي</label>
-                      <input 
-                        value={username}
-                        onChange={e => setUsername(e.target.value)}
-                        className="w-full bg-slate-50/50 border-2 border-slate-100/50 rounded-3xl py-5 px-8 text-base font-bold outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner"
-                        placeholder="اسم المستخدم"
-                      />
-                   </div>
-                   
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">البريد الإلكتروني</label>
-                      <input 
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        className="w-full bg-slate-50/50 border-2 border-slate-100/50 rounded-3xl py-5 px-8 text-base font-bold outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner"
-                        placeholder="name@domain.com"
-                      />
-                   </div>
-
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">رقم التواصل الموحد</label>
-                      <div className="relative group">
-                         <input 
-                          value={phone}
-                          onChange={e => setPhone(e.target.value)}
-                          className="w-full bg-slate-50/50 border-2 border-slate-100/50 rounded-3xl py-5 px-8 text-base font-bold outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner text-left"
-                          placeholder="+20xxxxxxxxxx"
-                        />
-                        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">تنبيهات نشطة</span>
-                        </div>
-                      </div>
-                   </div>
-                </div>
-             </div>
-
-             {/* Right Card: Security & Submission */}
-             <div className="space-y-8">
-                <div className="bg-white/70 backdrop-blur-xl p-10 rounded-[50px] border border-white/50 shadow-2xl shadow-slate-200/50 space-y-10">
-                   <div className="flex items-center gap-4 mb-2">
-                      <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600 shadow-sm">
-                         <Icons.Shield className="w-6 h-6" />
-                      </div>
-                      <div>
-                         <h4 className="text-lg font-black text-slate-900 tracking-tight">إدارة الأمان</h4>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">كلمات المرور والتشفير</p>
-                      </div>
-                   </div>
-
-                   <div className="space-y-6">
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">كلمة مرور جديدة (اختياري)</label>
-                         <input 
-                           type="password"
-                           value={newPassword}
-                           onChange={e => setNewPassword(e.target.value)}
-                           className="w-full bg-slate-50/50 border-2 border-slate-100/50 rounded-3xl py-5 px-8 text-base font-bold outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner"
-                           placeholder="••••••••"
-                         />
-                      </div>
-
-                      <div className="p-8 rounded-[40px] bg-[#0f172a] text-white space-y-4 relative overflow-hidden group/pass">
-                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/pass:rotate-45 transition-transform duration-700">
-                            <Icons.LogOut className="w-24 h-24" />
-                         </div>
-                         <label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] block text-right relative z-10">تأكيد الهوية الحالية</label>
-                         <input 
-                           required
-                           type="password"
-                           value={password}
-                           onChange={e => setPassword(e.target.value)}
-                           className="w-full bg-white/10 border border-white/10 rounded-2xl py-5 px-8 text-base font-bold outline-none focus:bg-white focus:text-slate-900 transition-all placeholder:text-white/20 relative z-10 shadow-2xl"
-                           placeholder="كلمة المرور الحالية"
-                         />
-                      </div>
-                   </div>
-                </div>
-
-                <button type="submit" className="w-full py-7 bg-blue-600 hover:bg-blue-700 text-white font-black text-xl rounded-[40px] shadow-[0_30px_60px_-15px_rgba(37,99,235,0.4)] transition-all active:scale-[0.97] flex items-center justify-center gap-4 group">
-                   <span>تطبيق التغييرات الذكية</span>
-                   <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform shadow-lg">
-                      <Icons.CheckCircle className="w-6 h-6" />
-                   </div>
+                
+                {/* Upload Trigger Button */}
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-2 -right-2 w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-blue-600 border border-slate-100 hover:scale-110 active:scale-95 transition-all group/cam"
+                  title="تغيير الصورة"
+                >
+                   <Icons.Eye className="w-6 h-6 group-hover/cam:rotate-12 transition-transform" />
+                   <input 
+                     ref={fileInputRef}
+                     type="file" 
+                     className="hidden" 
+                     accept="image/*"
+                     onChange={handleImageUpload}
+                   />
                 </button>
-             </div>
-          </form>
-        ) : (
-          /* OTP Verification Mode with Luxury Design */
-          <div className="bg-white/80 backdrop-blur-3xl p-16 rounded-[70px] border border-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] text-center max-w-2xl mx-auto space-y-12 animate-in zoom-in-95 duration-700">
-             <div className="relative inline-block">
-                <div className="w-40 h-40 bg-blue-50 rounded-[55px] flex items-center justify-center text-blue-600 relative z-10 shadow-inner">
-                   <Icons.Bell className="w-20 h-20 animate-bounce" />
-                </div>
-                <div className="absolute -inset-6 bg-blue-500/10 rounded-[70px] animate-pulse"></div>
-             </div>
-
-             <div className="space-y-4">
-                <h3 className="text-4xl font-black text-slate-900 tracking-tighter">تأكيد الإجراء</h3>
-                <p className="text-slate-500 font-bold max-w-sm mx-auto leading-relaxed">
-                   أرسلنا رمز التفعيل لتأكيد تحديث بياناتك الرقمية <br/>
-                   <span className="text-blue-600 font-black text-lg">{phone}</span>
-                </p>
-             </div>
-
-             <div className="max-w-[360px] mx-auto space-y-10">
-                <input 
-                  autoFocus
-                  maxLength={6}
-                  value={otpValue}
-                  onChange={e => setOtpValue(e.target.value.replace(/\D/g, ''))}
-                  className="w-full text-center text-6xl font-black tracking-[0.4em] py-10 bg-slate-50 border-4 border-transparent rounded-[45px] outline-none focus:border-blue-600 focus:bg-white transition-all text-blue-600 shadow-inner placeholder:text-slate-200"
-                  placeholder="000000"
-                />
-
-                <div className="space-y-5">
-                   <button 
-                    disabled={isVerifying || otpValue.length < 6}
-                    onClick={verifyAndSave}
-                    className="w-full bg-[#0f172a] text-white font-black py-7 rounded-[35px] text-xl hover:bg-black shadow-2xl transition-all active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-4"
-                  >
-                    {isVerifying ? (
-                       <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
-                    ) : (
-                       <>
-                         <span>تأكيد المزامنة</span>
-                         <Icons.Shield className="w-7 h-7" />
-                       </>
-                    )}
-                  </button>
-                  
-                  <div className="flex flex-col items-center gap-4">
-                     <button onClick={() => setOtpMode(false)} className="text-slate-400 font-black text-xs hover:text-slate-900 transition-colors uppercase tracking-[0.3em]">إلغاء العملية</button>
-                     
-                     {timer > 0 ? (
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">إمكانية الطلب مجدداً خلال {timer} ثانية</p>
-                     ) : (
-                        <button onClick={() => setTimer(60)} className="text-blue-600 font-black text-xs hover:underline underline-offset-8">إعادة إرسال الكود الرقمي</button>
-                     )}
-                  </div>
-                </div>
-             </div>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
+        <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+           
+           {/* Left Card: Account Details */}
+           <div className="bg-white/70 backdrop-blur-xl p-10 rounded-[50px] border border-white/50 shadow-2xl shadow-slate-200/50 space-y-10">
+              <div className="flex items-center gap-4 mb-2">
+                 <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm">
+                    <Icons.User className="w-6 h-6" />
+                 </div>
+                 <div>
+                    <h4 className="text-lg font-black text-slate-900 tracking-tight">البيانات العامة</h4>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">معلومات الحساب الأساسية</p>
+                 </div>
+              </div>
+
+              <div className="space-y-6">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">الاسم البرمجي</label>
+                    <input 
+                      value={username}
+                      onChange={e => setUsername(e.target.value)}
+                      className="w-full bg-slate-50/50 border-2 border-slate-100/50 rounded-3xl py-5 px-8 text-base font-bold outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner"
+                      placeholder="اسم المستخدم"
+                    />
+                 </div>
+                 
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">البريد الإلكتروني</label>
+                    <input 
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      className="w-full bg-slate-50/50 border-2 border-slate-100/50 rounded-3xl py-5 px-8 text-base font-bold outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner"
+                      placeholder="name@domain.com"
+                    />
+                 </div>
+
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">رقم التواصل الموحد</label>
+                    <div className="relative group">
+                       <input 
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        className="w-full bg-slate-50/50 border-2 border-slate-100/50 rounded-3xl py-5 px-8 text-base font-bold outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner text-left"
+                        placeholder="+20xxxxxxxxxx"
+                      />
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">تنبيهات نشطة</span>
+                      </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+           {/* Right Card: Security & Submission */}
+           <div className="space-y-8">
+              <div className="bg-white/70 backdrop-blur-xl p-10 rounded-[50px] border border-white/50 shadow-2xl shadow-slate-200/50 space-y-10">
+                 <div className="flex items-center gap-4 mb-2">
+                    <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600 shadow-sm">
+                       <Icons.Shield className="w-6 h-6" />
+                    </div>
+                    <div>
+                       <h4 className="text-lg font-black text-slate-900 tracking-tight">إدارة الأمان</h4>
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">كلمات المرور والتشفير</p>
+                    </div>
+                 </div>
+
+                 <div className="space-y-6">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 block text-right">كلمة مرور جديدة (اختياري)</label>
+                       <input 
+                         type="password"
+                         value={newPassword}
+                         onChange={e => setNewPassword(e.target.value)}
+                         className="w-full bg-slate-50/50 border-2 border-slate-100/50 rounded-3xl py-5 px-8 text-base font-bold outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner"
+                         placeholder="••••••••"
+                       />
+                    </div>
+
+                    <div className="p-8 rounded-[40px] bg-[#0f172a] text-white space-y-4 relative overflow-hidden group/pass">
+                       <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/pass:rotate-45 transition-transform duration-700">
+                          <Icons.LogOut className="w-24 h-24" />
+                       </div>
+                       <label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] block text-right relative z-10">تأكيد الهوية الحالية</label>
+                       <input 
+                         required
+                         type="password"
+                         value={password}
+                         onChange={e => setPassword(e.target.value)}
+                         className="w-full bg-white/10 border border-white/10 rounded-2xl py-5 px-8 text-base font-bold outline-none focus:bg-white focus:text-slate-900 transition-all placeholder:text-white/20 relative z-10 shadow-2xl"
+                         placeholder="كلمة المرور الحالية"
+                       />
+                    </div>
+                 </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isUpdating}
+                className="w-full py-7 bg-blue-600 hover:bg-blue-700 text-white font-black text-xl rounded-[40px] shadow-[0_30px_60px_-15px_rgba(37,99,235,0.4)] transition-all active:scale-[0.97] flex items-center justify-center gap-4 group disabled:opacity-70"
+              >
+                 {isUpdating ? (
+                    <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+                 ) : (
+                    <>
+                      <span>تطبيق التغييرات الذكية</span>
+                      <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform shadow-lg">
+                         <Icons.CheckCircle className="w-6 h-6" />
+                      </div>
+                    </>
+                 )}
+              </button>
+           </div>
+        </form>
       </div>
     </div>
   );

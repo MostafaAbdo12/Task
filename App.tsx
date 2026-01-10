@@ -174,7 +174,13 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col h-full overflow-hidden p-4 lg:p-10 relative">
-        <header className="flex flex-col gap-6 mb-10">
+        {/* شريط حالة قاعدة البيانات السحابية */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 hidden md:flex items-center gap-3 bg-white/80 backdrop-blur-md px-6 py-2 rounded-full border border-slate-200 shadow-sm z-50">
+           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">قاعدة البيانات: متصلة عالمياً 🌍</span>
+        </div>
+
+        <header className="flex flex-col gap-6 mb-10 pt-4 lg:pt-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:bg-slate-50 transition-colors">
@@ -303,15 +309,6 @@ const App: React.FC = () => {
               <div className={`p-8 rounded-[32px] text-white border-none shadow-lg flex flex-col justify-between hover:scale-[1.02] transition-all duration-700 group overflow-hidden relative
                 ${stats.percentage === 100 ? 'bg-indigo-600 shadow-indigo-400 animate-[pulseGlow_3s_infinite]' : 'bg-orange-500 shadow-orange-200/50'}
               `}>
-                  <style>{`
-                    @keyframes pulseGlow {
-                      0%, 100% { box-shadow: 0 0 20px rgba(79, 70, 229, 0.4); transform: scale(1.02); }
-                      50% { box-shadow: 0 0 50px rgba(79, 70, 229, 0.8); transform: scale(1.05); }
-                    }
-                    @keyframes shimmer {
-                      100% { transform: translateX(100%); }
-                    }
-                  `}</style>
                   <div className="absolute -bottom-2 -right-2 p-4 opacity-10 transition-transform group-hover:scale-125 group-hover:rotate-12 duration-700">
                     <Icons.Sparkles className="w-24 h-24" />
                   </div>
