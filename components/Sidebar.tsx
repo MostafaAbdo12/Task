@@ -24,30 +24,30 @@ const Sidebar: React.FC<SidebarProps> = ({
       <style>{`
         @keyframes heartBeatPulse {
           0% { transform: scale(1); }
-          15% { transform: scale(1.3); }
+          15% { transform: scale(1.2); }
           30% { transform: scale(1); }
-          45% { transform: scale(1.15); }
+          45% { transform: scale(1.1); }
           60% { transform: scale(1); }
         }
         .animate-heart-beat-pulse {
           animation: heartBeatPulse 1.8s infinite cubic-bezier(0.2, 0, 0, 1);
         }
         @keyframes signatureGlow {
-          0%, 100% { box-shadow: 0 0 15px rgba(37, 99, 235, 0.2), 0 0 5px rgba(37, 99, 235, 0.1); }
-          50% { box-shadow: 0 0 35px rgba(37, 99, 235, 0.5), 0 0 10px rgba(37, 99, 235, 0.3); }
+          0%, 100% { box-shadow: 0 0 10px rgba(37, 99, 235, 0.1), 0 0 5px rgba(37, 99, 235, 0.05); }
+          50% { box-shadow: 0 0 25px rgba(37, 99, 235, 0.35), 0 0 8px rgba(37, 99, 235, 0.15); }
         }
-        .kinetic-signature-card {
+        .kinetic-signature-card-mini {
           animation: signatureGlow 4s ease-in-out infinite;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
+          background: rgba(255, 255, 255, 0.98);
+          backdrop-filter: blur(8px);
         }
-        @keyframes neonFlicker {
-          0%, 100% { opacity: 0.8; text-shadow: 0 0 5px rgba(37, 99, 235, 0.3); }
-          50% { opacity: 1; text-shadow: 0 0 15px rgba(37, 99, 235, 0.6), 0 0 30px rgba(37, 99, 235, 0.2); }
+        @keyframes neonFlickerMini {
+          0%, 100% { opacity: 0.9; text-shadow: 0 0 3px rgba(37, 99, 235, 0.2); }
+          50% { opacity: 1; text-shadow: 0 0 10px rgba(37, 99, 235, 0.4); }
         }
-        .neon-name {
-          animation: neonFlicker 3s ease-in-out infinite;
-          background: linear-gradient(90deg, #2563eb, #6366f1);
+        .neon-name-mini {
+          animation: neonFlickerMini 3s ease-in-out infinite;
+          background: linear-gradient(90deg, #2563eb, #4f46e5);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -150,46 +150,44 @@ const Sidebar: React.FC<SidebarProps> = ({
            </div>
 
            {/* Footer Section */}
-           <div className="p-6 mt-auto space-y-6">
+           <div className="p-6 mt-auto space-y-5">
               {/* User Profile */}
-              <div className="bg-[#1e293b]/40 border border-slate-700/40 p-4 rounded-[30px] flex items-center gap-4 hover:bg-[#1e293b]/60 transition-colors">
+              <div className="bg-[#1e293b]/40 border border-slate-700/40 p-3.5 rounded-[22px] flex items-center gap-3.5 hover:bg-[#1e293b]/60 transition-colors">
                  <div className="relative">
-                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center overflow-hidden shadow-lg border-2 border-white/10">
+                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center overflow-hidden shadow-lg border border-white/10">
                      {user.avatar ? (
                        <img src={user.avatar} alt="User" className="w-full h-full object-cover" />
                      ) : (
-                       <span className="text-lg font-black text-white">{user.username.charAt(0).toUpperCase()}</span>
+                       <span className="text-base font-black text-white">{user.username.charAt(0).toUpperCase()}</span>
                      )}
                    </div>
-                   <div className="absolute -bottom-1 -left-1 w-4 h-4 bg-emerald-500 border-2 border-[#0f172a] rounded-full"></div>
+                   <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#0f172a] rounded-full"></div>
                  </div>
                  <div className="flex-1 min-w-0 text-right">
-                   <p className="text-sm font-bold text-white truncate">{user.username}</p>
-                   <p className="text-[10px] text-slate-500 font-medium tracking-wide">متصل الآن</p>
+                   <p className="text-[13px] font-bold text-white truncate">{user.username}</p>
+                   <p className="text-[9px] text-slate-500 font-medium tracking-wide">الوضع النشط</p>
                  </div>
                  <button 
                    onClick={onLogout} 
-                   className="p-2.5 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-xl transition-all"
+                   className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-all"
                    title="خروج"
                  >
-                    <Icons.LogOut className="w-5 h-5" />
+                    <Icons.LogOut className="w-4 h-4" />
                  </button>
               </div>
 
-              {/* Kinetic Signature Credit */}
+              {/* Mini Kinetic Signature Credit */}
               <div className="px-1 transform transition-transform hover:scale-105 duration-500">
-                <div className="kinetic-signature-card px-5 py-5 rounded-[35px] flex flex-col items-center gap-2.5 border border-blue-100/40 shadow-2xl relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  
-                  <div className="flex items-center gap-2.5 text-[10px] font-black text-slate-500 uppercase tracking-widest relative z-10">
+                <div className="kinetic-signature-card-mini px-4 py-2.5 rounded-[20px] flex flex-col items-center gap-1.5 border border-blue-100/30 shadow-lg relative overflow-hidden group">
+                  <div className="flex items-center gap-2 text-[8.5px] font-black text-slate-500 uppercase tracking-[0.2em] relative z-10">
                     <span>صنع بكل</span>
-                    <span className="animate-heart-beat-pulse inline-block text-rose-500 text-xl drop-shadow-[0_0_10px_rgba(244,63,94,0.6)]">❤️</span>
+                    <span className="animate-heart-beat-pulse inline-block text-rose-500 text-base drop-shadow-[0_0_5px_rgba(244,63,94,0.4)]">❤️</span>
                     <span>من قبل</span>
                   </div>
                   
-                  <div className="h-[1px] w-12 bg-gradient-to-r from-transparent via-blue-200 to-transparent relative z-10"></div>
+                  <div className="h-[1px] w-8 bg-gradient-to-r from-transparent via-blue-100 to-transparent relative z-10"></div>
                   
-                  <div className="neon-name text-[14px] font-black tracking-[0.25em] uppercase select-none cursor-default drop-shadow-sm relative z-10">
+                  <div className="neon-name-mini text-[11px] font-black tracking-[0.2em] uppercase select-none cursor-default relative z-10">
                     MOSTAFA ABDO
                   </div>
                 </div>

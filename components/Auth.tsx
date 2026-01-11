@@ -146,7 +146,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-white font-sans overflow-hidden">
+    <div className="min-h-screen w-full flex bg-white font-sans overflow-hidden relative">
       <style>{`
         @keyframes orbit-slow {
           from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
@@ -166,16 +166,54 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           border-color: #2563eb;
           box-shadow: 0 0 20px rgba(37, 99, 235, 0.1);
         }
+
+        /* Kinetic Signature Styles - Re-compacted */
+        @keyframes heartbeatCustom {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 5px #f43f5e); }
+        }
+        .animate-heart-beat { animation: heartbeatCustom 1.5s ease-in-out infinite; }
+        
+        @keyframes signatureKineticGlow {
+          0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.15), 0 0 30px rgba(59, 130, 246, 0.05); }
+          50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.4), 0 0 50px rgba(59, 130, 246, 0.2); }
+        }
+        .kinetic-signature-card {
+          animation: signatureKineticGlow 4s ease-in-out infinite;
+          backdrop-filter: blur(12px);
+          background: rgba(15, 23, 42, 0.75);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .neon-text-glow {
+          text-shadow: 0 0 8px rgba(59, 130, 246, 0.6), 0 0 15px rgba(59, 130, 246, 0.3);
+          background: linear-gradient(to right, #60a5fa, #a5b4fc);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
       `}</style>
 
-      {/* Left Immersive Side */}
+      {/* Re-compacted Signature - BOTTOM RIGHT */}
+      <div className="fixed right-6 bottom-6 lg:right-8 lg:bottom-8 z-[100] animate-float pointer-events-auto">
+        <div className="kinetic-signature-card px-5 py-3 rounded-[25px] flex flex-col items-center gap-2 transition-transform hover:scale-105 duration-500 group cursor-default">
+           <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">
+             <span>صنع بكل</span>
+             <span className="animate-heart-beat text-rose-500 text-sm">❤️</span>
+             <span>من قبل</span>
+           </div>
+           <div className="h-[1px] w-10 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
+           <div className="neon-text-glow text-[13px] font-black tracking-[0.35em] uppercase select-none">
+             MOSTAFA ABDO
+           </div>
+        </div>
+      </div>
+
+      {/* Left Side: Illustration Area (mesh-bg) */}
       <div className="hidden lg:flex w-[45%] mesh-bg relative items-center justify-center p-16 overflow-hidden">
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[150px] animate-pulse"></div>
           <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-indigo-500 rounded-full blur-[120px] animate-pulse delay-1000"></div>
         </div>
 
-        {/* Floating Decorative Elements */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
            <div className="w-[400px] h-[400px] border border-white/5 rounded-full absolute animate-orbit-slow"></div>
            <div className="w-[600px] h-[600px] border border-white/10 rounded-full absolute animate-orbit-slow" style={{ animationDirection: 'reverse', animationDuration: '40s' }}></div>
@@ -217,7 +255,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         </div>
       </div>
 
-      {/* Right Form Side */}
+      {/* Right Side: Auth Form */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white relative">
         <div className="w-full max-w-[480px] space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-1000">
           
