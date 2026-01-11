@@ -146,239 +146,197 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#0f172a] font-sans overflow-hidden selection:bg-blue-500/30">
+    <div className="min-h-screen w-full flex bg-white font-sans overflow-hidden">
       <style>{`
-        @keyframes aurora {
-          0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
-          50% { transform: translate(-45%, -55%) rotate(180deg) scale(1.2); }
-          100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+        @keyframes orbit-slow {
+          from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+          to { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
         }
-        .aurora-bg {
-          position: absolute;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle at 50% 50%, #1e3a8a 0%, #1e293b 40%, #0f172a 100%);
-          filter: blur(80px);
-          animation: aurora 30s linear infinite;
-          opacity: 0.6;
+        .animate-orbit-slow {
+          animation: orbit-slow 25s linear infinite;
         }
-        .input-glow:focus-within {
-          box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
+        .mesh-bg {
+          background: #0f172a;
+          background-image: 
+            radial-gradient(at 0% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%), 
+            radial-gradient(at 50% 0%, hsla(225, 39%, 20%, 1) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(225, 39%, 10%, 1) 0, transparent 50%);
+        }
+        .input-glow:focus {
           border-color: #2563eb;
-        }
-        .shimmer-text {
-          background: linear-gradient(90deg, #94a3b8, #fff, #94a3b8);
-          background-size: 200% auto;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          animation: shine 3s linear infinite;
-        }
-        @keyframes shine {
-          to { background-position: 200% center; }
+          box-shadow: 0 0 20px rgba(37, 99, 235, 0.1);
         }
       `}</style>
 
-      {/* Decorative Aurora Background Layers */}
-      <div className="absolute inset-0 z-0">
-        <div className="aurora-bg" style={{ top: '20%', left: '30%', background: 'radial-gradient(circle, #2563eb 0%, transparent 70%)', opacity: 0.15 }}></div>
-        <div className="aurora-bg" style={{ top: '80%', left: '70%', background: 'radial-gradient(circle, #4f46e5 0%, transparent 70%)', opacity: 0.15, animationDirection: 'reverse' }}></div>
-      </div>
+      {/* Left Immersive Side */}
+      <div className="hidden lg:flex w-[45%] mesh-bg relative items-center justify-center p-16 overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[150px] animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-indigo-500 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+        </div>
 
-      <div className="relative z-10 w-full flex flex-col lg:flex-row h-screen">
-        
-        {/* Left Side: Branding & Experience */}
-        <div className="hidden lg:flex w-[40%] flex-col justify-between p-20 bg-black/20 backdrop-blur-3xl border-l border-white/5">
-          <div className="space-y-12">
-            <div className="inline-flex items-center gap-4 group">
-               <div className="w-16 h-16 bg-blue-600 rounded-[28px] flex items-center justify-center shadow-[0_20px_40px_rgba(37,99,235,0.4)] transition-transform duration-700 group-hover:rotate-12">
-                  <Icons.Sparkles className="w-10 h-10 text-white" />
-               </div>
-               <div className="space-y-1">
-                 <h2 className="text-3xl font-black text-white tracking-tighter">منصة مهامي</h2>
-                 <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">نظام الإدارة الفائق</p>
-               </div>
+        {/* Floating Decorative Elements */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+           <div className="w-[400px] h-[400px] border border-white/5 rounded-full absolute animate-orbit-slow"></div>
+           <div className="w-[600px] h-[600px] border border-white/10 rounded-full absolute animate-orbit-slow" style={{ animationDirection: 'reverse', animationDuration: '40s' }}></div>
+        </div>
+
+        <div className="relative z-10 text-right space-y-10">
+          <div className="inline-flex items-center gap-4 bg-white/5 backdrop-blur-xl px-8 py-4 rounded-[32px] border border-white/10 shadow-2xl">
+            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/40">
+              <Icons.Sparkles className="w-7 h-7 text-white" />
             </div>
-
-            <div className="space-y-6">
-              <h1 className="text-6xl font-black text-white leading-tight tracking-tight">
-                أعد تعريف <br/>
-                <span className="shimmer-text">إنتاجيتك اليوم</span>
-              </h1>
-              <p className="text-lg font-bold text-slate-400 leading-relaxed max-w-sm">
-                انضم إلى آلاف المحترفين الذين يستخدمون نظامنا الذكي لتنظيم أعمالهم وحياتهم الشخصية بكل سهولة.
-              </p>
+            <div>
+              <span className="text-white text-sm font-black tracking-widest uppercase block">نظام مهامي 3.0</span>
+              <span className="text-blue-400 text-[9px] font-bold uppercase tracking-[0.3em]">الإنتاجية الفائقة</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
-             <div className="space-y-2">
-                <p className="text-3xl font-black text-white">99.9%</p>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">معدل الإنجاز</p>
+          <div className="space-y-6">
+            <h1 className="text-7xl font-black text-white leading-[1.1] tracking-tighter">
+              بوابة <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-l from-blue-400 to-indigo-300">الإنجاز الذكي</span>
+            </h1>
+            <p className="text-xl font-bold text-slate-400 max-w-sm leading-relaxed">
+              انضم إلى آلاف المحترفين الذين يديرون حياتهم الرقمية بذكاء وأمان فائق.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+             <div className="p-8 bg-white/5 backdrop-blur-md rounded-[40px] border border-white/10">
+                <Icons.Shield className="w-10 h-10 text-blue-400 mb-4" />
+                <h4 className="text-white font-black text-lg">أمان عسكري</h4>
+                <p className="text-slate-500 text-xs font-bold mt-2">تشفير كلي للبيانات الشخصية</p>
              </div>
-             <div className="space-y-2">
-                <p className="text-3xl font-black text-white">256-Bit</p>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">أمان البيانات</p>
+             <div className="p-8 bg-white/5 backdrop-blur-md rounded-[40px] border border-white/10">
+                <Icons.LayoutDashboard className="w-10 h-10 text-indigo-400 mb-4" />
+                <h4 className="text-white font-black text-lg">تزامن فوري</h4>
+                <p className="text-slate-500 text-xs font-bold mt-2">الوصول لبياناتك من أي مكان</p>
              </div>
           </div>
         </div>
+      </div>
 
-        {/* Right Side: Form Container */}
-        <div className="flex-1 flex items-center justify-center p-6 lg:p-12 relative">
+      {/* Right Form Side */}
+      <div className="flex-1 flex items-center justify-center p-8 bg-white relative">
+        <div className="w-full max-w-[480px] space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-1000">
           
-          {/* Main Auth Card */}
-          <div className="w-full max-w-[500px] space-y-10 animate-in fade-in slide-in-from-bottom-12 duration-1000">
-            
-            <header className="text-center space-y-4">
-               <div className="lg:hidden w-20 h-20 bg-blue-600 rounded-[30px] flex items-center justify-center text-white mx-auto shadow-2xl mb-8">
-                  <Icons.Sparkles className="w-12 h-12" />
-               </div>
-               <h3 className="text-4xl font-black text-white tracking-tight">
-                 {isLoginMode ? 'أهلاً بك مجدداً' : 'إنشاء هوية رقمية'}
-               </h3>
-               <p className="text-slate-500 font-bold">
-                 {isLoginMode ? 'الرجاء إدخال بيانات الدخول المعتمدة' : 'ابدأ رحلتك نحو التنظيم الفائق اليوم'}
-               </p>
-            </header>
+          <header className="text-center space-y-4">
+             <div className="lg:hidden flex justify-center mb-8">
+                <div className="w-20 h-20 bg-blue-600 rounded-[30px] flex items-center justify-center text-white shadow-2xl">
+                   <Icons.Sparkles className="w-12 h-12" />
+                </div>
+             </div>
+             <h2 className="text-5xl font-black text-slate-900 tracking-tighter">
+               {isLoginMode ? 'أهلاً بك' : 'ابدأ رحلتك'}
+             </h2>
+             <p className="text-slate-500 font-bold text-lg">
+               {isLoginMode ? 'سجل دخولك للوصول إلى مركز العمليات' : 'أنشئ حساباً جديداً في بضع ثوانٍ'}
+             </p>
+          </header>
 
-            <form onSubmit={handleAuth} className="space-y-6">
-              {/* Username Input */}
-              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mr-4 block">اسم المستخدم</label>
-                <div className="relative group input-glow bg-white/5 border border-white/10 rounded-[28px] transition-all">
-                  <Icons.User className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+          <form onSubmit={handleAuth} className="space-y-8">
+            <div className="space-y-3 group">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-4">اسم المستخدم</label>
+              <div className="relative">
+                <Icons.User className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                <input 
+                  required 
+                  value={username} 
+                  onChange={e => setUsername(e.target.value)} 
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] py-6 pr-16 pl-8 text-slate-900 font-black outline-none input-glow transition-all" 
+                  placeholder="ID المستخدم" 
+                />
+              </div>
+            </div>
+
+            {!isLoginMode && (
+              <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
+                <div className="space-y-3 group">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-4">البريد الإلكتروني</label>
                   <input 
+                    type="email" 
                     required 
-                    value={username} 
-                    onChange={e => setUsername(e.target.value)} 
-                    className="w-full bg-transparent py-6 pr-14 pl-8 text-white font-bold outline-none placeholder:text-slate-600" 
-                    placeholder="UserID الفريد الخاص بك" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] py-6 px-8 text-slate-900 font-black outline-none input-glow transition-all" 
+                    placeholder="example@corp.com" 
                   />
                 </div>
+                
+                <div className="space-y-3 group">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-4">رقم الجوال</label>
+                  <div className="flex gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setIsCountryListOpen(!isCountryListOpen)}
+                      className="bg-slate-50 border-2 border-slate-100 rounded-[28px] px-6 flex items-center gap-3 font-black text-slate-800 hover:bg-slate-100 transition-all"
+                    >
+                      <span className="text-xl">{selectedCountry.flag}</span>
+                      <span className="text-sm">{selectedCountry.code}</span>
+                    </button>
+                    <input 
+                      type="tel" 
+                      required 
+                      value={phone} 
+                      onChange={e => handlePhoneChange(e.target.value)} 
+                      className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-[28px] py-6 px-8 text-slate-900 font-black outline-none input-glow transition-all text-left" 
+                      placeholder={selectedCountry.placeholder} 
+                    />
+                  </div>
+                </div>
               </div>
+            )}
 
-              {!isLoginMode && (
+            <div className="space-y-3 group">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-4">كلمة المرور</label>
+              <div className="relative">
+                <Icons.Shield className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                <input 
+                  type="password" 
+                  required 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] py-6 pr-16 pl-8 text-slate-900 font-black outline-none input-glow transition-all" 
+                  placeholder="••••••••" 
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-6 bg-rose-50 border border-rose-100 rounded-[24px] text-rose-600 text-[13px] font-black flex items-center gap-4 animate-in zoom-in-95 duration-300">
+                <div className="w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0">!</div>
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button 
+              disabled={isLoading}
+              className="w-full bg-slate-900 hover:bg-black text-white py-7 rounded-[30px] text-xl font-black transition-all shadow-[0_25px_50px_-15px_rgba(0,0,0,0.3)] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              {isLoading ? (
+                <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin relative z-10"></div>
+              ) : (
                 <>
-                  {/* Email Input */}
-                  <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mr-4 block">البريد الإلكتروني</label>
-                    <div className="relative group input-glow bg-white/5 border border-white/10 rounded-[28px] transition-all">
-                      <Icons.Plus className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors rotate-45" />
-                      <input 
-                        type="email" 
-                        required 
-                        value={email} 
-                        onChange={e => setEmail(e.target.value)} 
-                        className="w-full bg-transparent py-6 pr-14 pl-8 text-white font-bold outline-none placeholder:text-slate-600" 
-                        placeholder="name@company.com" 
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Phone Input with Select */}
-                  <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mr-4 block">رقم الجوال</label>
-                    <div className="flex gap-3">
-                      <div className="relative" ref={dropdownRef}>
-                        <button 
-                          type="button"
-                          onClick={() => setIsCountryListOpen(!isCountryListOpen)}
-                          className="h-full bg-white/5 border border-white/10 rounded-[24px] px-5 flex items-center gap-3 text-white font-black hover:bg-white/10 transition-colors"
-                        >
-                          <span className="text-xl">{selectedCountry.flag}</span>
-                          <span className="text-sm">{selectedCountry.code}</span>
-                        </button>
-                        
-                        {isCountryListOpen && (
-                          <div className="absolute top-full right-0 mt-3 w-64 bg-slate-900 border border-white/10 rounded-[24px] shadow-2xl overflow-hidden z-[100] animate-in zoom-in-95">
-                             {COUNTRY_CODES.map(c => (
-                               <button 
-                                 key={c.code}
-                                 type="button"
-                                 onClick={() => { setSelectedCountry(c); setIsCountryListOpen(false); setPhone(''); }}
-                                 className="w-full flex items-center justify-between p-4 hover:bg-blue-600/20 text-right transition-colors"
-                               >
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-xl">{c.flag}</span>
-                                    <span className="text-sm font-bold text-white">{c.name}</span>
-                                  </div>
-                                  <span className="text-xs font-black text-slate-500">{c.code}</span>
-                               </button>
-                             ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 group input-glow bg-white/5 border border-white/10 rounded-[28px] transition-all">
-                        <input 
-                          type="tel" 
-                          required 
-                          value={phone} 
-                          onChange={e => handlePhoneChange(e.target.value)} 
-                          className="w-full bg-transparent py-6 px-8 text-white font-black outline-none placeholder:text-slate-600 tracking-widest text-left" 
-                          placeholder={selectedCountry.placeholder} 
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <span className="relative z-10">{isLoginMode ? 'دخول النظام' : 'تفعيل الحساب'}</span>
+                  <Icons.Chevron className="w-6 h-6 -rotate-90 group-hover:translate-x-[-4px] transition-transform relative z-10" />
                 </>
               )}
+            </button>
+          </form>
 
-              {/* Password Input */}
-              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mr-4 block">كلمة المرور</label>
-                <div className="relative group input-glow bg-white/5 border border-white/10 rounded-[28px] transition-all">
-                  <Icons.Shield className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-                  <input 
-                    type="password" 
-                    required 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)} 
-                    className="w-full bg-transparent py-6 pr-14 pl-8 text-white font-bold outline-none placeholder:text-slate-600" 
-                    placeholder="••••••••" 
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <div className="p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs font-black flex items-center gap-3 animate-in zoom-in-95">
-                  <div className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center shrink-0">!</div>
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button 
-                disabled={isLoading}
-                className="group relative w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-[28px] text-lg font-black transition-all shadow-[0_20px_50px_rgba(37,99,235,0.3)] active:scale-95 disabled:opacity-50 overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                <div className="relative z-10 flex items-center justify-center gap-4">
-                  {isLoading ? (
-                    <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <span>{isLoginMode ? 'دخول النظام' : 'تفعيل العضوية'}</span>
-                      <Icons.Chevron className="w-5 h-5 -rotate-90 group-hover:translate-x-[-4px] transition-transform" />
-                    </>
-                  )}
-                </div>
-              </button>
-            </form>
-
-            <footer className="text-center pt-6">
-              <button 
-                onClick={() => { setIsLoginMode(!isLoginMode); setError(''); }} 
-                className="text-sm font-black text-blue-400 hover:text-blue-300 transition-colors flex flex-col items-center gap-2 mx-auto"
-              >
-                <span className="opacity-50">{isLoginMode ? 'لا تملك تصريح وصول؟' : 'تملك حساباً بالفعل؟'}</span>
-                <span className="text-base border-b-2 border-blue-400/20 pb-1">{isLoginMode ? 'ابدأ كعضو جديد الآن' : 'قم بتسجيل الدخول'}</span>
-              </button>
-            </footer>
-          </div>
-
-          {/* Bottom Branding Tag */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 hidden lg:block">
-             <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.6em]">Premium Infrastructure 2024</p>
-          </div>
+          <footer className="text-center pt-8">
+            <button 
+              onClick={() => { setIsLoginMode(!isLoginMode); setError(''); }} 
+              className="group flex flex-col items-center gap-3 mx-auto"
+            >
+              <span className="text-sm font-bold text-slate-400">{isLoginMode ? 'لا تملك تصريحاً؟' : 'تملك حساباً بالفعل؟'}</span>
+              <span className="text-blue-600 font-black text-xl border-b-2 border-transparent group-hover:border-blue-600 transition-all pb-1">
+                {isLoginMode ? 'أنشئ هويتك الرقمية الآن' : 'سجل دخولك هنا'}
+              </span>
+            </button>
+          </footer>
         </div>
       </div>
     </div>

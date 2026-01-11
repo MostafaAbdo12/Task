@@ -22,33 +22,32 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       <style>{`
-        @keyframes heartBeat {
+        @keyframes heartBeatPulse {
           0% { transform: scale(1); }
           15% { transform: scale(1.3); }
           30% { transform: scale(1); }
           45% { transform: scale(1.15); }
           60% { transform: scale(1); }
         }
-        .animate-heart-beat {
-          animation: heartBeat 1.5s infinite;
+        .animate-heart-beat-pulse {
+          animation: heartBeatPulse 1.8s infinite cubic-bezier(0.2, 0, 0, 1);
         }
-        @keyframes kineticGlow {
+        @keyframes signatureGlow {
           0%, 100% { box-shadow: 0 0 15px rgba(37, 99, 235, 0.2), 0 0 5px rgba(37, 99, 235, 0.1); }
-          50% { box-shadow: 0 0 30px rgba(37, 99, 235, 0.5), 0 0 10px rgba(37, 99, 235, 0.3); }
+          50% { box-shadow: 0 0 35px rgba(37, 99, 235, 0.5), 0 0 10px rgba(37, 99, 235, 0.3); }
         }
-        .kinetic-glow-card {
-          animation: kineticGlow 3s ease-in-out infinite;
+        .kinetic-signature-card {
+          animation: signatureGlow 4s ease-in-out infinite;
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(10px);
         }
-        @keyframes textShimmer {
-          0% { opacity: 0.8; filter: drop-shadow(0 0 2px rgba(37, 99, 235, 0.5)); }
-          50% { opacity: 1; filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.8)); }
-          100% { opacity: 0.8; filter: drop-shadow(0 0 2px rgba(37, 99, 235, 0.5)); }
+        @keyframes neonFlicker {
+          0%, 100% { opacity: 0.8; text-shadow: 0 0 5px rgba(37, 99, 235, 0.3); }
+          50% { opacity: 1; text-shadow: 0 0 15px rgba(37, 99, 235, 0.6), 0 0 30px rgba(37, 99, 235, 0.2); }
         }
-        .neon-text-pro {
-          animation: textShimmer 2s ease-in-out infinite;
-          background: linear-gradient(90deg, #2563eb, #60a5fa);
+        .neon-name {
+          animation: neonFlicker 3s ease-in-out infinite;
+          background: linear-gradient(90deg, #2563eb, #6366f1);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -151,9 +150,9 @@ const Sidebar: React.FC<SidebarProps> = ({
            </div>
 
            {/* Footer Section */}
-           <div className="p-6 mt-auto space-y-5">
+           <div className="p-6 mt-auto space-y-6">
               {/* User Profile */}
-              <div className="bg-[#1e293b]/40 border border-slate-700/40 p-4 rounded-[28px] flex items-center gap-4 hover:bg-[#1e293b]/60 transition-colors">
+              <div className="bg-[#1e293b]/40 border border-slate-700/40 p-4 rounded-[30px] flex items-center gap-4 hover:bg-[#1e293b]/60 transition-colors">
                  <div className="relative">
                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center overflow-hidden shadow-lg border-2 border-white/10">
                      {user.avatar ? (
@@ -166,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                  </div>
                  <div className="flex-1 min-w-0 text-right">
                    <p className="text-sm font-bold text-white truncate">{user.username}</p>
-                   <p className="text-[10px] text-slate-500 font-medium tracking-wide">الحساب النشط</p>
+                   <p className="text-[10px] text-slate-500 font-medium tracking-wide">متصل الآن</p>
                  </div>
                  <button 
                    onClick={onLogout} 
@@ -177,16 +176,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                  </button>
               </div>
 
-              {/* Kinetic Glow Credit Tag - ENHANCED VERSION */}
-              <div className="px-1 transform transition-transform hover:scale-105">
-                <div className="kinetic-glow-card px-5 py-4 rounded-[30px] flex flex-col items-center gap-2 border border-blue-100/50 shadow-2xl">
-                  <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              {/* Kinetic Signature Credit */}
+              <div className="px-1 transform transition-transform hover:scale-105 duration-500">
+                <div className="kinetic-signature-card px-5 py-5 rounded-[35px] flex flex-col items-center gap-2.5 border border-blue-100/40 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  
+                  <div className="flex items-center gap-2.5 text-[10px] font-black text-slate-500 uppercase tracking-widest relative z-10">
                     <span>صنع بكل</span>
-                    <span className="animate-heart-beat inline-block text-rose-500 text-lg drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]">❤️</span>
+                    <span className="animate-heart-beat-pulse inline-block text-rose-500 text-xl drop-shadow-[0_0_10px_rgba(244,63,94,0.6)]">❤️</span>
                     <span>من قبل</span>
                   </div>
-                  <div className="h-[1px] w-12 bg-gradient-to-r from-transparent via-blue-100 to-transparent"></div>
-                  <div className="neon-text-pro text-[14px] font-black tracking-[0.2em] uppercase select-none cursor-default drop-shadow-sm">
+                  
+                  <div className="h-[1px] w-12 bg-gradient-to-r from-transparent via-blue-200 to-transparent relative z-10"></div>
+                  
+                  <div className="neon-name text-[14px] font-black tracking-[0.25em] uppercase select-none cursor-default drop-shadow-sm relative z-10">
                     MOSTAFA ABDO
                   </div>
                 </div>
