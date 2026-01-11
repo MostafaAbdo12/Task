@@ -165,6 +165,7 @@ const App: React.FC = () => {
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         categories={categories}
+        tasks={tasks}
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
         currentView={currentView}

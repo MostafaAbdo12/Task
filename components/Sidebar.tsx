@@ -1,12 +1,13 @@
 
 import React from 'react';
-import { Category, User } from '../types';
+import { Category, User, Task } from '../types';
 import { Icons, CategoryIconMap } from '../constants';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   categories: Category[];
+  tasks: Task[];
   selectedCategory: string;
   onCategorySelect: (cat: string) => void;
   currentView: 'tasks' | 'settings';
@@ -16,9 +17,17 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
-  isOpen, onClose, categories, selectedCategory, onCategorySelect, 
+  isOpen, onClose, categories, tasks, selectedCategory, onCategorySelect, 
   currentView, onViewChange, user, onLogout 
 }) => {
+  
+  // دالة لحساب عدد المهام في تصنيف معين
+  const getCategoryTaskCount = (categoryName: string) => {
+    return tasks.filter(task => task.category === categoryName).length;
+  };
+
+  const getAllTasksCount = () => tasks.length;
+
   return (
     <>
       <style>{`
@@ -93,7 +102,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                      }`}
                    >
                      <Icons.LayoutDashboard className="w-5 h-5" /> 
-                     <span>جميع المهام</span>
+                     <span className="flex-1 text-right">جميع المهام</span>
+                     <span className={`text-[10px] px-2 py-0.5 rounded-lg border ${
+                       currentView === 'tasks' && selectedCategory === 'الكل' 
+                       ? 'bg-white/20 border-white/30 text-white' 
+                       : 'bg-slate-800 border-slate-700 text-slate-500'
+                     }`}>
+                       {getAllTasksCount()}
+                     </span>
                    </button>
 
                    <button 
@@ -105,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                      }`}
                    >
                      <Icons.Settings className="w-5 h-5" /> 
-                     <span>الإعدادات</span>
+                     <span className="flex-1 text-right">الإعدادات</span>
                    </button>
                  </nav>
               </div>
@@ -120,6 +136,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <nav className="space-y-1 pb-10">
                     {categories.map((cat) => {
                       const isActive = selectedCategory === cat.name;
+                      const taskCount = getCategoryTaskCount(cat.name);
+                      
                       return (
                         <button 
                           key={cat.id} 
@@ -139,7 +157,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                           >
                             {cat.icon && CategoryIconMap[cat.icon] ? CategoryIconMap[cat.icon] : CategoryIconMap['star']}
                           </div>
+                          
                           <span className="truncate flex-1 text-right">{cat.name}</span>
+                          
+                          {/* عرض عدد المهام */}
+                          <div className={`
+                            px-2 py-0.5 rounded-lg text-[10px] font-black transition-all duration-500
+                            ${isActive 
+                              ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]' 
+                              : 'bg-slate-800 text-slate-600 border border-slate-700 opacity-60 group-hover:opacity-100'
+                            }
+                          `}>
+                            {taskCount}
+                          </div>
+                          
                           {isActive && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,1)]"></div>}
                         </button>
                       );
