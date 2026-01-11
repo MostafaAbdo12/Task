@@ -121,6 +121,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             avatar: foundUser.avatar
           };
           storageService.setSession(session);
+          sessionStorage.setItem('auth_success_msg', `مرحباً بك مجدداً، ${cleanUsername}! تم تفعيل الجلسة بنجاح.`);
           onLogin(session);
         } else {
           setError('اسم المستخدم أو كلمة المرور غير صحيحة.');
@@ -140,6 +141,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         
         const session: User = { username: cleanUsername, lastLogin: new Date().toISOString(), xp: 0, level: 1 };
         storageService.setSession(session);
+        sessionStorage.setItem('auth_success_msg', `أهلاً بك يا ${cleanUsername}! تم إنشاء حسابك وبدء رحلة الإنجاز.`);
         onLogin(session);
       }
     }, 1500);
