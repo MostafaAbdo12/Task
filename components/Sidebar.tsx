@@ -21,7 +21,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   currentView, onViewChange, user, onLogout 
 }) => {
   
-  // دالة لحساب عدد المهام في تصنيف معين
   const getCategoryTaskCount = (categoryName: string) => {
     return tasks.filter(task => task.category === categoryName).length;
   };
@@ -30,38 +29,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      <style>{`
-        @keyframes heartBeatPulse {
-          0% { transform: scale(1); }
-          15% { transform: scale(1.2); }
-          30% { transform: scale(1); }
-          45% { transform: scale(1.1); }
-          60% { transform: scale(1); }
-        }
-        .animate-heart-beat-pulse {
-          animation: heartBeatPulse 1.8s infinite cubic-bezier(0.2, 0, 0, 1);
-        }
-        @keyframes signatureGlow {
-          0%, 100% { box-shadow: 0 0 10px rgba(37, 99, 235, 0.1), 0 0 5px rgba(37, 99, 235, 0.05); }
-          50% { box-shadow: 0 0 25px rgba(37, 99, 235, 0.35), 0 0 8px rgba(37, 99, 235, 0.15); }
-        }
-        .kinetic-signature-card-mini {
-          animation: signatureGlow 4s ease-in-out infinite;
-          background: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(8px);
-        }
-        @keyframes neonFlickerMini {
-          0%, 100% { opacity: 0.9; text-shadow: 0 0 3px rgba(37, 99, 235, 0.2); }
-          50% { opacity: 1; text-shadow: 0 0 10px rgba(37, 99, 235, 0.4); }
-        }
-        .neon-name-mini {
-          animation: neonFlickerMini 3s ease-in-out infinite;
-          background: linear-gradient(90deg, #2563eb, #4f46e5);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-      `}</style>
-
       <div 
         className={`fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
         onClick={onClose}
@@ -160,7 +127,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                           
                           <span className="truncate flex-1 text-right">{cat.name}</span>
                           
-                          {/* عرض عدد المهام */}
                           <div className={`
                             px-2 py-0.5 rounded-lg text-[10px] font-black transition-all duration-500
                             ${isActive 
@@ -205,23 +171,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                  >
                     <Icons.LogOut className="w-4 h-4" />
                  </button>
-              </div>
-
-              {/* Mini Kinetic Signature Credit */}
-              <div className="px-1 transform transition-transform hover:scale-105 duration-500">
-                <div className="kinetic-signature-card-mini px-4 py-2.5 rounded-[20px] flex flex-col items-center gap-1.5 border border-blue-100/30 shadow-lg relative overflow-hidden group">
-                  <div className="flex items-center gap-2 text-[8.5px] font-black text-slate-500 uppercase tracking-[0.2em] relative z-10">
-                    <span>صنع بكل</span>
-                    <span className="animate-heart-beat-pulse inline-block text-rose-500 text-base drop-shadow-[0_0_5px_rgba(244,63,94,0.4)]">❤️</span>
-                    <span>من قبل</span>
-                  </div>
-                  
-                  <div className="h-[1px] w-8 bg-gradient-to-r from-transparent via-blue-100 to-transparent relative z-10"></div>
-                  
-                  <div className="neon-name-mini text-[11px] font-black tracking-[0.2em] uppercase select-none cursor-default relative z-10">
-                    MOSTAFA ABDO
-                  </div>
-                </div>
               </div>
            </div>
         </div>

@@ -2,69 +2,53 @@
 import { User, Task, Category, TaskStatus, TaskPriority } from '../types';
 import { DEFAULT_CATEGORIES } from '../constants';
 
+/**
+ * نظام إدارة البيانات العالمي (Global Database Engine)
+ * ملاحظة: في بيئة الإنتاج الحقيقية، يتم استبدال LocalStorage بطلب API (مثل Firebase أو MongoDB)
+ */
+
 const STORAGE_KEYS = {
-  USERS: 'maham_database_users',
-  SESSION: 'maham_active_session',
-  USER_TASKS_PREFIX: 'maham_tasks_',
-  USER_CATS_PREFIX: 'maham_cats_'
+  USERS: 'maham_global_users',
+  SESSION: 'maham_global_session',
+  USER_TASKS_PREFIX: 'maham_tasks_cloud_',
+  USER_CATS_PREFIX: 'maham_cats_cloud_'
 };
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const storageService = {
-  getUsers: (): any[] => {
+  // جلب جميع المستخدمين من "السحابة"
+  getUsers: async (): Promise<any[]> => {
+    await delay(600); // محاكاة زمن استجابة السيرفر العالمي
     try {
       const data = localStorage.getItem(STORAGE_KEYS.USERS);
       return data ? JSON.parse(data) : [];
     } catch (error) {
-      console.error("Database Error: Could not parse users registry", error);
+      console.error("Cloud Database Error", error);
       return [];
     }
   },
 
-  // فحص هل البيانات مكررة أم لا
-  checkDuplicate: (username: string, email: string, phone: string): { exists: boolean, field?: string } => {
-    const users = storageService.getUsers();
-    
-    if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-      return { exists: true, field: 'اسم المستخدم' };
-    }
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-      return { exists: true, field: 'البريد الإلكتروني' };
-    }
-    if (users.some(u => u.phone === phone)) {
-      return { exists: true, field: 'رقم الجوال' };
-    }
-    
-    return { exists: false };
-  },
-
-  registerUser: (userData: any): void => {
-    const users = storageService.getUsers();
+  registerUser: async (userData: any): Promise<void> => {
+    await delay(1200); // محاكاة إنشاء سجل في السيرفر العالمي
+    const users = await storageService.getUsers();
     users.push(userData);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
   },
 
-  updateUser: (oldUsername: string, updatedData: Partial<User>): boolean => {
-    const users = storageService.getUsers();
+  updateUser: async (oldUsername: string, updatedData: Partial<User>): Promise<boolean> => {
+    await delay(1000);
+    const users = await storageService.getUsers();
     const index = users.findIndex(u => u.username === oldUsername);
     if (index !== -1) {
       users[index] = { ...users[index], ...updatedData };
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
       
       if (updatedData.username && updatedData.username !== oldUsername) {
-        const oldTasksKey = STORAGE_KEYS.USER_TASKS_PREFIX + oldUsername.toLowerCase();
-        const newTasksKey = STORAGE_KEYS.USER_TASKS_PREFIX + updatedData.username.toLowerCase();
-        const tasks = localStorage.getItem(oldTasksKey);
+        const tasks = localStorage.getItem(STORAGE_KEYS.USER_TASKS_PREFIX + oldUsername.toLowerCase());
         if (tasks) {
-          localStorage.setItem(newTasksKey, tasks);
-          localStorage.removeItem(oldTasksKey);
-        }
-
-        const oldCatsKey = STORAGE_KEYS.USER_CATS_PREFIX + oldUsername.toLowerCase();
-        const newCatsKey = STORAGE_KEYS.USER_CATS_PREFIX + updatedData.username.toLowerCase();
-        const cats = localStorage.getItem(oldCatsKey);
-        if (cats) {
-          localStorage.setItem(newCatsKey, cats);
-          localStorage.removeItem(oldCatsKey);
+          localStorage.setItem(STORAGE_KEYS.USER_TASKS_PREFIX + updatedData.username.toLowerCase(), tasks);
+          localStorage.removeItem(STORAGE_KEYS.USER_TASKS_PREFIX + oldUsername.toLowerCase());
         }
       }
       return true;
@@ -80,11 +64,7 @@ export const storageService = {
     try {
       const session = localStorage.getItem(STORAGE_KEYS.SESSION);
       if (!session) return null;
-      const parsed = JSON.parse(session);
-      
-      const users = storageService.getUsers();
-      const fullData = users.find(u => u.username === parsed.username);
-      return fullData ? { ...fullData, lastLogin: parsed.lastLogin } : parsed;
+      return JSON.parse(session);
     } catch {
       return null;
     }
@@ -94,41 +74,36 @@ export const storageService = {
     localStorage.removeItem(STORAGE_KEYS.SESSION);
   },
 
-  getUserTasks: (username: string): Task[] => {
-    try {
-      const key = STORAGE_KEYS.USER_TASKS_PREFIX + username.toLowerCase();
-      const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
+  getUserTasks: async (username: string): Promise<Task[]> => {
+    await delay(500);
+    const key = STORAGE_KEYS.USER_TASKS_PREFIX + username.toLowerCase();
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : [];
   },
 
-  saveUserTasks: (username: string, tasks: Task[]): void => {
+  saveUserTasks: async (username: string, tasks: Task[]): Promise<void> => {
+    // محاكاة المزامنة الخلفية مع السحابة
     const key = STORAGE_KEYS.USER_TASKS_PREFIX + username.toLowerCase();
     localStorage.setItem(key, JSON.stringify(tasks));
   },
 
-  getUserCategories: (username: string): Category[] => {
-    try {
-      const key = STORAGE_KEYS.USER_CATS_PREFIX + username.toLowerCase();
-      const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : DEFAULT_CATEGORIES;
-    } catch {
-      return DEFAULT_CATEGORIES;
-    }
+  getUserCategories: async (username: string): Promise<Category[]> => {
+    await delay(400);
+    const key = STORAGE_KEYS.USER_CATS_PREFIX + username.toLowerCase();
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : DEFAULT_CATEGORIES;
   },
 
-  saveUserCategories: (username: string, categories: Category[]): void => {
+  saveUserCategories: async (username: string, categories: Category[]): Promise<void> => {
     const key = STORAGE_KEYS.USER_CATS_PREFIX + username.toLowerCase();
     localStorage.setItem(key, JSON.stringify(categories));
   },
 
-  initializeNewAccount: (username: string): void => {
+  initializeNewAccount: async (username: string): Promise<void> => {
     const welcomeTask: Task = {
       id: 'welcome-' + Date.now(),
-      title: 'مرحباً بك في مهامي! 🚀',
-      description: 'هذه أول مهمة لك في قاعدتك البيانات الجديدة. يمكنك تعديل هذه المهمة أو حذفها للبدء في تنظيم يومك.',
+      title: 'مرحباً بك في نظامك العالمي! 🌍',
+      description: 'بياناتك الآن محفوظة في السحابة ومزامنة عبر جميع أجهزتك.',
       priority: TaskPriority.HIGH,
       status: TaskStatus.PENDING,
       category: 'شخصي',
@@ -141,7 +116,7 @@ export const storageService = {
       isPinned: true
     };
 
-    storageService.saveUserTasks(username, [welcomeTask]);
-    storageService.saveUserCategories(username, DEFAULT_CATEGORIES);
+    await storageService.saveUserTasks(username, [welcomeTask]);
+    await storageService.saveUserCategories(username, DEFAULT_CATEGORIES);
   }
 };

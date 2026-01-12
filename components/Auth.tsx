@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { Icons } from '../constants';
 import { storageService } from '../services/storageService';
@@ -8,107 +8,33 @@ interface AuthProps {
   onLogin: (user: User) => void;
 }
 
-interface CountryConfig {
-  code: string;
-  flag: string;
-  name: string;
-  short: string;
-  placeholder: string;
-  pattern: RegExp;
-  maxLength: number;
-  errorMessage: string;
-}
-
-const COUNTRY_CODES: CountryConfig[] = [
-  { 
-    code: '+966', flag: '🇸🇦', name: 'المملكة العربية السعودية', short: 'SA', 
-    placeholder: '5xxxxxxxx', pattern: /^5\d*$/, maxLength: 9,
-    errorMessage: 'رقم الجوال السعودي يجب أن يبدأ بـ 5 ويتكون من 9 أرقام.'
-  },
-  { 
-    code: '+20', flag: '🇪🇬', name: 'جمهورية مصر العربية', short: 'EG', 
-    placeholder: '1xxxxxxxxx', pattern: /^1\d*$/, maxLength: 10,
-    errorMessage: 'رقم الجوال المصري يجب أن يبدأ بـ 1 ويتكون من 10 أرقام.'
-  },
-  { 
-    code: '+971', flag: '🇦🇪', name: 'الإمارات العربية المتحدة', short: 'AE', 
-    placeholder: '5xxxxxxxx', pattern: /^5\d*$/, maxLength: 9,
-    errorMessage: 'رقم الجوال الإماراتي يجب أن يبدأ بـ 5 ويتكون من 9 أرقام.'
-  }
-];
-
 const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isCountryListOpen, setIsCountryListOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsCountryListOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    setMounted(true);
   }, []);
 
-  const handlePhoneChange = (val: string) => {
-    const numericVal = val.replace(/\D/g, '');
-    if (numericVal === '' || selectedCountry.pattern.test(numericVal)) {
-      if (numericVal.length <= selectedCountry.maxLength) {
-        setPhone(numericVal);
-        setError('');
-      }
-    } else {
-      setError(selectedCountry.errorMessage);
-    }
-  };
-
-  const handleAuth = (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
     const cleanUsername = username.trim().toLowerCase();
-    const fullPhone = selectedCountry.code + phone;
 
     if (!cleanUsername || cleanUsername.length < 3) {
-      setError('اسم المستخدم يجب أن يكون 3 أحرف على الأقل.');
-      return;
-    }
-
-    if (!isLoginMode) {
-      if (!email.includes('@')) {
-        setError('يرجى إدخال بريد إلكتروني صالح.');
-        return;
-      }
-      if (phone.length !== selectedCountry.maxLength) {
-        setError(selectedCountry.errorMessage);
-        return;
-      }
-
-      const duplicate = storageService.checkDuplicate(cleanUsername, email, fullPhone);
-      if (duplicate.exists) {
-        setError(`نعتذر، ${duplicate.field} هذا مسجل مسبقاً في النظام.`);
-        return;
-      }
-    }
-
-    if (!password || password.length < 6) {
-      setError('كلمة المرور يجب أن تكون 6 خانات على الأقل.');
+      setError('ID المستخدم قصير جداً');
       return;
     }
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const savedUsers = storageService.getUsers();
+    try {
+      const savedUsers = await storageService.getUsers();
       
       if (isLoginMode) {
         const foundUser = savedUsers.find((u: any) => u.username === cleanUsername && u.password === password);
@@ -116,265 +42,142 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           const session: User = { 
             username: cleanUsername, 
             lastLogin: new Date().toISOString(),
-            xp: foundUser.xp || 0,
-            level: foundUser.level || 1,
             avatar: foundUser.avatar
           };
           storageService.setSession(session);
-          sessionStorage.setItem('auth_success_msg', `مرحباً بك مجدداً، ${cleanUsername}! تم تفعيل الجلسة بنجاح.`);
           onLogin(session);
         } else {
-          setError('اسم المستخدم أو كلمة المرور غير صحيحة.');
+          setError('خطأ في بيانات الوصول');
           setIsLoading(false);
         }
       } else {
-        const newUser = { 
-          username: cleanUsername, 
-          password, 
-          email, 
-          phone: fullPhone,
-          createdAt: new Date().toISOString()
-        };
+        if (savedUsers.some((u: any) => u.username === cleanUsername)) {
+          setError('اسم المستخدم محجوز');
+          setIsLoading(false);
+          return;
+        }
+
+        const newUser = { username: cleanUsername, password, email, createdAt: new Date().toISOString() };
+        await storageService.registerUser(newUser);
+        await storageService.initializeNewAccount(cleanUsername);
         
-        storageService.registerUser(newUser);
-        storageService.initializeNewAccount(cleanUsername);
-        
-        const session: User = { username: cleanUsername, lastLogin: new Date().toISOString(), xp: 0, level: 1 };
+        const session: User = { username: cleanUsername, lastLogin: new Date().toISOString() };
         storageService.setSession(session);
-        sessionStorage.setItem('auth_success_msg', `أهلاً بك يا ${cleanUsername}! تم إنشاء حسابك وبدء رحلة الإنجاز.`);
         onLogin(session);
       }
-    }, 1500);
+    } catch (err) {
+      setError("فشل الاتصال بقاعدة البيانات");
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-white font-sans overflow-hidden relative">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#020617] font-sans overflow-hidden relative">
       <style>{`
-        @keyframes orbit-slow {
-          from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
-          to { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+        @keyframes aurora {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+          50% { transform: translate(10%, 10%) scale(1.2); opacity: 0.5; }
         }
-        .animate-orbit-slow {
-          animation: orbit-slow 25s linear infinite;
+        .aurora-bg {
+          filter: blur(100px);
+          animation: aurora 15s infinite alternate ease-in-out;
         }
-        .mesh-bg {
-          background: #0f172a;
-          background-image: 
-            radial-gradient(at 0% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%), 
-            radial-gradient(at 50% 0%, hsla(225, 39%, 20%, 1) 0, transparent 50%), 
-            radial-gradient(at 100% 0%, hsla(225, 39%, 10%, 1) 0, transparent 50%);
+        @keyframes signaturePulse {
+          0%, 100% { transform: translateY(0); opacity: 0.8; }
+          50% { transform: translateY(-5px); opacity: 1; }
         }
-        .input-glow:focus {
-          border-color: #2563eb;
-          box-shadow: 0 0 20px rgba(37, 99, 235, 0.1);
+        .signature-glow {
+          text-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
         }
-
-        /* Kinetic Signature Styles - Re-compacted */
-        @keyframes heartbeatCustom {
-          0%, 100% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 5px #f43f5e); }
+        @keyframes heartPulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.3); }
+          100% { transform: scale(1); }
         }
-        .animate-heart-beat { animation: heartbeatCustom 1.5s ease-in-out infinite; }
-        
-        @keyframes signatureKineticGlow {
-          0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.15), 0 0 30px rgba(59, 130, 246, 0.05); }
-          50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.4), 0 0 50px rgba(59, 130, 246, 0.2); }
-        }
-        .kinetic-signature-card {
-          animation: signatureKineticGlow 4s ease-in-out infinite;
-          backdrop-filter: blur(12px);
-          background: rgba(15, 23, 42, 0.75);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .neon-text-glow {
-          text-shadow: 0 0 8px rgba(59, 130, 246, 0.6), 0 0 15px rgba(59, 130, 246, 0.3);
-          background: linear-gradient(to right, #60a5fa, #a5b4fc);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+        .animate-heart {
+          animation: heartPulse 1s infinite;
+          display: inline-block;
         }
       `}</style>
 
-      {/* Re-compacted Signature - BOTTOM RIGHT */}
-      <div className="fixed right-6 bottom-6 lg:right-8 lg:bottom-8 z-[100] animate-float pointer-events-auto">
-        <div className="kinetic-signature-card px-5 py-3 rounded-[25px] flex flex-col items-center gap-2 transition-transform hover:scale-105 duration-500 group cursor-default">
-           <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">
-             <span>صنع بكل</span>
-             <span className="animate-heart-beat text-rose-500 text-sm">❤️</span>
-             <span>من قبل</span>
-           </div>
-           <div className="h-[1px] w-10 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
-           <div className="neon-text-glow text-[13px] font-black tracking-[0.35em] uppercase select-none">
-             MOSTAFA ABDO
-           </div>
-        </div>
+      {/* Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-600/20 rounded-full aurora-bg"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-indigo-600/20 rounded-full aurora-bg" style={{ animationDelay: '-5s' }}></div>
       </div>
 
-      {/* Left Side: Illustration Area (mesh-bg) */}
-      <div className="hidden lg:flex w-[45%] mesh-bg relative items-center justify-center p-16 overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[150px] animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-indigo-500 rounded-full blur-[120px] animate-pulse delay-1000"></div>
-        </div>
-
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-           <div className="w-[400px] h-[400px] border border-white/5 rounded-full absolute animate-orbit-slow"></div>
-           <div className="w-[600px] h-[600px] border border-white/10 rounded-full absolute animate-orbit-slow" style={{ animationDirection: 'reverse', animationDuration: '40s' }}></div>
-        </div>
-
-        <div className="relative z-10 text-right space-y-10">
-          <div className="inline-flex items-center gap-4 bg-white/5 backdrop-blur-xl px-8 py-4 rounded-[32px] border border-white/10 shadow-2xl">
-            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/40">
-              <Icons.Sparkles className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <span className="text-white text-sm font-black tracking-widest uppercase block">نظام مهامي 3.0</span>
-              <span className="text-blue-400 text-[9px] font-bold uppercase tracking-[0.3em]">الإنتاجية الفائقة</span>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <h1 className="text-7xl font-black text-white leading-[1.1] tracking-tighter">
-              بوابة <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-l from-blue-400 to-indigo-300">الإنجاز الذكي</span>
-            </h1>
-            <p className="text-xl font-bold text-slate-400 max-w-sm leading-relaxed">
-              انضم إلى آلاف المحترفين الذين يديرون حياتهم الرقمية بذكاء وأمان فائق.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-             <div className="p-8 bg-white/5 backdrop-blur-md rounded-[40px] border border-white/10">
-                <Icons.Shield className="w-10 h-10 text-blue-400 mb-4" />
-                <h4 className="text-white font-black text-lg">أمان عسكري</h4>
-                <p className="text-slate-500 text-xs font-bold mt-2">تشفير كلي للبيانات الشخصية</p>
-             </div>
-             <div className="p-8 bg-white/5 backdrop-blur-md rounded-[40px] border border-white/10">
-                <Icons.LayoutDashboard className="w-10 h-10 text-indigo-400 mb-4" />
-                <h4 className="text-white font-black text-lg">تزامن فوري</h4>
-                <p className="text-slate-500 text-xs font-bold mt-2">الوصول لبياناتك من أي مكان</p>
-             </div>
-          </div>
-        </div>
+      {/* Signature Credit - Bottom Right Only for Login Page */}
+      <div className="fixed bottom-8 right-8 z-20 pointer-events-none animate-[signaturePulse_4s_infinite_ease-in-out]">
+         <div className="bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-full flex items-center gap-3 shadow-2xl transition-all duration-500 hover:bg-white/10">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">صنع بكل</span>
+            <span className="animate-heart text-rose-500 drop-shadow-[0_0_5px_rgba(244,63,94,0.6)]">❤️</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">من قبل</span>
+            <div className="w-[1px] h-3 bg-white/20"></div>
+            <span className="text-[12px] font-black text-blue-400 uppercase tracking-[0.2em] signature-glow">
+              MOSTAFA ABDO
+            </span>
+         </div>
       </div>
 
-      {/* Right Side: Auth Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-white relative">
-        <div className="w-full max-w-[480px] space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+      <div className={`w-full max-w-[460px] p-6 z-10 transition-all duration-1000 ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <div className="bg-slate-900/60 backdrop-blur-3xl border border-white/10 rounded-[50px] p-10 md:p-14 shadow-2xl">
           
-          <header className="text-center space-y-4">
-             <div className="lg:hidden flex justify-center mb-8">
-                <div className="w-20 h-20 bg-blue-600 rounded-[30px] flex items-center justify-center text-white shadow-2xl">
-                   <Icons.Sparkles className="w-12 h-12" />
-                </div>
+          <header className="mb-12 text-center">
+             <div className="w-16 h-16 bg-blue-600 border border-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-500/40">
+               <Icons.Sparkles className="w-8 h-8 text-white" />
              </div>
-             <h2 className="text-5xl font-black text-slate-900 tracking-tighter">
-               {isLoginMode ? 'أهلاً بك' : 'ابدأ رحلتك'}
-             </h2>
-             <p className="text-slate-500 font-bold text-lg">
-               {isLoginMode ? 'سجل دخولك للوصول إلى مركز العمليات' : 'أنشئ حساباً جديداً في بضع ثوانٍ'}
-             </p>
+             <h2 className="text-4xl font-black text-white tracking-tighter mb-2">مهامي</h2>
+             <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em]">إدارة مهامك اليومية</p>
           </header>
 
-          <form onSubmit={handleAuth} className="space-y-8">
-            <div className="space-y-3 group">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-4">اسم المستخدم</label>
-              <div className="relative">
-                <Icons.User className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
-                <input 
-                  required 
-                  value={username} 
-                  onChange={e => setUsername(e.target.value)} 
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] py-6 pr-16 pl-8 text-slate-900 font-black outline-none input-glow transition-all" 
-                  placeholder="ID المستخدم" 
-                />
-              </div>
+          <form onSubmit={handleAuth} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-4">معرف المستخدم</label>
+              <input 
+                required value={username} onChange={e => setUsername(e.target.value)} 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-8 text-white font-bold outline-none focus:border-blue-500 transition-all"
+                placeholder="ID الخاص بك"
+              />
             </div>
 
             {!isLoginMode && (
-              <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
-                <div className="space-y-3 group">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-4">البريد الإلكتروني</label>
-                  <input 
-                    type="email" 
-                    required 
-                    value={email} 
-                    onChange={e => setEmail(e.target.value)} 
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] py-6 px-8 text-slate-900 font-black outline-none input-glow transition-all" 
-                    placeholder="example@corp.com" 
-                  />
-                </div>
-                
-                <div className="space-y-3 group">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-4">رقم الجوال</label>
-                  <div className="flex gap-3">
-                    <button 
-                      type="button"
-                      onClick={() => setIsCountryListOpen(!isCountryListOpen)}
-                      className="bg-slate-50 border-2 border-slate-100 rounded-[28px] px-6 flex items-center gap-3 font-black text-slate-800 hover:bg-slate-100 transition-all"
-                    >
-                      <span className="text-xl">{selectedCountry.flag}</span>
-                      <span className="text-sm">{selectedCountry.code}</span>
-                    </button>
-                    <input 
-                      type="tel" 
-                      required 
-                      value={phone} 
-                      onChange={e => handlePhoneChange(e.target.value)} 
-                      className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-[28px] py-6 px-8 text-slate-900 font-black outline-none input-glow transition-all text-left" 
-                      placeholder={selectedCountry.placeholder} 
-                    />
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-4">البريد الإلكتروني</label>
+                <input 
+                  type="email" required value={email} onChange={e => setEmail(e.target.value)} 
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-8 text-white font-bold outline-none focus:border-blue-500 transition-all"
+                  placeholder="name@cloud.com"
+                />
               </div>
             )}
 
-            <div className="space-y-3 group">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-4">كلمة المرور</label>
-              <div className="relative">
-                <Icons.Shield className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
-                <input 
-                  type="password" 
-                  required 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-[28px] py-6 pr-16 pl-8 text-slate-900 font-black outline-none input-glow transition-all" 
-                  placeholder="••••••••" 
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-4">كلمة المرور</label>
+              <input 
+                type="password" required value={password} onChange={e => setPassword(e.target.value)} 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-8 text-white font-bold outline-none focus:border-blue-500 transition-all"
+                placeholder="••••••••"
+              />
             </div>
 
             {error && (
-              <div className="p-6 bg-rose-50 border border-rose-100 rounded-[24px] text-rose-600 text-[13px] font-black flex items-center gap-4 animate-in zoom-in-95 duration-300">
-                <div className="w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0">!</div>
-                <span>{error}</span>
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-[11px] font-black text-center">
+                {error}
               </div>
             )}
 
             <button 
               disabled={isLoading}
-              className="w-full bg-slate-900 hover:bg-black text-white py-7 rounded-[30px] text-xl font-black transition-all shadow-[0_25px_50px_-15px_rgba(0,0,0,0.3)] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 relative overflow-hidden group"
+              className="w-full bg-blue-600 text-white py-6 rounded-[28px] text-lg font-black shadow-2xl shadow-blue-500/30 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-4 group overflow-hidden relative"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              {isLoading ? (
-                <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin relative z-10"></div>
-              ) : (
-                <>
-                  <span className="relative z-10">{isLoginMode ? 'دخول النظام' : 'تفعيل الحساب'}</span>
-                  <Icons.Chevron className="w-6 h-6 -rotate-90 group-hover:translate-x-[-4px] transition-transform relative z-10" />
-                </>
-              )}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              {isLoading ? <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin"></div> : (isLoginMode ? 'دخول آمن' : 'إنشاء حساب جديد')}
             </button>
           </form>
 
-          <footer className="text-center pt-8">
-            <button 
-              onClick={() => { setIsLoginMode(!isLoginMode); setError(''); }} 
-              className="group flex flex-col items-center gap-3 mx-auto"
-            >
-              <span className="text-sm font-bold text-slate-400">{isLoginMode ? 'لا تملك تصريحاً؟' : 'تملك حساباً بالفعل؟'}</span>
-              <span className="text-blue-600 font-black text-xl border-b-2 border-transparent group-hover:border-blue-600 transition-all pb-1">
-                {isLoginMode ? 'أنشئ هويتك الرقمية الآن' : 'سجل دخولك هنا'}
-              </span>
+          <footer className="mt-10 text-center">
+            <button onClick={() => setIsLoginMode(!isLoginMode)} className="text-slate-400 text-xs font-black uppercase tracking-widest hover:text-blue-400 transition-colors">
+              {isLoginMode ? 'إنشاء هوية جديدة' : 'لديك حساب؟ سجل دخولك'}
             </button>
           </footer>
         </div>

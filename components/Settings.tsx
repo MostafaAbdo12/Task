@@ -38,19 +38,22 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
     }
   };
 
-  const handleUpdate = (e: React.FormEvent) => {
+  // Fix: handleUpdate is now async to properly await storageService.getUsers() and storageService.updateUser()
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const users = storageService.getUsers();
-    const currentUserData = users.find(u => u.username === user.username);
-    
-    if (password !== currentUserData.password) {
-      showToast("كلمة المرور الحالية غير صحيحة", 'danger');
-      return;
-    }
-
     setIsUpdating(true);
     
-    setTimeout(() => {
+    try {
+      // Correctly await the promise from storageService.getUsers() to get the actual array
+      const users = await storageService.getUsers();
+      const currentUserData = users.find(u => u.username === user.username);
+      
+      if (!currentUserData || password !== currentUserData.password) {
+        showToast("كلمة المرور الحالية غير صحيحة", 'danger');
+        setIsUpdating(false);
+        return;
+      }
+
       const updatedFields: Partial<User> = {
         username,
         email,
@@ -62,7 +65,8 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
         updatedFields.password = newPassword;
       }
 
-      const success = storageService.updateUser(user.username, updatedFields);
+      // Correctly await the promise from storageService.updateUser()
+      const success = await storageService.updateUser(user.username, updatedFields);
       if (success) {
         const updatedUserSession: User = { ...user, ...updatedFields, lastLogin: new Date().toISOString() };
         storageService.setSession(updatedUserSession);
@@ -73,8 +77,12 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
       } else {
         showToast("خطأ في تحديث البيانات", 'danger');
       }
+    } catch (err) {
+      console.error("Cloud Update Error:", err);
+      showToast("فشل الاتصال بقاعدة البيانات العالمية", 'danger');
+    } finally {
       setIsUpdating(false);
-    }, 800);
+    }
   };
 
   return (
