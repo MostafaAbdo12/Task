@@ -4,7 +4,7 @@ import { DEFAULT_CATEGORIES } from '../constants';
 
 /**
  * نظام إدارة البيانات العالمي (Global Database Engine)
- * ملاحظة: في بيئة الإنتاج الحقيقية، يتم استبدال LocalStorage بطلب API (مثل Firebase أو MongoDB)
+ * يستخدم LocalStorage لضمان بقاء البيانات حتى بعد تحديث المتصفح.
  */
 
 const STORAGE_KEYS = {
@@ -17,9 +17,9 @@ const STORAGE_KEYS = {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const storageService = {
-  // جلب جميع المستخدمين من "السحابة"
+  // جلب جميع المستخدمين
   getUsers: async (): Promise<any[]> => {
-    await delay(600); // محاكاة زمن استجابة السيرفر العالمي
+    // لا نحتاج تأخير طويل عند كل استدعاء، نقلله لتحسين تجربة المستخدم
     try {
       const data = localStorage.getItem(STORAGE_KEYS.USERS);
       return data ? JSON.parse(data) : [];
@@ -30,25 +30,36 @@ export const storageService = {
   },
 
   registerUser: async (userData: any): Promise<void> => {
-    await delay(1200); // محاكاة إنشاء سجل في السيرفر العالمي
+    await delay(500);
     const users = await storageService.getUsers();
     users.push(userData);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
   },
 
   updateUser: async (oldUsername: string, updatedData: Partial<User>): Promise<boolean> => {
-    await delay(1000);
+    await delay(500);
     const users = await storageService.getUsers();
     const index = users.findIndex(u => u.username === oldUsername);
     if (index !== -1) {
       users[index] = { ...users[index], ...updatedData };
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
       
+      // في حال تم تغيير اسم المستخدم، نقوم بنقل المهام والتصنيفات للمعرف الجديد
       if (updatedData.username && updatedData.username !== oldUsername) {
-        const tasks = localStorage.getItem(STORAGE_KEYS.USER_TASKS_PREFIX + oldUsername.toLowerCase());
+        const oldTasksKey = STORAGE_KEYS.USER_TASKS_PREFIX + oldUsername.toLowerCase();
+        const newTasksKey = STORAGE_KEYS.USER_TASKS_PREFIX + updatedData.username.toLowerCase();
+        const tasks = localStorage.getItem(oldTasksKey);
         if (tasks) {
-          localStorage.setItem(STORAGE_KEYS.USER_TASKS_PREFIX + updatedData.username.toLowerCase(), tasks);
-          localStorage.removeItem(STORAGE_KEYS.USER_TASKS_PREFIX + oldUsername.toLowerCase());
+          localStorage.setItem(newTasksKey, tasks);
+          localStorage.removeItem(oldTasksKey);
+        }
+
+        const oldCatsKey = STORAGE_KEYS.USER_CATS_PREFIX + oldUsername.toLowerCase();
+        const newCatsKey = STORAGE_KEYS.USER_CATS_PREFIX + updatedData.username.toLowerCase();
+        const cats = localStorage.getItem(oldCatsKey);
+        if (cats) {
+          localStorage.setItem(newCatsKey, cats);
+          localStorage.removeItem(oldCatsKey);
         }
       }
       return true;
@@ -75,20 +86,17 @@ export const storageService = {
   },
 
   getUserTasks: async (username: string): Promise<Task[]> => {
-    await delay(500);
     const key = STORAGE_KEYS.USER_TASKS_PREFIX + username.toLowerCase();
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : [];
   },
 
   saveUserTasks: async (username: string, tasks: Task[]): Promise<void> => {
-    // محاكاة المزامنة الخلفية مع السحابة
     const key = STORAGE_KEYS.USER_TASKS_PREFIX + username.toLowerCase();
     localStorage.setItem(key, JSON.stringify(tasks));
   },
 
   getUserCategories: async (username: string): Promise<Category[]> => {
-    await delay(400);
     const key = STORAGE_KEYS.USER_CATS_PREFIX + username.toLowerCase();
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : DEFAULT_CATEGORIES;
@@ -100,6 +108,10 @@ export const storageService = {
   },
 
   initializeNewAccount: async (username: string): Promise<void> => {
+    // التحقق من عدم وجود بيانات مسبقة قبل المسح
+    const existingTasks = await storageService.getUserTasks(username);
+    if (existingTasks.length > 0) return;
+
     const welcomeTask: Task = {
       id: 'welcome-' + Date.now(),
       title: 'مرحباً بك في نظامك العالمي! 🌍',
