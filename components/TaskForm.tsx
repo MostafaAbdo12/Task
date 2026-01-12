@@ -64,160 +64,149 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
   };
 
   return (
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-[#0a0f1d]/95 backdrop-blur-2xl animate-in fade-in duration-700 overflow-y-auto">
-      {/* Background Decorative Elements */}
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-[#0a0f1d]/90 backdrop-blur-xl animate-in fade-in duration-500 overflow-y-auto no-scrollbar">
+      {/* Background Decor */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.1),transparent_50%)]"></div>
-        <div className="absolute top-1/4 -right-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-1/4 -left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse delay-700"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.05),transparent_50%)]"></div>
       </div>
 
-      <div className={`w-full max-w-4xl bg-white rounded-[50px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-slate-200/50 transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) relative z-10 ${isAnimating ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-24 opacity-0 scale-90'}`}>
+      <div className={`w-full max-w-xl bg-white rounded-[40px] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.4)] border border-slate-200/50 transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) relative z-10 ${isAnimating ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0 scale-95'}`}>
         
-        {/* Luxury Header */}
-        <header className="px-10 lg:px-14 py-10 border-b border-slate-100 flex justify-between items-center bg-gradient-to-l from-white to-slate-50/50 rounded-t-[50px]">
-          <div className="relative">
-            <h2 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tighter leading-tight flex items-center gap-4">
-              <span className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-200">
-                {initialTask ? <Icons.Edit className="w-6 h-6" /> : <Icons.Plus className="w-7 h-7" />}
-              </span>
-              {initialTask ? 'تعديل المهمة' : 'مهمة جديدة'}
-            </h2>
-            <p className="text-[12px] font-black text-blue-600/60 mt-2 uppercase tracking-[0.4em] mr-16">نظام الإنتاجية الفائقة</p>
+        {/* Compact Header */}
+        <header className="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30 rounded-t-[40px]">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+              {initialTask ? <Icons.Edit className="w-5 h-5" /> : <Icons.Plus className="w-5 h-5" />}
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                {initialTask ? 'تحديث المهمة' : 'مهمة جديدة'}
+              </h2>
+              <p className="text-[9px] font-black text-blue-600/50 uppercase tracking-[0.3em]">Core Operations</p>
+            </div>
           </div>
           <button 
             type="button"
             onClick={onClose} 
-            className="w-14 h-14 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white hover:shadow-2xl rounded-2xl transition-all duration-500 active:scale-75 border border-transparent hover:border-slate-100"
+            className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white rounded-xl transition-all active:scale-75 border border-transparent hover:border-slate-100 shadow-sm"
           >
-            <Icons.X className="w-8 h-8" />
+            <Icons.X className="w-6 h-6" />
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="p-10 lg:p-14 space-y-12 max-h-[75vh] overflow-y-auto no-scrollbar">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[80vh] overflow-y-auto no-scrollbar">
           
-          {/* Main Title Field */}
-          <div className={`space-y-4 transition-all duration-700 delay-[100ms] ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-            <label className="text-[12px] font-black text-slate-500 uppercase tracking-widest px-1 block">عنوان المهمة الرئيسي</label>
-            <div className="relative group">
-               <input 
-                required
-                autoFocus
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-[30px] px-8 py-6 text-2xl font-black text-slate-800 outline-none focus:ring-[15px] focus:ring-blue-600/5 focus:border-blue-600 focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
-                placeholder="ما الذي تريد إنجازه اليوم؟"
-              />
-              <div className="absolute left-8 top-1/2 -translate-y-1/2 text-blue-600 opacity-0 group-focus-within:opacity-100 group-focus-within:scale-125 transition-all duration-500">
-                <Icons.Sparkles className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-
-          {/* Description Field */}
-          <div className={`space-y-4 transition-all duration-700 delay-[200ms] ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-            <label className="text-[12px] font-black text-slate-500 uppercase tracking-widest px-1 block">وصف التفاصيل</label>
-            <textarea 
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-50 border-2 border-slate-100 rounded-[35px] p-8 text-lg font-bold text-slate-700 outline-none focus:ring-[15px] focus:ring-blue-600/5 focus:border-blue-600 focus:bg-white min-h-[160px] resize-none transition-all shadow-inner placeholder:text-slate-300 leading-relaxed"
-              placeholder="اكتب وصفاً دقيقاً لخطوات التنفيذ..."
+          {/* Title */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">العنوان</label>
+            <input 
+              required
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 text-lg font-black text-slate-800 outline-none focus:border-blue-600 focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
+              placeholder="ما هي العملية القادمة؟"
             />
           </div>
 
-          {/* Settings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* Priority Select */}
-            <div className={`space-y-4 transition-all duration-700 delay-[300ms] ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-              <label className="text-[12px] font-black text-slate-500 uppercase tracking-widest px-1 block">الأولوية</label>
-              <div className="relative group">
+          {/* Description */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">التفاصيل</label>
+            <textarea 
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-6 text-sm font-bold text-slate-700 outline-none focus:border-blue-600 focus:bg-white min-h-[100px] resize-none transition-all shadow-inner placeholder:text-slate-300 leading-relaxed"
+              placeholder="أدخل مواصفات المهمة هنا..."
+            />
+          </div>
+
+          {/* Compact Settings Row 1 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">الأولوية</label>
+              <div className="relative">
                 <select 
                   value={priority}
                   onChange={e => setPriority(e.target.value as TaskPriority)}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-[25px] px-8 py-5 text-base font-black text-slate-800 outline-none focus:border-blue-600 appearance-none cursor-pointer transition-all pr-14"
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 text-xs font-black text-slate-800 outline-none focus:border-blue-600 appearance-none cursor-pointer transition-all"
                 >
                   {Object.keys(TaskPriority).map(p => (
                     <option key={p} value={p}>{PRIORITY_LABELS[p].label}</option>
                   ))}
                 </select>
-                <Icons.Chevron className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-6 h-6" />
-                <div className={`absolute right-8 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${priority === TaskPriority.URGENT ? 'bg-red-500 shadow-lg shadow-red-200 animate-pulse' : priority === TaskPriority.HIGH ? 'bg-orange-500 shadow-lg shadow-orange-200' : 'bg-blue-500 shadow-lg shadow-blue-200'}`}></div>
+                <Icons.Chevron className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4" />
               </div>
             </div>
 
-            {/* Category Select */}
-            <div className={`space-y-4 transition-all duration-700 delay-[400ms] ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-              <label className="text-[12px] font-black text-slate-500 uppercase tracking-widest px-1 block">التصنيف</label>
-              <div className="flex gap-4">
-                <div className="relative flex-1 group">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">التصنيف</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
                   <select 
                     value={category}
                     onChange={e => setCategory(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-[25px] px-8 py-5 text-base font-black text-slate-800 outline-none focus:border-blue-600 appearance-none cursor-pointer transition-all"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 text-xs font-black text-slate-800 outline-none focus:border-blue-600 appearance-none cursor-pointer transition-all"
                   >
                     {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                   </select>
-                  <Icons.Chevron className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-6 h-6" />
+                  <Icons.Chevron className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4" />
                 </div>
                 <button 
                   type="button"
                   onClick={onManageCategories}
-                  className="w-16 h-16 bg-blue-50 text-blue-600 border-2 border-blue-100 rounded-[22px] hover:bg-blue-600 hover:text-white transition-all active:scale-90 flex items-center justify-center group shadow-xl shadow-blue-500/10"
+                  className="w-12 h-12 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-90 flex items-center justify-center shrink-0"
                 >
-                  <Icons.Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />
+                  <Icons.Plus className="w-5 h-5" />
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Deadline */}
-            <div className={`space-y-4 transition-all duration-700 delay-[500ms] ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-              <label className="text-[12px] font-black text-slate-500 uppercase tracking-widest px-1 block">تاريخ الإنجاز</label>
-              <div className="relative group">
-                <Icons.Calendar className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6 pointer-events-none group-focus-within:text-blue-600 transition-colors" />
+          {/* Compact Settings Row 2 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">تاريخ الإنجاز</label>
+              <div className="relative">
                 <input 
                   type="date"
                   value={dueDate}
                   onChange={e => setDueDate(e.target.value)}
                   onClick={openPicker}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-[25px] pr-16 pl-8 py-5 text-base font-black text-slate-800 outline-none focus:border-blue-600 cursor-pointer shadow-inner text-center"
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 text-xs font-black text-slate-800 outline-none focus:border-blue-600 cursor-pointer shadow-inner text-center"
                 />
               </div>
             </div>
 
-            {/* Reminder */}
-            <div className={`space-y-4 transition-all duration-700 delay-[600ms] ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-              <label className="text-[12px] font-black text-slate-500 uppercase tracking-widest px-1 block">تذكير واتساب</label>
-              <div className="relative group">
-                <Icons.AlarmClock className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6 pointer-events-none group-focus-within:text-blue-600 transition-colors" />
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">تذكير التنبيه</label>
+              <div className="relative">
                 <input 
                   type="datetime-local"
                   value={reminderAt}
                   onChange={e => setReminderAt(e.target.value)}
                   onClick={openPicker}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-[25px] pr-16 pl-8 py-5 text-base font-black text-slate-800 outline-none focus:border-blue-600 cursor-pointer shadow-inner text-center"
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 text-xs font-black text-slate-800 outline-none focus:border-blue-600 cursor-pointer shadow-inner text-center"
                 />
               </div>
             </div>
           </div>
 
-          {/* Footer Actions */}
-          <div className={`pt-10 flex flex-col sm:flex-row gap-6 transition-all duration-1000 delay-[700ms] ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+          {/* Actions */}
+          <div className="pt-6 flex gap-4">
             <button 
               type="button"
               onClick={onClose}
-              className="flex-1 py-7 border-2 border-slate-100 text-slate-500 text-base font-black rounded-[35px] hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95 flex items-center justify-center gap-3"
+              className="flex-1 py-4 border-2 border-slate-100 text-slate-400 text-xs font-black rounded-2xl hover:bg-slate-50 hover:text-slate-700 transition-all active:scale-95"
             >
-              <span>إلغاء العملية</span>
+              إلغاء
             </button>
             <button 
               type="submit"
-              className="flex-[2] py-7 bg-blue-600 text-white text-lg font-black rounded-[35px] hover:bg-blue-700 shadow-[0_25px_50px_-15px_rgba(37,99,235,0.4)] active:scale-95 transition-all flex items-center justify-center gap-4 group relative overflow-hidden"
+              className="flex-[2] py-4 bg-blue-600 text-white text-xs font-black rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-3 group relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-              <span>{initialTask ? 'حفظ التعديلات' : 'إنشاء المهمة الآن'}</span>
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform">
-                <Icons.CheckCircle className="w-6 h-6" />
-              </div>
+              <span>{initialTask ? 'حفظ التعديل' : 'إنشاء السجل'}</span>
+              <Icons.CheckCircle className="w-5 h-5" />
             </button>
           </div>
         </form>
