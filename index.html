@@ -4,8 +4,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1e293b" />
-    <title>منصة مهامي | تجربة الإدارة الفائقة</title>
+    <meta name="theme-color" content="#020617" />
+    <title>منصة مهامي | القوة الذكية بين يديك</title>
     
     <script>
       window.process = window.process || { env: {} };
@@ -18,23 +18,28 @@
             fontFamily: {
               sans: ['Cairo', 'sans-serif'],
             },
+            colors: {
+              'corp': {
+                'bg': '#f8fafc',
+                'dark': '#020617',
+                'primary': '#2563eb',
+                'secondary': '#4f46e5',
+                'accent': '#10b981',
+              }
+            },
             animation: {
-              'border-beam': 'borderBeam 4s linear infinite',
-              'glass-shine': 'glassShine 3s ease-in-out infinite',
+              'slow-spin': 'spin 20s linear infinite',
               'float': 'float 6s ease-in-out infinite',
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
             },
             keyframes: {
-              borderBeam: {
-                '100%': { 'offset-distance': '100%' },
-              },
-              glassShine: {
-                '0%': { transform: 'translateX(-100%) skewX(-15deg)' },
-                '100%': { transform: 'translateX(200%) skewX(-15deg)' },
-              },
               float: {
                 '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
+                '50%': { transform: 'translateY(-15px)' },
+              },
+              pulseGlow: {
+                '0%, 100%': { opacity: 1, filter: 'brightness(1)' },
+                '50%': { opacity: 0.8, filter: 'brightness(1.5)' },
               }
             }
           },
@@ -47,42 +52,34 @@
     <style>
       body {
         font-family: 'Cairo', sans-serif;
-        background: radial-gradient(circle at top right, #f8fafc, #eff6ff);
-        min-height: 100vh;
+        background-color: #f8fafc;
+        color: #1e293b;
+        overflow: hidden; /* App handles its own scrolling */
       }
 
-      .premium-glass {
+      .glass-card {
         background: rgba(255, 255, 255, 0.7);
         backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+
+      .dark-glass {
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      ::selection {
+        background: #2563eb;
+        color: white;
       }
 
       .glowing-text {
-        background: linear-gradient(to right, #1e293b, #2563eb, #7c3aed, #2563eb, #1e293b);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shine 5s linear infinite;
+        text-shadow: 0 0 15px rgba(37, 99, 235, 0.3);
       }
-
-      @keyframes shine {
-        to { background-position: 200% center; }
-      }
-
-      .card-3d-effect {
-        transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-        transform-style: preserve-3d;
-      }
-
-      .card-3d-effect:hover {
-        transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) scale(1.02);
-      }
-
-      /* Custom thin scrollbar */
-      ::-webkit-scrollbar { width: 4px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.05); border-radius: 10px; }
-      ::-webkit-scrollbar-thumb:hover { background: rgba(37, 99, 235, 0.2); }
     </style>
   <script type="importmap">
 {
