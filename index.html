@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
   <head>
@@ -10,93 +9,98 @@
     <script>
       window.process = window.process || { env: {} };
     </script>
+    
+    <!-- Loading Cairo as a professional fallback -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Cairo', 'sans-serif'],
+              sans: ['TheYearofHandicrafts-Medium', 'Cairo', 'sans-serif'],
             },
             colors: {
-              'corp': {
-                'bg': '#f8fafc',
-                'dark': '#020617',
-                'primary': '#2563eb',
-                'secondary': '#4f46e5',
-                'accent': '#10b981',
-              }
+              'corp-bg': '#020617',
             },
             animation: {
-              'slow-spin': 'spin 20s linear infinite',
               'float': 'float 6s ease-in-out infinite',
-              'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
+              'shimmer': 'shimmer 2s linear infinite',
             },
             keyframes: {
               float: {
                 '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-15px)' },
+                '50%': { transform: 'translateY(-20px)' },
               },
-              pulseGlow: {
-                '0%, 100%': { opacity: 1, filter: 'brightness(1)' },
-                '50%': { opacity: 0.8, filter: 'brightness(1.5)' },
+              shimmer: {
+                '0%': { backgroundPosition: '-200% 0' },
+                '100%': { backgroundPosition: '200% 0' },
               }
             }
-          },
-        },
-      }
+          }
+        }
+      };
     </script>
-
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
     <style>
+      /* Global Font Injection */
+      @font-face {
+        font-family: 'TheYearofHandicrafts-Medium';
+        src: local('TheYearofHandicrafts-Medium');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      * {
+        font-family: 'TheYearofHandicrafts-Medium', 'Cairo', sans-serif !important;
+      }
+
       body {
-        font-family: 'Cairo', sans-serif;
+        margin: 0;
+        padding: 0;
         background-color: #f8fafc;
-        color: #1e293b;
-        overflow: hidden; /* App handles its own scrolling */
-      }
-
-      .glass-card {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.5);
-      }
-
-      .dark-glass {
-        background: rgba(15, 23, 42, 0.8);
-        backdrop-filter: blur(25px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
       }
 
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-      ::selection {
-        background: #2563eb;
-        color: white;
+      .glowing-text {
+        text-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
       }
 
-      .glowing-text {
-        text-shadow: 0 0 15px rgba(37, 99, 235, 0.3);
+      ::selection {
+        background: rgba(37, 99, 235, 0.2);
+        color: #1e40af;
+      }
+
+      @keyframes pulse-slow {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.6; }
+      }
+      .animate-pulse-slow {
+        animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
-    "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.4",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
-  }
-}
-</script>
-</head>
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+        "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+        "vite": "https://esm.sh/vite@^7.3.1",
+        "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.4"
+      }
+    }
+    </script>
+  </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
