@@ -37,15 +37,15 @@ const Sidebar: React.FC<SidebarProps> = ({
         ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%+16px)] lg:translate-x-0'}
         flex flex-col overflow-hidden
       `}>
-        {/* Futuristic Brand */}
+        {/* Futuristic Brand - Changed NEBULA to مهامي */}
         <div className="p-10">
           <div className="flex flex-col items-center gap-4 text-center">
             <div className="w-16 h-16 bg-gradient-to-br from-nebula-purple to-nebula-blue rounded-2xl flex items-center justify-center text-white shadow-2xl floating">
               <Icons.Sparkles className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tighter neon-text">NEBULA</h1>
-              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-[0.4em]">Intelligence OS</p>
+              <h1 className="text-3xl font-black tracking-tighter neon-text">مهامي</h1>
+              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-[0.4em]">نظام الإدارة الذكي</p>
             </div>
           </div>
         </div>
