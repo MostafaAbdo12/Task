@@ -24,6 +24,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
   const [isInsightLoading, setIsInsightLoading] = useState(false);
   const [showCompletionGlow, setShowCompletionGlow] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  
+  // Animation state for Pin and Favorite
+  const [pinAnim, setPinAnim] = useState(false);
+  const [favAnim, setFavAnim] = useState(false);
+  
   const cardRef = useRef<HTMLDivElement>(null);
   
   const isCompleted = task.status === TaskStatus.COMPLETED;
@@ -121,6 +126,18 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
     });
   };
 
+  const handleTogglePinWithAnim = () => {
+    setPinAnim(true);
+    setTimeout(() => setPinAnim(false), 600);
+    onTogglePin(task.id);
+  };
+
+  const handleToggleFavoriteWithAnim = () => {
+    setFavAnim(true);
+    setTimeout(() => setFavAnim(false), 600);
+    onToggleFavorite?.(task.id);
+  };
+
   return (
     <div 
       ref={cardRef}
@@ -190,7 +207,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
         .icon-edit:hover { animation: wiggle 0.4s ease infinite; }
         .icon-trash:hover { animation: shake 0.4s ease infinite; }
         .icon-copy:hover { animation: bounce 0.6s ease infinite; }
-        .icon-pin:hover { animation: rotateSmall 1s linear infinite; }
+        .icon-pin-spin { animation: rotateSmall 0.6s ease-in-out; }
+        .icon-fav-pulse { animation: heartBeat 0.6s ease-in-out; }
         .icon-bell:hover { animation: bellSwing 0.8s ease-in-out infinite; }
         .icon-sparkle:hover { animation: pulseGlow 1.2s infinite; }
         .icon-status:hover { transform: scale(1.15); filter: drop-shadow(0 0 8px currentColor); }
@@ -198,7 +216,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
         @keyframes wiggle { 0%, 100% { transform: rotate(-10deg) scale(1.1); } 50% { transform: rotate(10deg) scale(1.1); } }
         @keyframes shake { 0%, 100% { transform: translateX(0) scale(1.1); } 25% { transform: translateX(-2px) scale(1.1); } 75% { transform: translateX(2px) scale(1.1); } }
         @keyframes bounce { 0%, 100% { transform: translateY(0) scale(1.1); } 50% { transform: translateY(-4px) scale(1.1); } }
-        @keyframes rotateSmall { from { transform: rotate(0deg) scale(1.1); } to { transform: rotate(360deg) scale(1.1); } }
+        @keyframes rotateSmall { from { transform: rotate(0deg) scale(1.3); } to { transform: rotate(360deg) scale(1); } }
+        @keyframes heartBeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.5); } }
         @keyframes bellSwing { 0%, 100% { transform: rotate(0deg) scale(1.1); } 25% { transform: rotate(15deg) scale(1.1); } 75% { transform: rotate(-15deg) scale(1.1); } }
         @keyframes pulseGlow { 0%, 100% { transform: scale(1.1); filter: drop-shadow(0 0 2px currentColor); } 50% { transform: scale(1.3); filter: drop-shadow(0 0 10px currentColor); } }
       `}</style>
@@ -303,10 +322,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
                 hoverTheme="hover:text-blue-500 hover:bg-blue-500/10"
               />
               <CardAction 
-                icon={<Icons.Bell className="w-5 h-5 icon-bell" />} 
-                onClick={() => {}} 
-                title="ضبط تذكير" 
-                hoverTheme="hover:text-indigo-500 hover:bg-indigo-500/10"
+                icon={<Icons.Heart className={`w-5 h-5 ${favAnim ? 'icon-fav-pulse' : ''}`} filled={task.isFavorite} />} 
+                onClick={handleToggleFavoriteWithAnim} 
+                title={task.isFavorite ? "إزالة من المفضلة" : "إضافة للمفضلة"} 
+                hoverTheme={task.isFavorite ? "text-rose-500 bg-rose-500/10" : "hover:text-rose-500 hover:bg-rose-500/10"}
               />
               <CardAction 
                 icon={isInsightLoading ? <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div> : <Icons.Sparkles className="w-5 h-5 icon-sparkle" />} 
@@ -321,8 +340,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
                 hoverTheme="hover:text-emerald-500 hover:bg-emerald-500/10"
               />
               <CardAction 
-                icon={<Icons.Pin className="w-5 h-5 icon-pin" filled={task.isPinned} />} 
-                onClick={() => onTogglePin(task.id)} 
+                icon={<Icons.Pin className={`w-5 h-5 ${pinAnim ? 'icon-pin-spin' : ''}`} filled={task.isPinned} />} 
+                onClick={handleTogglePinWithAnim} 
                 title={task.isPinned ? "إلغاء التثبيت" : "تثبيت في الواجهة"} 
                 hoverTheme={task.isPinned ? "text-amber-500 bg-amber-500/10" : "hover:text-amber-500 hover:bg-amber-500/10"}
               />
