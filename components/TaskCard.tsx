@@ -43,19 +43,23 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
     
     if (nextStatus === TaskStatus.COMPLETED) {
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      
+      // Subtle, refined confetti burst
       confetti({
-        particleCount: 150,
-        spread: 70,
+        particleCount: 50,
+        spread: 60,
         origin: { 
           x: (rect.left + rect.width / 2) / window.innerWidth, 
           y: (rect.top + rect.height / 2) / window.innerHeight 
         },
-        colors: [task.color, '#ff00ff', '#00ffff'],
+        colors: [task.color, '#6366f1', '#a855f7'],
         disableForReducedMotion: true,
-        scalar: 0.7,
-        gravity: 1.2,
-        ticks: 200
+        scalar: 0.6,
+        gravity: 0.9,
+        ticks: 200,
+        shapes: ['circle', 'square']
       });
+      
       setShowCompletionGlow(true);
       setTimeout(() => setShowCompletionGlow(false), 2000);
     }
@@ -80,13 +84,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     
-    // Tilt rotation logic
-    const rotateX = ((y - centerY) / centerY) * -12;
-    const rotateY = ((x - centerX) / centerX) * 12;
+    // Smooth Tilt rotation
+    const rotateX = ((y - centerY) / centerY) * -10;
+    const rotateY = ((x - centerX) / centerX) * 10;
     
-    // Deep parallax movement for background elements
-    const parallaxX = ((x - centerX) / centerX) * 20;
-    const parallaxY = ((y - centerY) / centerY) * 20;
+    // Deep parallax movement for inner layers
+    const parallaxX = ((x - centerX) / centerX) * 30;
+    const parallaxY = ((y - centerY) / centerY) * 30;
     
     cardRef.current.style.setProperty('--mouse-x', `${x}px`);
     cardRef.current.style.setProperty('--mouse-y', `${y}px`);
@@ -108,40 +112,21 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
   const formatDateFull = (dateStr: string) => {
     if (!dateStr) return '---';
     return new Date(dateStr).toLocaleString('ar-EG', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   };
 
   const handleCopyDate = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const dateText = formatDateFull(task.createdAt);
-    navigator.clipboard.writeText(dateText);
+    navigator.clipboard.writeText(formatDateFull(task.createdAt));
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
   const formatShortDate = (dateStr: string) => {
     if (!dateStr) return 'بلا موعد';
-    return new Date(dateStr).toLocaleDateString('ar-EG', {
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const handleTogglePinWithAnim = () => {
-    setPinAnim(true);
-    setTimeout(() => setPinAnim(false), 600);
-    onTogglePin(task.id);
-  };
-
-  const handleToggleFavoriteWithAnim = () => {
-    setFavAnim(true);
-    setTimeout(() => setFavAnim(false), 600);
-    onToggleFavorite?.(task.id);
+    return new Date(dateStr).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -153,108 +138,123 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
       style={{ 
         animationDelay: `${index * 60}ms`,
         transform: isHovered && !isCompleted 
-          ? `perspective(1000px) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg)) scale3d(1.05, 1.05, 1.05)` 
+          ? `perspective(1000px) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg)) translateY(-12px) scale3d(1.05, 1.05, 1.05)` 
           : 'scale3d(1, 1, 1)'
       }}
-      className={`group relative rounded-[42px] transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) border animate-in fade-in slide-in-from-bottom-8 will-change-transform overflow-hidden
+      className={`group relative rounded-[44px] transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) border animate-in fade-in slide-in-from-bottom-8 will-change-transform overflow-hidden
         ${showCompletionGlow ? 'vibrant-glow-active' : ''}
         ${isCompleted 
-          ? 'opacity-70 bg-[var(--panel-bg)] border-[var(--border-color)] shadow-none scale-95' 
-          : 'bg-gradient-to-br from-[var(--panel-bg)] via-[var(--panel-bg)] to-transparent border-[var(--border-color)] hover:border-accent/40 shadow-2xl hover:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.45)]'}
+          ? 'opacity-60 bg-[var(--panel-bg)] border-[var(--border-color)] shadow-none scale-95 grayscale-[0.3]' 
+          : 'glass-panel border-white/20 shadow-2xl hover:shadow-[0_45px_90px_-20px_rgba(0,0,0,0.35)]'}
       `}
     >
       <style>{`
-        /* Futuristic Background Parallax */
+        /* Futuristic Background Layers */
         .parallax-layer {
           position: absolute;
           inset: -40px;
           pointer-events: none;
           z-index: 0;
           opacity: 0;
-          transition: opacity 0.6s ease;
+          transition: opacity 0.8s ease;
         }
-        .group:hover .parallax-layer { opacity: 1; }
+        .group:hover .parallax-layer { opacity: 0.25; }
 
-        .parallax-grid {
-          background-image: 
-            radial-gradient(circle at 1px 1px, ${task.color}15 1px, transparent 0);
-          background-size: 32px 32px;
-          transform: translate(calc(var(--parallax-x, 0px) * -0.8), calc(var(--parallax-y, 0px) * -0.8));
+        .parallax-grid-dots {
+          background-image: radial-gradient(${task.color} 1.5px, transparent 1.5px);
+          background-size: 30px 30px;
+          transform: translate(calc(var(--parallax-x, 0px) * -0.6), calc(var(--parallax-y, 0px) * -0.6));
         }
 
-        .parallax-spot {
-          background: radial-gradient(
-            circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-            ${task.color}25 0%, 
-            transparent 75%
-          );
-          transform: translate(calc(var(--parallax-x, 0px) * 0.3), calc(var(--parallax-y, 0px) * 0.3));
+        .parallax-spotlight-glow {
+          background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${task.color}30 0%, transparent 70%);
+          z-index: 1;
         }
 
         @keyframes vibrantGlow {
-          0%, 100% { box-shadow: 0 0 20px -5px ${task.color}; }
-          50% { box-shadow: 0 0 60px 15px ${task.color}60; }
+          0%, 100% { box-shadow: 0 0 15px -5px ${task.color}; }
+          50% { box-shadow: 0 0 70px 20px ${task.color}50; }
         }
         .vibrant-glow-active {
-          animation: vibrantGlow 2s ease forwards;
+          animation: vibrantGlow 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        /* Tooltip refinement */
+        /* Tooltip Refined Animation */
         .creation-date-tooltip {
           position: absolute;
           top: 15px;
           left: 50%;
-          transform: translateX(-50%) translateY(-15px);
+          transform: translateX(-50%) translateY(-20px);
           opacity: 0;
           visibility: hidden;
           transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           pointer-events: none;
-          white-space: nowrap;
           z-index: 100;
         }
         .group:hover .creation-date-tooltip {
           opacity: 1;
           visibility: visible;
-          transform: translateX(-50%) translateY(calc(0px + var(--rotate-x, 0deg) * 0.4));
-          pointer-events: auto;
+          transform: translateX(-50%) translateY(calc(5px + var(--rotate-x, 0deg) * 0.5));
         }
 
-        /* Icon Hover Refinement */
-        .icon-action {
-          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* Icon Action Animations - Refined with Glow & Scale */
+        .icon-btn-modern {
+          position: relative;
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .icon-action:hover {
-          transform: translateY(-5px) scale(1.25);
-          filter: drop-shadow(0 0 15px currentColor);
+        .icon-btn-modern:hover {
+          transform: translateY(-6px) scale(1.3);
+          filter: drop-shadow(0 0 12px currentColor);
+        }
+        .icon-btn-modern::after {
+          content: '';
+          position: absolute;
+          inset: -4px;
           background: currentColor;
-          color: white;
+          opacity: 0;
+          border-radius: inherit;
+          filter: blur(8px);
+          transition: opacity 0.3s ease;
+          z-index: -1;
         }
+        .icon-btn-modern:hover::after {
+          opacity: 0.15;
+        }
+        
+        @keyframes heartPulseEffect { 
+          0%, 100% { transform: scale(1); } 
+          50% { transform: scale(1.5); filter: drop-shadow(0 0 20px #f43f5e); } 
+        }
+        .fav-pulse-anim { animation: heartPulseEffect 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
-        @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spinSlow 3s linear infinite; }
+        @keyframes rotatePin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .pin-spin-anim { animation: rotatePin 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
       `}</style>
 
-      {/* Parallax Layers */}
-      <div className="parallax-layer parallax-grid" />
-      <div className="parallax-layer parallax-spot" />
+      {/* Futuristic Background Parallax Elements */}
+      <div className="parallax-layer parallax-grid-dots" />
+      <div className="parallax-layer parallax-spotlight-glow" />
 
-      <div className="relative p-8 h-full flex flex-col gap-6 z-10">
+      <div className="relative p-9 h-full flex flex-col gap-6 z-10">
         
-        {/* Creation Date Tooltip */}
+        {/* Creation Date Tooltip (Floating Context) */}
         <div 
           onClick={handleCopyDate}
-          className="creation-date-tooltip bg-slate-900/95 backdrop-blur-3xl text-white text-[10px] font-black px-6 py-3 rounded-2xl border border-white/15 shadow-2xl flex items-center gap-2.5 cursor-pointer hover:bg-slate-800 transition-all"
+          className="creation-date-tooltip bg-[var(--bg-main)]/95 backdrop-blur-3xl text-[var(--text-primary)] text-[10px] font-black px-6 py-3 rounded-2xl border border-[var(--border-color)] shadow-2xl flex items-center gap-3 cursor-pointer hover:scale-105 hover:bg-white transition-all"
         >
-           <Icons.Calendar className="w-3.5 h-3.5 text-accent" />
-           <span>{copySuccess ? 'تم النسخ!' : `أنشئت في: ${formatDateFull(task.createdAt)}`}</span>
-           {!copySuccess && <Icons.Copy className="w-3 h-3 opacity-30 ml-1" />}
+           <Icons.Calendar className="w-4 h-4 text-accent" />
+           <span className="tracking-tight">{copySuccess ? 'تم النسخ للسجل' : `أنشئت في: ${formatShortDate(task.createdAt)}`}</span>
+           <Icons.Copy className="w-3 h-3 opacity-20" />
         </div>
 
-        {/* AI Insight Popup */}
+        {/* AI Insight Overlay */}
         {insight && (
           <div className="absolute top-6 left-6 right-6 z-50 animate-in zoom-in-95 slide-in-from-top-6 duration-500">
-            <div className="bg-accent text-white p-6 rounded-[32px] shadow-[0_20px_50px_rgba(var(--accent-rgb,37,99,235),0.4)] border border-white/25 text-xs font-black flex items-center gap-5">
-              <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center animate-pulse shrink-0">
+            <div className="bg-accent text-white p-6 rounded-[32px] shadow-[0_25px_60px_-10px_rgba(var(--accent-rgb,37,99,235),0.5)] border border-white/20 text-[12px] font-black flex items-center gap-5">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center animate-pulse shrink-0">
                 <Icons.Sparkles className="w-6 h-6" />
               </div>
               <p className="leading-relaxed flex-1">{insight}</p>
@@ -262,21 +262,21 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
           </div>
         )}
 
-        {/* Header Section */}
+        {/* Card Header Section */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-6">
             <div 
-              className="w-18 h-18 rounded-[28px] flex items-center justify-center text-white shadow-2xl transition-all duration-700 group-hover:scale-115 group-hover:-rotate-3"
+              className="w-20 h-20 rounded-[30px] flex items-center justify-center text-white shadow-2xl transition-all duration-700 group-hover:scale-115 group-hover:rotate-6"
               style={{ 
                 backgroundColor: isCompleted ? '#64748b' : task.color,
-                boxShadow: isHovered && !isCompleted ? `0 20px 45px ${task.color}60` : 'none'
+                boxShadow: isHovered && !isCompleted ? `0 20px 50px ${task.color}60` : 'none'
               }}
             >
-              <div className="w-9 h-9">{task.icon && CategoryIconMap[task.icon] ? CategoryIconMap[task.icon] : CategoryIconMap['star']}</div>
+              <div className="w-10 h-10">{task.icon && CategoryIconMap[task.icon] ? CategoryIconMap[task.icon] : CategoryIconMap['star']}</div>
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.25em]">{task.category}</span>
-              <span className={`text-[9px] font-black px-3.5 py-1.5 rounded-xl border w-fit transition-all duration-500 ${isCompleted ? 'bg-slate-100 text-slate-500 border-transparent' : priorityMeta.color + ' border-current/20'}`}>
+              <span className={`text-[9px] font-black px-4 py-1.5 rounded-xl border w-fit transition-all duration-500 ${isCompleted ? 'bg-slate-100 text-slate-500 border-transparent' : priorityMeta.color + ' border-current/20'}`}>
                 {priorityMeta.label}
               </span>
             </div>
@@ -284,39 +284,39 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
 
           <button 
             onClick={handleStatusToggle}
-            className={`w-15 h-15 rounded-[26px] flex items-center justify-center transition-all duration-500 active:scale-75 border-2 shadow-sm
+            className={`w-16 h-16 rounded-[24px] flex items-center justify-center transition-all duration-500 active:scale-75 border-2 shadow-sm
               ${isCompleted 
-                ? 'bg-emerald-500 border-emerald-400 text-white shadow-emerald-500/30 shadow-xl scale-110' 
+                ? 'bg-emerald-500 border-emerald-400 text-white shadow-xl scale-110 shadow-emerald-500/30' 
                 : 'bg-white/5 border-[var(--border-color)] text-[var(--text-secondary)] hover:border-accent hover:text-accent hover:bg-accent/10'
               }`}
           >
-            {isCompleted ? <Icons.CheckCircle className="w-9 h-9" /> : <div className="w-8 h-8 rounded-full border-[4px] border-current opacity-20 transition-opacity group-hover:opacity-100"></div>}
+            {isCompleted ? <Icons.CheckCircle className="w-10 h-10" /> : <div className="w-8 h-8 rounded-full border-[4px] border-current opacity-10 group-hover:opacity-100 transition-opacity"></div>}
           </button>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 space-y-5">
-          <h3 className={`text-2xl font-black tracking-tighter leading-[1.2] transition-all duration-500
-            ${isCompleted ? 'text-slate-400 line-through' : 'text-[var(--text-primary)] group-hover:text-accent'}
+        {/* Main Content Area */}
+        <div className="flex-1 space-y-4">
+          <h3 className={`text-2xl font-black tracking-tight leading-tight transition-all duration-500
+            ${isCompleted ? 'text-slate-400 line-through opacity-70' : 'text-[var(--text-primary)] group-hover:text-accent'}
           `}>
             {task.title}
           </h3>
-          <p className={`text-[15px] font-bold leading-relaxed line-clamp-2 transition-opacity duration-500
-            ${isCompleted ? 'text-slate-400 opacity-50' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}
+          <p className={`text-[15px] font-bold leading-relaxed line-clamp-2 transition-all duration-500
+            ${isCompleted ? 'text-slate-400 opacity-40' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}
           `}>
-            {task.description || "لا توجد تفاصيل إضافية لهذا المسار الرقمي."}
+            {task.description || "لا توجد بيانات تفصيلية متوفرة لهذا المسار الرقمي."}
           </p>
 
-          {/* Subtask Progress */}
+          {/* Execution Roadmap (Progress) */}
           {task.subTasks && task.subTasks.length > 0 && (
-            <div className="mt-5 space-y-3">
-              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
-                 <span className="opacity-60">مؤشر الإنجاز</span>
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)]">
+                 <span className="opacity-60">خارطة التنفيذ</span>
                  <span className="text-accent">{subtaskProgress}%</span>
               </div>
-              <div className="w-full h-2 bg-black/10 rounded-full overflow-hidden shadow-inner">
+              <div className="w-full h-2.5 bg-black/5 rounded-full overflow-hidden shadow-inner border border-black/5">
                  <div 
-                    className="h-full bg-accent transition-all duration-1000 ease-out shadow-[0_0_15px_var(--accent-color)]" 
+                    className="h-full bg-accent transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) shadow-[0_0_15px_var(--accent-color)]" 
                     style={{ width: `${subtaskProgress}%` }}
                   />
               </div>
@@ -324,67 +324,37 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
           )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="pt-8 border-t border-[var(--border-color)]">
+        {/* Futuristic Action Interface */}
+        <div className="pt-7 border-t border-[var(--border-color)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <CardAction 
-                icon={<Icons.Edit className="w-5 h-5" />} 
-                onClick={() => onEdit(task)} 
-                title="تعديل" 
-                hoverTheme="hover:text-blue-500"
-              />
-              <CardAction 
-                icon={<Icons.Heart className={`w-5 h-5 ${favAnim ? 'animate-bounce' : ''}`} filled={task.isFavorite} />} 
-                onClick={handleToggleFavoriteWithAnim} 
-                title="المفضلة" 
-                hoverTheme={task.isFavorite ? "text-rose-500" : "hover:text-rose-500"}
-              />
-              <CardAction 
-                icon={isInsightLoading ? <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div> : <Icons.Sparkles className="w-5 h-5" />} 
-                onClick={handleFetchInsight} 
-                title="ذكاء اصطناعي" 
-                hoverTheme="hover:text-accent"
-              />
-              <CardAction 
-                icon={<Icons.Copy className="w-5 h-5" />} 
-                onClick={() => onCopy(task)} 
-                title="نسخ" 
-                hoverTheme="hover:text-emerald-500"
-              />
-              <CardAction 
-                icon={<Icons.Pin className={`w-5 h-5 ${pinAnim ? 'animate-spin-slow' : ''}`} filled={task.isPinned} />} 
-                onClick={handleTogglePinWithAnim} 
-                title="تثبيت" 
-                hoverTheme={task.isPinned ? "text-amber-500" : "hover:text-amber-500"}
-              />
-              <CardAction 
-                icon={<Icons.Trash className="w-5 h-5" />} 
-                onClick={() => setIsDeleting(true)} 
-                title="حذف" 
-                hoverTheme="hover:text-rose-500"
-              />
+              <ActionBtn icon={<Icons.Edit className="w-5 h-5" />} onClick={() => onEdit(task)} title="تعديل" color="hover:text-blue-500" />
+              <ActionBtn icon={<Icons.Heart className={`w-5 h-5 ${favAnim ? 'fav-pulse-anim' : ''}`} filled={task.isFavorite} />} onClick={() => { setFavAnim(true); setTimeout(() => setFavAnim(false), 600); onToggleFavorite?.(task.id); }} title="المفضلة" color={task.isFavorite ? 'text-rose-500' : 'hover:text-rose-500'} />
+              <ActionBtn icon={isInsightLoading ? <div className="w-4 h-4 border-2 border-accent/20 border-t-accent rounded-full animate-spin"></div> : <Icons.Sparkles className="w-5 h-5" />} onClick={handleFetchInsight} title="ذكاء اصطناعي" color="hover:text-accent" />
+              <ActionBtn icon={<Icons.Copy className="w-5 h-5" />} onClick={() => onCopy(task)} title="استنساخ" color="hover:text-emerald-500" />
+              <ActionBtn icon={<Icons.Pin className={`w-5 h-5 ${pinAnim ? 'pin-spin-anim' : ''}`} filled={task.isPinned} />} onClick={() => { setPinAnim(true); setTimeout(() => setPinAnim(false), 800); onTogglePin(task.id); }} title="تثبيت" color={task.isPinned ? 'text-amber-500' : 'hover:text-amber-500'} />
+              <ActionBtn icon={<Icons.Trash className="w-5 h-5" />} onClick={() => setIsDeleting(true)} title="حذف نهائي" color="hover:text-rose-500" />
             </div>
             
-            <div className="flex items-center gap-3 text-[10px] font-black text-[var(--text-secondary)] bg-black/5 px-4.5 py-3 rounded-2xl border border-[var(--border-color)] group/date transition-all hover:border-accent/40 hover:bg-white shadow-sm">
-               <Icons.Calendar className="w-4 h-4 opacity-50 group-hover/date:text-accent group-hover/date:scale-110 transition-all" />
+            <div className="flex items-center gap-3 text-[10px] font-black text-[var(--text-secondary)] bg-black/5 px-5 py-3 rounded-2xl border border-[var(--border-color)] group/date transition-all hover:border-accent/30 hover:bg-white shadow-sm">
+               <Icons.Calendar className="w-4 h-4 opacity-40 group-hover/date:text-accent group-hover/date:scale-110 transition-all" />
                <span className="tracking-tighter">{formatShortDate(task.dueDate)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Deletion Interface */}
+      {/* Delete Confirmation Overlay (Futuristic Glass) */}
       {isDeleting && (
-        <div className="absolute inset-0 z-[200] bg-[var(--bg-main)]/95 backdrop-blur-3xl flex flex-col items-center justify-center p-12 text-center animate-in zoom-in-95 duration-500">
-           <div className="w-26 h-26 bg-rose-500/15 rounded-[40px] flex items-center justify-center mb-8 text-rose-500 shadow-2xl animate-bounce">
-              <Icons.Trash className="w-13 h-13" />
+        <div className="absolute inset-0 z-[200] bg-[var(--bg-main)]/95 backdrop-blur-3xl flex flex-col items-center justify-center p-10 text-center animate-in zoom-in-95 duration-500">
+           <div className="w-24 h-24 bg-rose-500/10 rounded-[40px] flex items-center justify-center mb-7 text-rose-500 shadow-2xl animate-bounce">
+              <Icons.Trash className="w-11 h-11" />
            </div>
-           <h4 className="text-3xl font-black text-[var(--text-primary)] mb-4 tracking-tighter">حذف المهمة؟</h4>
-           <p className="text-sm text-[var(--text-secondary)] mb-12 px-6 font-bold max-w-[320px] leading-relaxed opacity-80">سيتم إزالة كافة السجلات الرقمية المتعلقة بهذه المهمة فوراً من السحابة.</p>
-           <div className="flex gap-5 w-full max-w-[340px]">
-             <button onClick={() => onDelete(task.id)} className="flex-1 py-4.5 bg-rose-600 text-white rounded-[26px] text-[15px] font-black hover:bg-rose-700 transition-all shadow-[0_15px_40px_rgba(225,29,72,0.4)] hover:scale-105 active:scale-95">تأكيد</button>
-             <button onClick={() => setIsDeleting(false)} className="flex-1 py-4.5 bg-white/10 text-[var(--text-primary)] border border-[var(--border-color)] rounded-[26px] text-[15px] font-black hover:bg-white/20 transition-all">تراجع</button>
+           <h4 className="text-3xl font-black text-[var(--text-primary)] mb-4 tracking-tighter">إلغاء البروتوكول؟</h4>
+           <p className="text-[13px] text-[var(--text-secondary)] mb-12 px-6 font-bold opacity-70 leading-relaxed max-w-[320px]">تحذير: هذا الإجراء سيقوم بمسح كافة السجلات الرقمية المتعلقة بهذه المهمة نهائياً.</p>
+           <div className="flex gap-4 w-full max-w-[340px]">
+             <button onClick={() => onDelete(task.id)} className="flex-1 py-5 bg-rose-600 text-white rounded-[26px] text-[14px] font-black hover:bg-rose-700 transition-all shadow-[0_20px_45px_-10px_rgba(225,29,72,0.4)] hover:scale-105 active:scale-95">تأكيد الحذف</button>
+             <button onClick={() => setIsDeleting(false)} className="flex-1 py-5 bg-white/5 border border-[var(--border-color)] text-[var(--text-primary)] rounded-[26px] text-[14px] font-black hover:bg-white/20 transition-all">تراجع</button>
            </div>
         </div>
       )}
@@ -392,11 +362,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onCopy, onS
   );
 };
 
-const CardAction = ({ icon, onClick, title, hoverTheme }: { icon: React.ReactNode, onClick: () => void, title: string, hoverTheme: string }) => (
+const ActionBtn = ({ icon, onClick, title, color }: { icon: React.ReactNode, onClick: () => void, title: string, color: string }) => (
   <button 
     onClick={(e) => { e.stopPropagation(); onClick(); }}
     title={title}
-    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-400 active:scale-75 text-[var(--text-secondary)] icon-action ${hoverTheme}`}
+    className={`w-11 h-11 rounded-[18px] flex items-center justify-center transition-all duration-400 active:scale-75 text-[var(--text-secondary)] icon-btn-modern ${color}`}
   >
     {icon}
   </button>
