@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Category, User, Task } from '../types';
 import { Icons, CategoryIconMap } from '../constants';
@@ -80,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                  <Icons.Sparkles className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="premium-logo-text text-2xl font-black tracking-tighter">مهامي</h1>
+                <h1 className="premium-logo-text text-2xl font-black tracking-tighter text-[var(--text-primary)]">مهامي</h1>
                 <p className="text-[9px] font-black text-accent uppercase tracking-[0.4em] mt-1">القوة الذكية</p>
               </div>
            </div>
@@ -160,6 +161,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                  </div>
               </div>
+           </div>
         </div>
       </aside>
     </>
