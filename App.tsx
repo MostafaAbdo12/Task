@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task, TaskStatus, Category, User } from './types';
 import { Icons } from './constants';
@@ -12,10 +13,8 @@ import { getSmartAdvice, getSystemBriefingAudio } from './services/geminiService
 
 type ToastType = 'success' | 'danger' | 'info';
 type ViewFilter = 'ALL' | 'COMPLETED' | 'FAVORITES' | 'PENDING';
+type AppTheme = 'light' | 'night' | 'midnight';
 
-/**
- * Manual Base64 decoding to Uint8Array
- */
 function decodeBase64(base64: string) {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -26,9 +25,6 @@ function decodeBase64(base64: string) {
   return bytes;
 }
 
-/**
- * Decodes raw PCM data into an AudioBuffer
- */
 async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
@@ -55,6 +51,7 @@ const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [viewFilter, setViewFilter] = useState<ViewFilter>('ALL');
   const [currentView, setCurrentView] = useState<'tasks' | 'settings'>('tasks');
+  const [appTheme, setAppTheme] = useState<AppTheme>(() => (localStorage.getItem('maham_theme') as AppTheme) || 'night');
   
   const [showForm, setShowForm] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -63,7 +60,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   
-  const [smartAdvice, setSmartAdvice] = useState('جاري تحليل مصفوفة البيانات...');
+  const [smartAdvice, setSmartAdvice] = useState('تحليل النبض البياني...');
   const [isAudioLoading, setIsAudioLoading] = useState(false);
 
   const [toast, setToast] = useState<{ message: string; visible: boolean; type: ToastType }>({ 
@@ -74,6 +71,12 @@ const App: React.FC = () => {
     setToast({ message: msg, visible: true, type });
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 4000);
   }, []);
+
+  // Sync Theme with DOM
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', appTheme);
+    localStorage.setItem('maham_theme', appTheme);
+  }, [appTheme]);
 
   useEffect(() => {
     const initAppData = async () => {
@@ -89,7 +92,7 @@ const App: React.FC = () => {
           const advice = await getSmartAdvice(userTasks);
           setSmartAdvice(advice);
         } catch (err) {
-          showToast("فشل في مزامنة البيانات", "danger");
+          showToast("فشل في مزامنة البيانات السحابية", "danger");
         } finally {
           setIsInitialLoading(false);
         }
@@ -101,7 +104,7 @@ const App: React.FC = () => {
   }, [currentUser, showToast]);
 
   useEffect(() => {
-    if (currentUser && tasks.length >= 0) {
+    if (currentUser && tasks) {
       storageService.saveUserTasks(currentUser.username, tasks);
     }
   }, [tasks, currentUser]);
@@ -118,21 +121,19 @@ const App: React.FC = () => {
     try {
       const audioBase64 = await getSystemBriefingAudio(currentUser.username, tasks);
       if (audioBase64) {
-        // Correcting audio playback for PCM data
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
         const decodedBytes = decodeBase64(audioBase64);
         const audioBuffer = await decodeAudioData(decodedBytes, audioContext, 24000, 1);
-        
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContext.destination);
         source.start();
       } else {
-        showToast("فشل في تحميل التقرير الصوتي", "danger");
+        showToast("فشل في تحميل تقرير التلخيص الصوتي", "danger");
       }
     } catch (err) {
       console.error("Audio Playback Error:", err);
-      showToast("خطأ في تشغيل الصوت", "danger");
+      showToast("خطأ في معالجة الصوت", "danger");
     } finally {
       setIsAudioLoading(false);
     }
@@ -140,13 +141,15 @@ const App: React.FC = () => {
 
   const stats = useMemo(() => {
     const activeTasks = tasks.filter(t => t.status !== TaskStatus.COMPLETED);
-    const totalActive = activeTasks.length;
-    const completed = tasks.filter(t => t.status === TaskStatus.COMPLETED).length;
-    const favorites = activeTasks.filter(t => t.isFavorite).length;
-    const pending = activeTasks.filter(t => t.status === TaskStatus.PENDING).length;
-    const totalAll = tasks.length;
-    const percentage = totalAll > 0 ? Math.round((completed / totalAll) * 100) : 0;
-    return { total: totalActive, completed, pending, percentage, favorites };
+    const completedTasks = tasks.filter(t => t.status === TaskStatus.COMPLETED);
+    
+    return {
+      total: activeTasks.length,
+      completed: completedTasks.length,
+      favorites: activeTasks.filter(t => t.isFavorite).length,
+      pending: activeTasks.filter(t => t.status === TaskStatus.PENDING).length,
+      percentage: tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0
+    };
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
@@ -166,29 +169,29 @@ const App: React.FC = () => {
   const handleStatusChange = (id: string, status: TaskStatus) => {
     setTasks(prevTasks => prevTasks.map(t => {
       if (t.id === id) {
-        const isNowCompleted = status === TaskStatus.COMPLETED;
         return {
           ...t,
           status,
-          isFavorite: isNowCompleted ? false : t.isFavorite,
-          isPinned: isNowCompleted ? false : t.isPinned,
           updatedAt: new Date().toISOString()
         };
       }
       return t;
     }));
+    
     if (status === TaskStatus.COMPLETED) {
-      showToast("تم إغلاق السجل بنجاح 🎯", 'success');
+      showToast("رائع! المهمة انتقلت لخانة المنجزات 🚀", 'success');
+    } else {
+      showToast("تمت استعادة المهمة للعمل النشط", 'info');
     }
   };
 
   if (isInitialLoading) {
     return (
       <div className="h-screen w-full bg-[#020617] flex flex-col items-center justify-center text-white">
-        <div className="w-24 h-24 bg-blue-600/10 border border-blue-500/20 rounded-[40px] flex items-center justify-center animate-pulse mb-8">
-          <Icons.Sparkles className="w-12 h-12 text-blue-500" />
+        <div className="w-20 h-20 bg-indigo-600/10 rounded-[30px] flex items-center justify-center animate-bounce mb-6">
+          <Icons.Sparkles className="w-10 h-10 text-indigo-500" />
         </div>
-        <p className="text-sm font-black uppercase tracking-[0.4em] opacity-40">Connecting to Neural Matrix...</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-400">Loading Intelligence...</p>
       </div>
     );
   }
@@ -196,21 +199,7 @@ const App: React.FC = () => {
   if (!currentUser) return <Auth onLogin={setCurrentUser} />;
 
   return (
-    <div className="h-screen w-full flex bg-[#f8fafc] overflow-hidden font-sans">
-      <style>{`
-        @keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .animate-float-icon { animation: floatIcon 4s infinite ease-in-out; }
-        .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.3); }
-      `}</style>
-      
-      {toast.visible && (
-        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[3000] animate-in slide-in-from-top-12">
-           <div className={`px-12 py-5 rounded-[32px] shadow-2xl flex items-center gap-5 border ${toast.type === 'success' ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-rose-600 border-rose-400 text-white'}`}>
-             <span className="font-black text-[15px] tracking-tight">{toast.message}</span>
-           </div>
-        </div>
-      )}
-
+    <div className="h-screen w-full flex bg-[var(--bg-main)] overflow-hidden font-sans selection:bg-indigo-500/30 transition-colors duration-500">
       <Sidebar 
         isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} 
         categories={categories} tasks={tasks} selectedCategory={selectedCategory}
@@ -221,43 +210,70 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto no-scrollbar p-6 lg:p-16 pt-32 lg:pt-16">
-          <header className="flex flex-col md:flex-row md:items-end justify-between gap-10 mb-20">
-            <div>
-              <h1 className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tighter">
-                {currentView === 'tasks' ? 'قاعة العمليات' : 'مركز التخصيص'}
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[100px] animate-pulse-slow"></div>
+        
+        <div className="flex-1 overflow-y-auto no-scrollbar p-6 lg:p-12 pt-28 lg:pt-12 relative z-10">
+          <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 mb-16">
+            <div className="space-y-4">
+              <h1 className="text-4xl lg:text-7xl font-black text-[var(--text-primary)] tracking-tighter">
+                {currentView === 'tasks' 
+                  ? (viewFilter === 'COMPLETED' ? 'قائمة الإنجازات' : 'قاعة العمليات') 
+                  : 'إعدادات المستخدم'}
               </h1>
-              <div className="flex items-center gap-5 mt-6">
-                 <div className="bg-emerald-50 text-emerald-700 px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-3 border border-emerald-100">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                    المشغل: {currentUser.username}
+              <div className="flex flex-wrap items-center gap-4">
+                 <div className="bg-accent/10 text-accent px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-accent/20 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+                    المستخدم {currentUser.username} نشط
                  </div>
+                 
+                 {/* Theme Switcher Toggle */}
+                 <div className="flex bg-[var(--panel-bg)] border border-[var(--border-color)] p-1 rounded-full shadow-lg">
+                    <button 
+                      onClick={() => setAppTheme('light')}
+                      className={`p-2 rounded-full transition-all ${appTheme === 'light' ? 'bg-white text-blue-600 shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                       <Icons.Sun className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => setAppTheme('night')}
+                      className={`p-2 rounded-full transition-all ${appTheme === 'night' ? 'bg-indigo-600 text-white shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                       <Icons.Moon className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => setAppTheme('midnight')}
+                      className={`p-2 rounded-full transition-all ${appTheme === 'midnight' ? 'bg-slate-900 text-cyan-400 shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                       <Icons.Sparkles className="w-3.5 h-3.5" />
+                    </button>
+                 </div>
+
                  <button 
                   onClick={handleAudioBriefing}
                   disabled={isAudioLoading}
-                  className="bg-blue-50 text-blue-700 hover:bg-blue-100 px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-3 transition-all active:scale-95 border border-blue-100"
+                  className="bg-accent/5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-[var(--border-color)] transition-all flex items-center gap-2"
                  >
-                    {isAudioLoading ? <div className="w-4 h-4 border-2 border-blue-700/20 border-t-blue-700 rounded-full animate-spin"></div> : <Icons.Bell className="w-4 h-4 animate-float-icon" />}
+                    {isAudioLoading ? <div className="w-3 h-3 border-2 border-accent/20 border-t-accent rounded-full animate-spin"></div> : <Icons.Bell className="w-3 h-3" />}
                     تقرير التلخيص الصوتي
                  </button>
               </div>
             </div>
 
             {currentView === 'tasks' && (
-              <div className="flex flex-wrap items-center gap-6">
-                <div className="relative flex-1 min-w-[260px] md:max-w-sm">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative flex-1 min-w-[240px] max-w-sm">
                    <input 
                     value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="البحث في المصفوفة السحابية..."
-                    className="w-full bg-white border border-slate-200 rounded-[32px] py-5 pr-14 pl-8 text-base font-bold shadow-lg focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                    placeholder="ابحث في الذاكرة..."
+                    className="w-full bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-2xl py-4 pr-12 pl-6 text-sm font-bold text-[var(--text-primary)] shadow-xl focus:border-accent/30 outline-none transition-all placeholder:text-slate-600"
                    />
-                   <Icons.Search className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 w-6 h-6" />
+                   <Icons.Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
                 </div>
                 <button 
                   onClick={() => setShowForm(true)} 
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-5 rounded-[32px] text-lg font-black shadow-xl shadow-indigo-200 transition-all hover:scale-105 active:scale-95 flex items-center gap-5 group"
+                  className="bg-accent hover:opacity-90 text-white px-10 py-4 rounded-2xl text-base font-black shadow-2xl shadow-accent/40 transition-all hover:scale-105 active:scale-95 flex items-center gap-4 group"
                 >
-                  <Icons.Plus className="w-7 h-7 group-hover:rotate-180 transition-transform duration-700" />
+                  <Icons.Plus className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
                   <span>مهمة جديدة</span>
                 </button>
               </div>
@@ -265,45 +281,50 @@ const App: React.FC = () => {
           </header>
 
           {currentView === 'tasks' ? (
-            <div className="space-y-24 pb-32">
-              <div className="bg-gradient-to-l from-slate-900 to-indigo-900 p-12 rounded-[50px] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden border border-white/10 group">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(37,99,235,0.1),transparent_60%)]"></div>
-                  <div className="relative z-10 space-y-5 text-center md:text-right">
-                    <div className="flex items-center justify-center md:justify-start gap-4">
-                      <Icons.Sparkles className="w-8 h-8 text-indigo-400 animate-float-icon" />
-                      <span className="text-[12px] font-black text-indigo-300 uppercase tracking-[0.4em]">تحليلات الذكاء الاصطناعي</span>
+            <div className="space-y-16 pb-20">
+              {/* Dynamic AI Banner */}
+              <div className="bg-accent/10 border border-accent/20 p-10 rounded-[40px] flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group">
+                  <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_0%_0%,rgba(99,102,241,0.1),transparent_50%)]"></div>
+                  <div className="relative z-10 space-y-4 text-center md:text-right">
+                    <div className="flex items-center justify-center md:justify-start gap-3">
+                      <Icons.Sparkles className="w-6 h-6 text-accent animate-float" />
+                      <span className="text-[10px] font-black text-accent uppercase tracking-widest">تحليل الذكاء الاصطناعي</span>
                     </div>
-                    <h2 className="text-3xl lg:text-5xl font-black text-white leading-tight">
+                    <h2 className="text-2xl lg:text-4xl font-black text-[var(--text-primary)] leading-tight max-w-2xl">
                        {smartAdvice}
                     </h2>
                   </div>
-                  <div className="relative z-10 bg-white/5 backdrop-blur-3xl p-10 rounded-[45px] border border-white/10 text-center min-w-[240px] shadow-2xl">
-                     <p className="text-7xl font-black text-white tracking-tighter">{stats.percentage}%</p>
-                     <p className="text-[12px] font-black text-indigo-200 uppercase tracking-widest mt-4">إجمالي الإنجاز السحابي</p>
+                  <div className="relative z-10 bg-accent text-white px-8 py-6 rounded-[30px] text-center min-w-[180px] shadow-2xl">
+                     <p className="text-5xl font-black tracking-tighter">{stats.percentage}%</p>
+                     <p className="text-[9px] font-black uppercase tracking-widest mt-2 opacity-70">إنتاجية المستخدم</p>
                   </div>
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="المهام النشطة" value={stats.total} type="total" icon={<Icons.LayoutDashboard />} active={viewFilter === 'ALL'} onClick={() => setViewFilter('ALL')} />
-                <StatCard title="الأرشيف المنجز" value={stats.completed} type="completed" icon={<Icons.CheckCircle />} active={viewFilter === 'COMPLETED'} onClick={() => setViewFilter('COMPLETED')} />
-                <StatCard title="المفضلة" value={stats.favorites} type="fav" icon={<Icons.Sparkles />} active={viewFilter === 'FAVORITES'} onClick={() => setViewFilter('FAVORITES')} />
-                <StatCard title="قيد الانتظار" value={stats.pending} type="pending" icon={<Icons.AlarmClock />} active={viewFilter === 'PENDING'} onClick={() => setViewFilter('PENDING')} />
+                <StatCard title="المنجزات" value={stats.completed} type="completed" icon={<Icons.CheckCircle />} active={viewFilter === 'COMPLETED'} onClick={() => setViewFilter('COMPLETED')} />
+                <StatCard title="المفضلة النشطة" value={stats.favorites} type="fav" icon={<Icons.Sparkles />} active={viewFilter === 'FAVORITES'} onClick={() => setViewFilter('FAVORITES')} />
+                <StatCard title="بانتظار البدء" value={stats.pending} type="pending" icon={<Icons.AlarmClock />} active={viewFilter === 'PENDING'} onClick={() => setViewFilter('PENDING')} />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-12">
+              {/* Task Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 {filteredTasks.length > 0 ? filteredTasks.map((task, idx) => (
                   <TaskCard 
                     key={task.id} task={task} index={idx} 
-                    onDelete={id => { setTasks(tasks.filter(t => t.id !== id)); showToast("تم حذف المهمة نهائياً", 'danger'); }} 
+                    onDelete={id => { setTasks(tasks.filter(t => t.id !== id)); showToast("تم حذف السجل بنجاح", 'danger'); }} 
                     onEdit={t => { setEditingTask(t); setShowForm(true); }} 
-                    onCopy={t => { setTasks([{...t, id: Date.now().toString(), createdAt: new Date().toISOString(), isFavorite: false, isPinned: false}, ...tasks]); showToast("تم استنساخ المهمة", 'info'); }}
+                    onCopy={t => { setTasks([{...t, id: Date.now().toString(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()}, ...tasks]); showToast("تم استنساخ المهمة", 'info'); }}
                     onStatusChange={handleStatusChange} 
                     onTogglePin={id => setTasks(tasks.map(t => t.id === id ? {...t, isPinned: !t.isPinned} : t))} 
                     onToggleFavorite={id => setTasks(tasks.map(t => t.id === id ? {...t, isFavorite: !t.isFavorite} : t))}
                   />
                 )) : (
-                  <div className="col-span-full py-40 text-center glass-card rounded-[60px] border-4 border-dashed border-slate-200 opacity-60">
-                    <p className="text-3xl font-black text-slate-300 uppercase tracking-[0.3em]">المصفوفة الرقمية فارغة حالياً</p>
+                  <div className="col-span-full py-24 text-center border-2 border-dashed border-[var(--border-color)] rounded-[40px] opacity-40">
+                    <p className="text-xl font-black text-[var(--text-secondary)] uppercase tracking-widest">
+                      {viewFilter === 'COMPLETED' ? 'سجل الإنجازات فارغ' : 'لا يوجد مهام نشطة حالياً'}
+                    </p>
                   </div>
                 )}
               </div>
@@ -327,33 +348,40 @@ const App: React.FC = () => {
       {showCategoryModal && (
         <CategoryModal categories={categories} onAdd={cat => setCategories([...categories, cat])} onUpdate={cat => setCategories(categories.map(c => c.id === cat.id ? cat : c))} onDelete={id => setCategories(categories.filter(c => c.id !== id))} onClose={() => setShowCategoryModal(false)} />
       )}
+      
+      {toast.visible && (
+        <div className="fixed bottom-10 left-10 z-[2000] animate-in slide-in-from-bottom-10">
+           <div className={`px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border backdrop-blur-xl ${toast.type === 'success' ? 'bg-emerald-600/20 border-emerald-500/30 text-emerald-400' : 'bg-rose-600/20 border-rose-500/30 text-rose-400'}`}>
+             <div className="w-2 h-2 rounded-full bg-current animate-pulse"></div>
+             <span className="font-bold text-sm">{toast.message}</span>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const StatCard = ({ title, value, type, icon, active, onClick }: any) => {
   const configs = {
-    total: 'from-blue-600 to-blue-800 shadow-blue-100',
-    completed: 'from-emerald-500 to-emerald-700 shadow-emerald-100',
-    fav: 'from-rose-500 to-rose-700 shadow-rose-100',
-    pending: 'from-amber-500 to-amber-700 shadow-amber-100'
+    total: 'from-blue-600 to-blue-800',
+    completed: 'from-emerald-600 to-emerald-800',
+    fav: 'from-rose-600 to-rose-800',
+    pending: 'from-amber-600 to-amber-800'
   };
   return (
     <button 
       onClick={onClick}
-      className={`relative p-10 rounded-[45px] text-right transition-all duration-700 overflow-hidden shadow-2xl active:scale-95 group
-        ${active ? `bg-gradient-to-br ${configs[type as keyof typeof configs]} text-white scale-105` : 'bg-white text-slate-400 hover:text-slate-800 border border-slate-100 hover:shadow-xl'}
+      className={`relative p-8 rounded-[32px] text-right transition-all duration-500 overflow-hidden shadow-2xl active:scale-95 group border
+        ${active ? `bg-gradient-to-br ${configs[type as keyof typeof configs]} text-white border-white/10 scale-105` : 'bg-[var(--panel-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border-[var(--border-color)] hover:bg-[var(--border-color)]'}
       `}
     >
-      <div className="flex items-center justify-between mb-10">
-         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all animate-float-icon ${active ? 'bg-white/20' : 'bg-slate-50'}`}>
-           <div className="w-7 h-7">{icon}</div>
+      <div className="flex items-center justify-between mb-8">
+         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all animate-float ${active ? 'bg-white/20 text-white' : 'bg-accent/10 text-accent'}`}>
+           <div className="w-6 h-6">{icon}</div>
          </div>
-         {active && <div className="w-3 h-3 rounded-full bg-white animate-ping"></div>}
       </div>
-      <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">{title}</p>
-      <p className="text-6xl font-black tracking-tighter drop-shadow-lg">{value}</p>
-      {active && <div className="absolute bottom-0 right-0 w-full h-1 bg-white/20"></div>}
+      <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-2">{title}</p>
+      <p className="text-5xl font-black tracking-tighter drop-shadow-xl">{value}</p>
     </button>
   );
 };

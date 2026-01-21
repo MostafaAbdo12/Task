@@ -25,7 +25,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        showToast("حجم الصورة كبير جداً (الأقصى 2MB)", 'danger');
+        showToast("حجم الصورة كبير جداً (الأقصى 50MB)", 'danger');
         return;
       }
       const reader = new FileReader();

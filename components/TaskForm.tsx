@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TaskPriority, Category, TaskStatus } from '../types';
-import { Icons, PRIORITY_LABELS } from '../constants';
-import { getSmartSubtasks } from '../services/geminiService';
+import { Icons, PRIORITY_LABELS, CategoryIconMap } from '../constants';
+import { getMagicFillData } from '../services/geminiService';
 
 interface TaskFormProps {
   onAdd: (task: any) => void;
@@ -17,29 +17,40 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
   const [description, setDescription] = useState(initialTask?.description || '');
   const [priority, setPriority] = useState<TaskPriority>(initialTask?.priority || TaskPriority.MEDIUM);
   const [category, setCategory] = useState(initialTask?.category || categories[0]?.name || 'أخرى');
-  const [dueDate, setDueDate] = useState(initialTask?.dueDate || '');
-  const [reminderAt, setReminderAt] = useState(initialTask?.reminderAt || '');
+  const [dueDate, setDueDate] = useState(initialTask?.dueDate || new Date().toISOString().split('T')[0]);
   const [subTasks, setSubTasks] = useState<{id: string, title: string, isCompleted: boolean}[]>(initialTask?.subTasks || []);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [isGeneratingSubtasks, setIsGeneratingSubtasks] = useState(false);
+  const [isMagicLoading, setIsMagicLoading] = useState(false);
 
   useEffect(() => {
     setIsAnimating(true);
   }, []);
 
-  const handleGenerateAI = async () => {
-    if (!title.trim()) return;
-    setIsGeneratingSubtasks(true);
-    const suggestions = await getSmartSubtasks(title);
-    if (suggestions.length > 0) {
-      const newSubtasks = suggestions.map((s, idx) => ({
-        id: `ai-${Date.now()}-${idx}`,
-        title: s,
-        isCompleted: false
-      }));
-      setSubTasks(newSubtasks);
+  const handleMagicFill = async () => {
+    if (!title.trim() || isMagicLoading) return;
+    setIsMagicLoading(true);
+    try {
+      const data = await getMagicFillData(title);
+      if (data) {
+        if (data.description) setDescription(data.description);
+        if (data.priority) setPriority(data.priority as TaskPriority);
+        if (data.category) {
+          const catExists = categories.find(c => c.name === data.category);
+          if (catExists) setCategory(data.category);
+        }
+        if (data.subTasks) {
+          setSubTasks(data.subTasks.map((s: string, i: number) => ({
+            id: `magic-${Date.now()}-${i}`,
+            title: s,
+            isCompleted: false
+          })));
+        }
+      }
+    } catch (err) {
+      console.error("Magic fill failed", err);
+    } finally {
+      setIsMagicLoading(false);
     }
-    setIsGeneratingSubtasks(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -54,13 +65,14 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
       priority,
       category,
       dueDate,
-      reminderAt,
-      color: selectedCategoryData?.color || '#2563eb',
+      color: selectedCategoryData?.color || '#6366f1',
       icon: selectedCategoryData?.icon || 'star',
       status: initialTask?.status || TaskStatus.PENDING,
       subTasks,
       isPinned: initialTask?.isPinned || false,
-      reminderFired: initialTask?.reminderFired || false
+      isFavorite: initialTask?.isFavorite || false,
+      createdAt: initialTask?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     if (initialTask && onUpdate) {
@@ -71,104 +83,133 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
   };
 
   return (
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto">
-      <div className={`w-full max-w-2xl bg-white rounded-[40px] shadow-2xl border border-slate-200 transition-all duration-500 transform ${isAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl animate-in fade-in duration-300">
+      <div className="absolute inset-0" onClick={onClose}></div>
+      
+      <div className={`relative w-full max-w-xl bg-[var(--bg-main)] border border-[var(--border-color)] rounded-[45px] shadow-2xl flex flex-col overflow-hidden max-h-[90vh] transition-all duration-500 transform ${isAnimating ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-10'}`}>
         
-        <header className="px-8 py-6 border-b border-slate-50 flex justify-between items-center rounded-t-[40px]">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-              {initialTask ? <Icons.Edit className="w-6 h-6" /> : <Icons.Plus className="w-6 h-6" />}
+        <header className="px-8 py-6 border-b border-[var(--border-color)] flex items-center justify-between bg-black/5">
+          <div className="flex items-center gap-5">
+            <div className="w-12 h-12 bg-accent rounded-2xl flex items-center justify-center text-white shadow-xl shadow-accent/20">
+              <Icons.Sparkles className={`w-6 h-6 ${isMagicLoading ? 'animate-spin' : ''}`} />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                {initialTask ? 'تعديل المهمة' : 'إنشاء سجل جديد'}
-              </h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">إدارة العمليات اليومية</p>
+              <h3 className="text-xl font-black text-[var(--text-primary)] leading-none">تخطيط ذكي</h3>
+              <p className="text-[10px] font-black text-accent uppercase tracking-[0.3em] mt-2">إصدار Gemini Neural</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all">
+          <button onClick={onClose} className="p-3 text-slate-400 hover:text-rose-500 transition-all bg-black/5 rounded-xl">
             <Icons.X className="w-6 h-6" />
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mr-2">عنوان المهمة</label>
-            <div className="relative">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto no-scrollbar p-8 space-y-8">
+          <div className="space-y-3">
+            <label className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest px-2">هدف العملية</label>
+            <div className="relative group">
               <input 
                 required autoFocus value={title} onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 text-lg font-black text-slate-800 outline-none focus:border-indigo-600 focus:bg-white transition-all shadow-sm"
-                placeholder="ما الذي تود إنجازه؟"
+                className="w-full bg-black/10 border border-[var(--border-color)] rounded-[25px] py-5 px-7 text-lg font-bold text-[var(--text-primary)] outline-none focus:border-accent/50 transition-all placeholder:text-slate-700"
+                placeholder="ما هو هدفك القادم؟"
               />
               <button 
                 type="button" 
-                onClick={handleGenerateAI}
-                disabled={isGeneratingSubtasks || !title.trim()}
-                className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md active:scale-95"
+                onClick={handleMagicFill}
+                disabled={isMagicLoading || !title.trim()}
+                className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-2xl text-[11px] font-black hover:scale-105 disabled:opacity-50 disabled:scale-100 transition-all shadow-xl group/magic"
               >
-                {isGeneratingSubtasks ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : <Icons.Sparkles className="w-4 h-4" />}
-                <span>تقسيم ذكي</span>
+                {isMagicLoading ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <Icons.Sparkles className="w-4 h-4 group-hover/magic:rotate-12" />
+                )}
+                <span>سحر الذكاء</span>
               </button>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mr-2">تفاصيل المهمة</label>
+          <div className="space-y-3">
+            <label className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest px-2">التفاصيل الفنية</label>
             <textarea 
               value={description} onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-6 text-sm font-bold text-slate-700 outline-none focus:border-indigo-600 focus:bg-white min-h-[100px] resize-none transition-all shadow-sm leading-relaxed"
-              placeholder="وصف إضافي للمهمة..."
+              className="w-full bg-black/10 border border-[var(--border-color)] rounded-[25px] p-6 text-[15px] font-medium text-[var(--text-primary)] outline-none focus:border-accent/50 min-h-[100px] transition-all placeholder:text-slate-700 leading-relaxed"
+              placeholder="صف ملامح المهمة هنا..."
             />
           </div>
 
           {subTasks.length > 0 && (
-            <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-              <label className="text-[11px] font-black text-indigo-500 uppercase tracking-widest mr-2">الخطوات التنفيذية (AI)</label>
-              <div className="space-y-2">
+            <div className="bg-accent/5 border border-accent/10 rounded-[30px] p-6 space-y-4 animate-in zoom-in-95">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Icons.Sparkles className="w-4 h-4" /> خريطة الطريق المقترحة
+                </p>
+                <button type="button" onClick={() => setSubTasks([])} className="text-[9px] font-black text-rose-500 uppercase">مسح</button>
+              </div>
+              <div className="space-y-3">
                 {subTasks.map((st, idx) => (
-                  <div key={st.id} className="flex items-center gap-3 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl">
-                    <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] font-bold">{idx + 1}</div>
-                    <span className="text-sm font-bold text-slate-700">{st.title}</span>
+                  <div key={st.id} className="flex items-center gap-4 text-[13px] font-bold text-[var(--text-secondary)] bg-black/5 p-4 rounded-2xl border border-[var(--border-color)] hover:border-accent/20 transition-all">
+                    <span className="w-6 h-6 bg-accent text-white rounded-lg flex items-center justify-center text-[11px] font-black">{idx + 1}</span>
+                    {st.title}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mr-2">الأولوية</label>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <label className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest px-2">الأولوية الاستراتيجية</label>
               <select 
                 value={priority} onChange={e => setPriority(e.target.value as TaskPriority)}
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-sm font-black text-slate-800 outline-none focus:border-indigo-600 appearance-none cursor-pointer"
+                className="w-full bg-black/10 border border-[var(--border-color)] rounded-2xl py-4 px-5 text-sm font-bold text-[var(--text-primary)] outline-none focus:border-accent/50 appearance-none cursor-pointer"
               >
-                {Object.keys(TaskPriority).map(p => <option key={p} value={p}>{PRIORITY_LABELS[p].label}</option>)}
+                {Object.keys(TaskPriority).map(p => (
+                  <option key={p} value={p} className="bg-[#0f172a]">{PRIORITY_LABELS[p].label}</option>
+                ))}
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mr-2">التصنيف</label>
+            <div className="space-y-3">
+              <label className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest px-2">قطاع المهمة</label>
               <div className="flex gap-2">
                 <select 
                   value={category} onChange={e => setCategory(e.target.value)}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-sm font-black text-slate-800 outline-none focus:border-indigo-600 flex-1"
+                  className="flex-1 bg-black/10 border border-[var(--border-color)] rounded-2xl py-4 px-5 text-sm font-bold text-[var(--text-primary)] outline-none focus:border-accent/50 appearance-none cursor-pointer"
                 >
-                  {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  {categories.map(c => <option key={c.id} value={c.name} className="bg-[#0f172a]">{c.name}</option>)}
                 </select>
-                <button type="button" onClick={onManageCategories} className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center shadow-sm">
-                  <Icons.Plus className="w-6 h-6" />
-                </button>
               </div>
             </div>
           </div>
 
-          <div className="pt-8 flex gap-4">
-            <button type="button" onClick={onClose} className="flex-1 py-5 border-2 border-slate-100 text-slate-400 font-black rounded-3xl hover:bg-slate-50 transition-all">إلغاء</button>
-            <button type="submit" className="flex-[2] py-5 bg-indigo-600 text-white font-black text-lg rounded-3xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all active:scale-95">
-              {initialTask ? 'حفظ التغييرات' : 'تفعيل المهمة'}
-            </button>
+          <div className="space-y-3">
+            <label className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest px-2">الموعد النهائي</label>
+            <div className="relative">
+              <input 
+                type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-black/10 border border-[var(--border-color)] rounded-2xl py-4 px-6 text-sm font-bold text-[var(--text-primary)] outline-none focus:border-accent/50 transition-all"
+              />
+              <Icons.Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-accent w-5 h-5 pointer-events-none" />
+            </div>
           </div>
         </form>
+
+        <footer className="p-8 border-t border-[var(--border-color)] flex items-center gap-4 bg-black/5">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="flex-1 py-5 rounded-2xl border border-[var(--border-color)] text-[var(--text-secondary)] text-sm font-black hover:bg-black/10 transition-all"
+          >
+            تجاهل
+          </button>
+          <button 
+            onClick={handleSubmit}
+            className="flex-[2] py-5 rounded-2xl bg-accent text-white text-sm font-black shadow-2xl shadow-accent/40 hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-3"
+          >
+            <span>{initialTask ? 'حفظ التغييرات' : 'اعتماد المهمة'}</span>
+            <Icons.CheckCircle className="w-5 h-5" />
+          </button>
+        </footer>
       </div>
     </div>
   );
