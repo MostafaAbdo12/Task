@@ -1,5 +1,5 @@
 
-import { User, Task, Category, TaskStatus, TaskPriority } from '../types';
+import { User, Task, Category, TaskStatus, TaskPriority, RecurrenceInterval } from '../types';
 import { DEFAULT_CATEGORIES } from '../constants';
 
 /**
@@ -112,6 +112,7 @@ export const storageService = {
     const existingTasks = await storageService.getUserTasks(username);
     if (existingTasks.length > 0) return;
 
+    // Fix: Adding recurrence property to match Task interface (1-based line 115 error fix)
     const welcomeTask: Task = {
       id: 'welcome-' + Date.now(),
       title: 'مرحباً بك في نظامك العالمي! 🌍',
@@ -125,7 +126,8 @@ export const storageService = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       subTasks: [],
-      isPinned: true
+      isPinned: true,
+      recurrence: RecurrenceInterval.NONE
     };
 
     await storageService.saveUserTasks(username, [welcomeTask]);

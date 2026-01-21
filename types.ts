@@ -12,6 +12,13 @@ export enum TaskStatus {
   COMPLETED = 'COMPLETED'
 }
 
+export enum RecurrenceInterval {
+  NONE = 'NONE',
+  DAILY = 'DAILY',
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY'
+}
+
 export interface SubTask {
   id: string;
   title: string;
@@ -30,7 +37,7 @@ export interface User {
   password?: string;
   email?: string;
   phone?: string;
-  avatar?: string; // إضافة حقل الصورة الشخصية
+  avatar?: string;
   lastLogin: string;
   xp?: number;
   level?: number;
@@ -46,13 +53,16 @@ export interface Task {
   color: string;
   icon?: string;
   dueDate: string;
-  reminderAt?: string;
+  reminderAt?: string; // التنبيه المخصص
   reminderFired?: boolean;
+  recurrence: RecurrenceInterval; // التكرار
   createdAt: string;
   updatedAt: string;
   subTasks: SubTask[];
   isPinned: boolean;
   isFavorite?: boolean;
+  assignedTo?: string; // تعيين لمستخدم
+  sharedWith?: string[]; // مشاركة مع مستخدمين
 }
 
 export interface TaskStats {
