@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task, Category, User, TaskStatus } from './types';
 import { Icons } from './constants';
 import TaskCard from './components/TaskCard';
@@ -10,6 +10,12 @@ import Settings from './components/Settings';
 import CategoryManagement from './components/CategoryManagement';
 import { storageService } from './services/storageService';
 import { getSmartAdvice } from './services/geminiService';
+
+interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'danger' | 'info';
+}
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => storageService.getSession());
@@ -24,6 +30,15 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [smartAdvice, setSmartAdvice] = useState('جارِ تهيئة الأنظمة ...');
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const addToast = useCallback((message: string, type: 'success' | 'danger' | 'info' = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  }, []);
 
   useEffect(() => {
     const initData = async () => {
@@ -46,7 +61,6 @@ const App: React.FC = () => {
     initData();
   }, [currentUser]);
 
-  // Sync categories & tasks to storage
   useEffect(() => {
     if (currentUser) {
       storageService.saveUserCategories(currentUser.username, categories);
@@ -76,125 +90,123 @@ const App: React.FC = () => {
       .sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1));
   }, [tasks, selectedCategory, searchQuery]);
 
+  const handleTaskDelete = (id: string) => {
+    setTasks(tasks.filter(x => x.id !== id));
+    addToast("تم حذف المهمة نهائياً من سجلاتك", "danger");
+  };
+
+  const handleTaskCopy = (task: Task) => {
+    const newTask = {...task, id: Date.now().toString(), createdAt: new Date().toISOString(), status: TaskStatus.PENDING};
+    setTasks([newTask, ...tasks]);
+    addToast("تم تكرار المهمة بنجاح", "success");
+  };
+
+  const handleStatusChange = (id: string, s: TaskStatus) => {
+    setTasks(tasks.map(x => x.id === id ? {...x, status: s, updatedAt: new Date().toISOString()} : x));
+    if (s === TaskStatus.COMPLETED) {
+      addToast("تم إنجاز المهمة! عمل رائع", "success");
+    } else {
+      addToast("تم تحديث حالة المهمة", "info");
+    }
+  };
+
+  const handleCategoryAdd = (cat: Category) => {
+    setCategories([...categories, cat]);
+    addToast(`تم تفعيل قطاع ${cat.name}`, "success");
+  };
+
+  const handleCategoryDelete = (id: string) => {
+    setCategories(categories.filter(c => c.id !== id));
+    addToast("تمت إزالة القطاع", "info");
+  };
+
   if (isInitialLoading) return <div className="h-screen flex items-center justify-center bg-[#020617]"><div className="w-12 h-12 border-4 border-nebula-purple border-t-transparent rounded-full animate-spin shadow-glow"></div></div>;
   if (!currentUser) return <Auth onLogin={setCurrentUser} />;
 
   const renderView = () => {
     switch (currentView) {
       case 'settings':
-        return <Settings user={currentUser} onUpdate={setCurrentUser} showToast={() => {}} />;
+        return <Settings user={currentUser} onUpdate={setCurrentUser} showToast={addToast} />;
       case 'categories':
         return (
           <CategoryManagement 
             categories={categories} 
-            onAdd={cat => setCategories([...categories, cat])}
-            onUpdate={cat => setCategories(categories.map(c => c.id === cat.id ? cat : c))}
-            onDelete={id => setCategories(categories.filter(c => c.id !== id))}
+            onAdd={handleCategoryAdd}
+            onUpdate={cat => {
+              setCategories(categories.map(c => c.id === cat.id ? cat : c));
+              addToast("تم تحديث بيانات القطاع", "success");
+            }}
+            onDelete={handleCategoryDelete}
           />
         );
       default:
         return (
           <>
-            {/* Stats Dashboard Header */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
-              <StatCard 
-                label="إجمالي المهام" 
-                count={stats.total} 
-                icon={<Icons.LayoutDashboard className="w-6 h-6" />} 
-                color="from-blue-600 to-indigo-500" 
-                glow="rgba(37, 99, 235, 0.3)"
-              />
-              <StatCard 
-                label="المهام المنجزة" 
-                count={stats.completed} 
-                icon={<Icons.CheckCircle className="w-6 h-6" />} 
-                color="from-emerald-600 to-teal-500" 
-                glow="rgba(16, 185, 129, 0.3)"
-              />
-              <StatCard 
-                label="المهام المثبتة" 
-                count={stats.pinned} 
-                icon={<Icons.Pin className="w-6 h-6" />} 
-                color="from-amber-500 to-orange-400" 
-                glow="rgba(245, 158, 11, 0.3)"
-              />
-              <StatCard 
-                label="المهام المتبقية" 
-                count={stats.pending} 
-                icon={<Icons.AlarmClock className="w-6 h-6" />} 
-                color="from-rose-600 to-pink-500" 
-                glow="rgba(225, 29, 72, 0.3)"
-              />
+            {/* Dashboard Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              <StatCard label="إجمالي المهام" count={stats.total} icon={<Icons.LayoutDashboard className="w-6 h-6" />} color="from-blue-600 to-indigo-500" glow="rgba(37, 99, 235, 0.3)" />
+              <StatCard label="المنجزة" count={stats.completed} icon={<Icons.CheckCircle className="w-6 h-6" />} color="from-emerald-600 to-teal-500" glow="rgba(16, 185, 129, 0.3)" />
+              <StatCard label="المثبتة" count={stats.pinned} icon={<Icons.Pin className="w-6 h-6" />} color="from-amber-500 to-orange-400" glow="rgba(245, 158, 11, 0.3)" />
+              <StatCard label="قيد الانتظار" count={stats.pending} icon={<Icons.AlarmClock className="w-6 h-6" />} color="from-rose-600 to-pink-500" glow="rgba(225, 29, 72, 0.3)" />
             </div>
 
-            {/* AI Progress & Advice Section */}
-            <div className="glass-panel border-nebula-purple/20 rounded-[32px] p-8 flex flex-col gap-8 shadow-2xl relative overflow-hidden mb-12">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-nebula-purple/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-               
-               <div className="flex flex-col md:flex-row items-center gap-10">
-                  {/* Circular Progress (Desktop only visual) or percentage */}
+            {/* Futuristic Progress Bar Dashboard */}
+            <div className="glass-panel border-white/5 rounded-[40px] p-8 mb-10 relative overflow-hidden group">
+               <div className="flex flex-col md:flex-row items-center gap-8">
                   <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
                     <svg className="w-full h-full transform -rotate-90">
-                      <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/5" />
-                      <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={364} strokeDashoffset={364 - (364 * stats.progress) / 100} strokeLinecap="round" className="text-nebula-purple transition-all duration-1000 ease-out" />
+                      <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/5" />
+                      <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={364} strokeDashoffset={364 - (364 * stats.progress) / 100} strokeLinecap="round" className="text-nebula-purple transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                        <span className="text-3xl font-black text-white">{stats.progress}%</span>
-                       <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">معدل الإنجاز</span>
+                       <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">إنجاز</span>
                     </div>
                   </div>
 
-                  <div className="flex-1 space-y-4">
-                    <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-3">
-                         <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></div>
-                         <p className="text-[11px] font-black text-blue-400 uppercase tracking-[0.4em]">توصية المركز العصبي</p>
+                  <div className="flex-1 w-full">
+                    <div className="flex items-center justify-between mb-4">
+                       <h4 className="text-lg font-black text-white tracking-tight">معدل التقدم العام</h4>
+                       <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] bg-emerald-400/10 px-3 py-1 rounded-full">
+                          <div className="w-1 h-1 rounded-full bg-emerald-400 animate-ping"></div>
+                          نشط
                        </div>
-                       <span className="text-[10px] font-black text-slate-500 italic">ذكاء اصطناعي نشط</span>
                     </div>
-                    <p className="text-xl font-bold text-white/90 leading-relaxed italic border-r-2 border-nebula-purple/30 pr-6">
-                      "{smartAdvice}"
+                    <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-1 relative">
+                       <div 
+                         className="h-full bg-gradient-to-r from-nebula-blue via-nebula-purple to-nebula-pink rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(124,58,237,0.5)]"
+                         style={{ width: `${stats.progress}%` }}
+                       ></div>
+                    </div>
+                    <p className="mt-4 text-sm text-slate-400 font-medium italic opacity-80 leading-relaxed">
+                      " {smartAdvice} "
                     </p>
-                    
-                    {/* Linear Progress Bar (The requested one) */}
-                    <div className="space-y-2 pt-4">
-                      <div className="flex justify-between items-end mb-1">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">تطور المهمة الحالية</span>
-                        <span className="text-[10px] font-black text-nebula-purple">{stats.progress}%</span>
-                      </div>
-                      <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-[2px]">
-                        <div 
-                          className="h-full bg-gradient-to-r from-nebula-blue via-nebula-purple to-nebula-pink rounded-full transition-all duration-1000 relative"
-                          style={{ width: `${stats.progress}%` }}
-                        >
-                          <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                </div>
             </div>
 
-            {/* Main Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            {/* Task Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pb-10">
               {filteredTasks.length > 0 ? filteredTasks.map((t, i) => (
                 <TaskCard 
                   key={t.id} task={t} index={i}
-                  onDelete={id => setTasks(tasks.filter(x => x.id !== id))}
+                  onDelete={handleTaskDelete}
                   onEdit={x => { setEditingTask(x); setShowForm(true); }}
-                  onCopy={x => setTasks([{...x, id: Date.now().toString(), createdAt: new Date().toISOString()}, ...tasks])}
-                  onStatusChange={(id, s) => setTasks(tasks.map(x => x.id === id ? {...x, status: s, updatedAt: new Date().toISOString()} : x))}
-                  onTogglePin={id => setTasks(tasks.map(x => x.id === id ? {...x, isPinned: !x.isPinned} : x))}
+                  onCopy={handleTaskCopy}
+                  onStatusChange={handleStatusChange}
+                  onTogglePin={id => {
+                    const task = tasks.find(x => x.id === id);
+                    setTasks(tasks.map(x => x.id === id ? {...x, isPinned: !x.isPinned} : x));
+                    addToast(task?.isPinned ? "تم إلغاء تثبيت المهمة" : "تم تثبيت المهمة بنجاح", "info");
+                  }}
                 />
               )) : (
-                <div className="col-span-full py-40 flex flex-col items-center justify-center text-center space-y-6 animate-pulse">
-                  <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center text-slate-700">
-                     <Icons.LayoutDashboard className="w-16 h-16" />
-                  </div>
-                  <div>
-                    <p className="text-xl font-black text-slate-500 uppercase tracking-[0.5em]">المجال الكوني فارغ</p>
-                    <p className="text-sm text-slate-600 font-bold mt-2">ابدأ بإنشاء أول مهمة جديدة الآن</p>
-                  </div>
+                <div className="col-span-full py-40 flex flex-col items-center justify-center text-center">
+                   <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center text-slate-700 mb-6">
+                      <Icons.LayoutDashboard className="w-12 h-12" />
+                   </div>
+                   <h3 className="text-xl font-black text-slate-500 tracking-[0.3em] uppercase">لا توجد مهام حالية</h3>
+                   <p className="text-sm text-slate-600 mt-2 font-bold">ابدأ بإضافة مهمة جديدة لمتابعة إنجازاتك</p>
                 </div>
               )}
             </div>
@@ -220,18 +232,12 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-20 glass-panel rounded-[28px] px-8 flex items-center justify-between sticky top-4 z-50 mb-4 transition-all duration-500">
+        <header className="h-20 glass-panel rounded-[28px] px-8 flex items-center justify-between sticky top-4 z-50 mb-4 transition-all duration-500 border-white/5">
           <div className="flex items-center gap-6">
-            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-blue-400 p-2 hover:bg-white/5 rounded-xl"><Icons.LayoutDashboard className="w-6 h-6" /></button>
-            <div>
-              <h2 className="text-lg font-black tracking-tight text-white uppercase">
-                {currentView === 'tasks' ? 'نظام الإنجاز' : currentView === 'settings' ? 'تكوين الهوية' : 'مختبر القطاعات'}
-              </h2>
-              <div className="flex items-center gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">مستوى الوصول: متميز</span>
-              </div>
-            </div>
+            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-nebula-blue p-2 hover:bg-white/5 rounded-xl"><Icons.LayoutDashboard className="w-6 h-6" /></button>
+            <h2 className="text-xl font-black tracking-tight text-white glow-title uppercase">
+              {currentView === 'tasks' ? 'مركز القيادة' : currentView === 'settings' ? 'تكوين الهوية' : 'إدارة القطاعات'}
+            </h2>
           </div>
           
           <div className="flex items-center gap-4">
@@ -239,22 +245,22 @@ const App: React.FC = () => {
                <div className="relative hidden md:block">
                   <input 
                     value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="ابحث في الذاكرة..." 
-                    className="bg-white/5 border border-white/10 rounded-2xl py-2 pr-10 pl-4 text-xs font-bold outline-none focus:border-nebula-purple focus:bg-white/10 transition-all w-64 text-white"
+                    placeholder="ابحث في المهام..." 
+                    className="bg-white/5 border border-white/10 rounded-2xl py-2 pr-10 pl-4 text-xs font-bold outline-none focus:border-nebula-purple transition-all w-64 text-white"
                   />
                   <Icons.Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                </div>
              )}
              <button 
               onClick={() => { setEditingTask(null); setShowForm(true); }} 
-              className="bg-gradient-to-r from-nebula-purple to-nebula-blue text-white text-[11px] font-black px-6 py-3 rounded-2xl hover:scale-105 transition-transform shadow-[0_10px_20px_rgba(124,58,237,0.3)] active:scale-95"
+              className="bg-gradient-to-r from-nebula-purple to-nebula-blue text-white text-[11px] font-black px-6 py-3 rounded-2xl hover:scale-105 transition-transform shadow-[0_10px_20px_rgba(124,58,237,0.3)]"
              >
-               + مهمة جديدة
+               + إضافة مهمة
              </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar pt-6 pb-20">
+        <div className="flex-1 overflow-y-auto no-scrollbar pt-2 pb-20">
           <div className="max-w-7xl mx-auto px-4 lg:px-10">
             {renderView()}
           </div>
@@ -263,14 +269,43 @@ const App: React.FC = () => {
 
       {showForm && (
         <TaskForm 
-          onAdd={data => {setTasks([{...data, id: Date.now().toString()} , ...tasks]); setShowForm(false);}} 
-          onUpdate={task => {setTasks(tasks.map(t => t.id === task.id ? task : t)); setShowForm(false);}} 
+          onAdd={data => {
+            setTasks([{...data, id: Date.now().toString()} , ...tasks]); 
+            setShowForm(false);
+            addToast("تمت إضافة مهمة جديدة بنجاح", "success");
+          }} 
+          onUpdate={task => {
+            setTasks(tasks.map(t => t.id === task.id ? task : t)); 
+            setShowForm(false);
+            addToast("تم تحديث بيانات المهمة", "success");
+          }} 
           onClose={() => setShowForm(false)} 
           categories={categories} 
           initialTask={editingTask} 
           onManageCategories={() => setCurrentView('categories')} 
         />
       )}
+
+      {/* Real-time Toast Notifications Container */}
+      <div className="toast-container">
+        {toasts.map(toast => (
+          <div 
+            key={toast.id}
+            className={`flex items-center gap-4 px-6 py-4 rounded-2xl glass-panel border shadow-2xl animate-in slide-in-from-left duration-500
+              ${toast.type === 'success' ? 'border-emerald-500/30 text-emerald-400' : 
+                toast.type === 'danger' ? 'border-rose-500/30 text-rose-400' : 
+                'border-nebula-blue/30 text-nebula-blue'}
+            `}
+          >
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-white/5`}>
+              {toast.type === 'success' ? <Icons.CheckCircle className="w-5 h-5" /> :
+               toast.type === 'danger' ? <Icons.Trash className="w-5 h-5" /> :
+               <Icons.Sparkles className="w-5 h-5" />}
+            </div>
+            <p className="text-sm font-black tracking-tight">{toast.message}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -284,15 +319,14 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ label, count, icon, color, glow }) => (
-  <div className="nebula-card p-6 flex items-center gap-6 group hover:border-white/20 relative" style={{ boxShadow: `0 0 20px ${glow}` }}>
+  <div className="nebula-card p-6 flex items-center gap-6 group relative overflow-hidden" style={{ boxShadow: `0 0 20px ${glow}` }}>
     <div className={`w-14 h-14 rounded-2xl bg-gradient-to-tr ${color} flex items-center justify-center text-white shrink-0 shadow-lg group-hover:rotate-12 transition-transform duration-500`}>
       {icon}
     </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">{label}</p>
+    <div className="flex-1 min-w-0 text-right">
+      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</p>
       <h5 className="text-3xl font-black text-white">{count}</h5>
     </div>
-    <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
   </div>
 );
 

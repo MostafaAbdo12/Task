@@ -5,52 +5,64 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#020617" id="theme-meta" />
-    <title>Mahami Tasks | إنجازك من عالم آخر</title>
+    <title>مهامي | إدارة المهام بلمسة مستقبلية</title>
     
     <script>
       window.process = window.process || { env: {} };
       document.documentElement.setAttribute('data-theme', 'night');
     </script>
     
-    <!-- تم تغيير الخط إلى الخط المطلوب -->
     <style>
       @font-face {
         font-family: 'TheYearofHandicrafts-Medium';
         src: local('TheYearofHandicrafts-Medium');
       }
-    </style>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: { sans: ['TheYearofHandicrafts-Medium', 'Cairo', 'sans-serif'] },
-            colors: {
-              'nebula-purple': '#7c3aed',
-              'nebula-blue': '#3b82f6',
-              'nebula-pink': '#db2777',
-              'nebula-dark': '#020617',
-            }
-          }
-        }
-      };
-    </script>
-    <style>
-      :root {
-        --nebula-bg: #020617;
-        --glass-bg: rgba(15, 23, 42, 0.4);
-        --glass-border: rgba(255, 255, 255, 0.08);
+
+      /* تطبيق الخط على جميع العناصر بشكل إجباري */
+      * {
+        font-family: 'TheYearofHandicrafts-Medium', 'Cairo', sans-serif !important;
       }
 
-      body {
-        background-color: var(--nebula-bg);
-        color: #f8fafc;
-        font-family: 'TheYearofHandicrafts-Medium', 'Cairo', sans-serif;
-        overflow-x: hidden;
+      /* Animated Gradient Text Effect */
+      @keyframes shimmer-text {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
       }
 
-      /* Cosmic Background Animation */
+      .glow-title {
+        background: linear-gradient(90deg, #7c3aed, #3b82f6, #db2777, #7c3aed);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shimmer-text 5s linear infinite;
+        filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.4));
+        transition: filter 0.3s ease;
+      }
+      .glow-title:hover {
+        filter: drop-shadow(0 0 20px rgba(124, 58, 237, 0.7));
+      }
+
+      .glow-username {
+        color: #fff;
+        text-shadow: 0 0 8px rgba(59, 130, 246, 0.6), 0 0 16px rgba(59, 130, 246, 0.3);
+        animation: pulse-glow 3s ease-in-out infinite;
+      }
+
+      @keyframes pulse-glow {
+        0%, 100% { opacity: 1; filter: brightness(1) drop-shadow(0 0 2px rgba(255,255,255,0.5)); }
+        50% { opacity: 0.9; filter: brightness(1.2) drop-shadow(0 0 8px rgba(59,130,246,0.4)); }
+      }
+
+      .toast-container {
+        position: fixed;
+        bottom: 2rem;
+        left: 2rem;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
       .cosmic-bg {
         position: fixed;
         inset: 0;
@@ -80,9 +92,9 @@
       }
 
       .glass-panel {
-        background: var(--glass-bg);
+        background: rgba(15, 23, 42, 0.45);
         backdrop-filter: blur(24px) saturate(180%);
-        border: 1px solid var(--glass-border);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
       }
 
@@ -97,82 +109,45 @@
       }
 
       .nebula-card:hover {
-        transform: translateY(-8px) scale(1.03);
+        transform: translateY(-8px) scale(1.02);
         border-color: rgba(124, 58, 237, 0.4);
-        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.7), 0 0 30px rgba(124, 58, 237, 0.15);
+        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.7), 0 0 30px rgba(124, 58, 237, 0.2);
       }
 
-      /* Subtle Parallax BG Layer */
-      .card-parallax-bg {
-        position: absolute;
-        inset: -20%;
-        transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-        z-index: 0;
-        pointer-events: none;
-        opacity: 0.3;
+      .icon-action-btn {
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
-
-      .nebula-card:hover .card-parallax-bg {
-        transform: translate(5%, 5%) scale(1.1) rotate(2deg);
-        opacity: 0.5;
+      .icon-action-btn:hover {
+        transform: scale(1.3) rotate(-5deg);
+        filter: drop-shadow(0 0 10px currentColor);
       }
 
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-      .neon-text {
-        text-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
-      }
-      
-      .floating {
-        animation: floating 6s ease-in-out infinite;
-      }
+      .floating { animation: floating 6s ease-in-out infinite; }
       @keyframes floating {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-10px); }
       }
-
-      /* Animated Action Icons */
-      .icon-action-btn {
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        position: relative;
-      }
-      
-      .icon-action-btn:hover {
-        transform: scale(1.3) rotate(-5deg);
-        filter: drop-shadow(0 0 8px currentColor);
-      }
-
-      .icon-action-btn::after {
-        content: '';
-        position: absolute;
-        inset: -4px;
-        background: currentColor;
-        border-radius: 50%;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        z-index: -1;
-      }
-
-      .icon-action-btn:hover::after {
-        opacity: 0.1;
-      }
-
-      .tooltip-nebula {
-        background: rgba(15, 23, 42, 0.95);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 6px 12px;
-        border-radius: 12px;
-        font-size: 10px;
-        font-weight: 800;
-        color: #f8fafc;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-        white-space: nowrap;
-        pointer-events: none;
-        z-index: 50;
-      }
     </style>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['TheYearofHandicrafts-Medium', 'Cairo', 'sans-serif'] },
+            colors: {
+              'nebula-purple': '#7c3aed',
+              'nebula-blue': '#3b82f6',
+              'nebula-pink': '#db2777',
+              'nebula-dark': '#020617',
+            }
+          }
+        }
+      };
+    </script>
   <script type="importmap">
 {
   "imports": {
