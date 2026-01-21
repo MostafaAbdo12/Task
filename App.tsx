@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task, TaskStatus, Category, User } from './types';
 import { Icons } from './constants';
@@ -13,7 +12,7 @@ import { getSmartAdvice, getSystemBriefingAudio } from './services/geminiService
 
 type ToastType = 'success' | 'danger' | 'info';
 type ViewFilter = 'ALL' | 'COMPLETED' | 'FAVORITES' | 'PENDING';
-type AppTheme = 'light' | 'night' | 'midnight';
+type AppTheme = 'light' | 'night' | 'midnight' | 'cosmic';
 
 function decodeBase64(base64: string) {
   const binaryString = atob(base64);
@@ -51,7 +50,7 @@ const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [viewFilter, setViewFilter] = useState<ViewFilter>('ALL');
   const [currentView, setCurrentView] = useState<'tasks' | 'settings'>('tasks');
-  const [appTheme, setAppTheme] = useState<AppTheme>(() => (localStorage.getItem('maham_theme') as AppTheme) || 'night');
+  const [appTheme, setAppTheme] = useState<AppTheme>(() => (localStorage.getItem('maham_theme') as AppTheme) || 'light');
   
   const [showForm, setShowForm] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -76,6 +75,15 @@ const App: React.FC = () => {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', appTheme);
     localStorage.setItem('maham_theme', appTheme);
+    
+    // تحديث لون شريط حالة المتصفح (Meta Theme Color)
+    const metaThemeColor = document.getElementById('theme-meta');
+    if (metaThemeColor) {
+      if (appTheme === 'light') metaThemeColor.setAttribute('content', '#f8fafc');
+      else if (appTheme === 'night') metaThemeColor.setAttribute('content', '#020617');
+      else if (appTheme === 'midnight') metaThemeColor.setAttribute('content', '#000000');
+      else if (appTheme === 'cosmic') metaThemeColor.setAttribute('content', '#050510');
+    }
   }, [appTheme]);
 
   useEffect(() => {
@@ -187,11 +195,11 @@ const App: React.FC = () => {
 
   if (isInitialLoading) {
     return (
-      <div className="h-screen w-full bg-[#020617] flex flex-col items-center justify-center text-white">
-        <div className="w-20 h-20 bg-indigo-600/10 rounded-[30px] flex items-center justify-center animate-bounce mb-6">
-          <Icons.Sparkles className="w-10 h-10 text-indigo-500" />
+      <div className="h-screen w-full bg-[var(--bg-main)] flex flex-col items-center justify-center text-[var(--text-primary)] transition-colors duration-500">
+        <div className="w-20 h-20 bg-accent/10 rounded-[30px] flex items-center justify-center animate-bounce mb-6">
+          <Icons.Sparkles className="w-10 h-10 text-accent" />
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-400">Loading Intelligence...</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-accent">Loading Intelligence...</p>
       </div>
     );
   }
@@ -199,7 +207,7 @@ const App: React.FC = () => {
   if (!currentUser) return <Auth onLogin={setCurrentUser} />;
 
   return (
-    <div className="h-screen w-full flex bg-[var(--bg-main)] overflow-hidden font-sans selection:bg-indigo-500/30 transition-colors duration-500">
+    <div className="h-screen w-full flex bg-[var(--bg-main)] overflow-hidden font-sans selection:bg-accent/30 transition-colors duration-500">
       <Sidebar 
         isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} 
         categories={categories} tasks={tasks} selectedCategory={selectedCategory}
@@ -210,7 +218,7 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[100px] animate-pulse-slow"></div>
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[100px] animate-nebula"></div>
         
         <div className="flex-1 overflow-y-auto no-scrollbar p-6 lg:p-12 pt-28 lg:pt-12 relative z-10">
           <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 mb-16">
@@ -227,24 +235,34 @@ const App: React.FC = () => {
                  </div>
                  
                  {/* Theme Switcher Toggle */}
-                 <div className="flex bg-[var(--panel-bg)] border border-[var(--border-color)] p-1 rounded-full shadow-lg">
+                 <div className="flex bg-[var(--panel-bg)] border border-[var(--border-color)] p-1.5 rounded-full shadow-lg gap-1">
                     <button 
+                      title="الوضع النهاري"
                       onClick={() => setAppTheme('light')}
-                      className={`p-2 rounded-full transition-all ${appTheme === 'light' ? 'bg-white text-blue-600 shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
+                      className={`p-2.5 rounded-full transition-all ${appTheme === 'light' ? 'bg-white text-blue-600 shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
                     >
-                       <Icons.Sun className="w-3.5 h-3.5" />
+                       <Icons.Sun className="w-4 h-4" />
                     </button>
                     <button 
+                      title="الوضع الليلي"
                       onClick={() => setAppTheme('night')}
-                      className={`p-2 rounded-full transition-all ${appTheme === 'night' ? 'bg-indigo-600 text-white shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
+                      className={`p-2.5 rounded-full transition-all ${appTheme === 'night' ? 'bg-indigo-600 text-white shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
                     >
-                       <Icons.Moon className="w-3.5 h-3.5" />
+                       <Icons.Moon className="w-4 h-4" />
                     </button>
                     <button 
+                      title="وضع منتصف الليل"
                       onClick={() => setAppTheme('midnight')}
-                      className={`p-2 rounded-full transition-all ${appTheme === 'midnight' ? 'bg-slate-900 text-cyan-400 shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
+                      className={`p-2.5 rounded-full transition-all ${appTheme === 'midnight' ? 'bg-slate-900 text-cyan-400 shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
                     >
-                       <Icons.Sparkles className="w-3.5 h-3.5" />
+                       <Icons.Shield className="w-4 h-4" />
+                    </button>
+                    <button 
+                      title="الوضع الكوني"
+                      onClick={() => setAppTheme('cosmic')}
+                      className={`p-2.5 rounded-full transition-all ${appTheme === 'cosmic' ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-md scale-110' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                       <Icons.Sparkles className="w-4 h-4" />
                     </button>
                  </div>
 

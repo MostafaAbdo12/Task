@@ -3,11 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#020617" />
+    <meta name="theme-color" content="#f8fafc" id="theme-meta" />
     <title>منصة مهامي | القوة الذكية بين يديك</title>
     
     <script>
       window.process = window.process || { env: {} };
+      const savedTheme = localStorage.getItem('maham_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
     
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap" rel="stylesheet">
@@ -28,23 +30,16 @@
               'shimmer': 'shimmer 2s linear infinite',
               'pulse-slow': 'pulse-slow 8s infinite',
               'spin-slow': 'spin-slow 12s linear infinite',
+              'nebula': 'nebula 15s ease infinite',
+              'logo-hover': 'logo-hover 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
             },
             keyframes: {
               float: {
                 '0%, 100%': { transform: 'translateY(0) rotate(0)' },
                 '50%': { transform: 'translateY(-20px) rotate(2deg)' },
               },
-              shimmer: {
-                '0%': { backgroundPosition: '-200% 0' },
-                '100%': { backgroundPosition: '200% 0' },
-              },
-              'pulse-slow': {
-                '0%, 100%': { opacity: 0.1, transform: 'scale(1)' },
-                '50%': { opacity: 0.3, transform: 'scale(1.2)' },
-              },
-              'spin-slow': {
-                'from': { transform: 'rotate(0deg)' },
-                'to': { transform: 'rotate(360deg)' },
+              'logo-hover': {
+                'to': { transform: 'scale(1.1) rotate(10deg)' }
               }
             }
           }
@@ -53,26 +48,33 @@
     </script>
     <style>
       :root {
-        /* Default Night Mode Variables */
-        --bg-main: #020617;
-        --panel-bg: rgba(15, 23, 42, 0.6);
-        --border-color: rgba(255, 255, 255, 0.05);
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-        --accent-color: #6366f1;
-        --card-glow: rgba(99, 102, 241, 0.2);
-        --sidebar-bg: #0f172a;
-      }
-
-      [data-theme='light'] {
         --bg-main: #f8fafc;
         --panel-bg: rgba(255, 255, 255, 0.8);
         --border-color: rgba(0, 0, 0, 0.05);
         --text-primary: #0f172a;
         --text-secondary: #64748b;
         --accent-color: #2563eb;
-        --card-glow: rgba(37, 99, 235, 0.1);
+        /* Logo Styles */
+        --logo-bg: linear-gradient(135deg, #2563eb, #3b82f6);
+        --logo-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.2);
+        --logo-text: #1e293b;
+        --logo-glow: transparent;
         --sidebar-bg: #ffffff;
+      }
+
+      [data-theme='night'] {
+        --bg-main: #020617;
+        --panel-bg: rgba(15, 23, 42, 0.6);
+        --border-color: rgba(255, 255, 255, 0.05);
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --accent-color: #6366f1;
+        /* Logo Styles */
+        --logo-bg: linear-gradient(135deg, #6366f1, #a855f7);
+        --logo-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+        --logo-text: #ffffff;
+        --logo-glow: rgba(99, 102, 241, 0.2);
+        --sidebar-bg: #0f172a;
       }
 
       [data-theme='midnight'] {
@@ -82,8 +84,27 @@
         --text-primary: #ffffff;
         --text-secondary: #64748b;
         --accent-color: #00f2ff;
-        --card-glow: rgba(0, 242, 255, 0.3);
+        /* Logo Styles */
+        --logo-bg: #00f2ff;
+        --logo-shadow: 0 0 40px rgba(0, 242, 255, 0.6);
+        --logo-text: #ffffff;
+        --logo-glow: rgba(0, 242, 255, 0.4);
         --sidebar-bg: #050505;
+      }
+
+      [data-theme='cosmic'] {
+        --bg-main: #050510;
+        --panel-bg: rgba(13, 13, 30, 0.7);
+        --border-color: rgba(255, 0, 255, 0.1);
+        --text-primary: #e2e8f0;
+        --text-secondary: #94a3b8;
+        --accent-color: #ff00ff;
+        /* Logo Styles */
+        --logo-bg: linear-gradient(135deg, #ff00ff, #7000ff);
+        --logo-shadow: 0 0 50px rgba(255, 0, 255, 0.7);
+        --logo-text: #ffffff;
+        --logo-glow: rgba(255, 0, 255, 0.5);
+        --sidebar-bg: #0a0a1a;
       }
 
       @font-face {
@@ -97,7 +118,27 @@
       * {
         font-family: 'TheYearofHandicrafts-Medium', 'Cairo', sans-serif !important;
         scroll-behavior: smooth;
-        transition: background-color 0.4s ease, border-color 0.4s ease;
+        transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+      }
+
+      /* Unified Premium Logo Style */
+      .premium-logo-box {
+        background: var(--logo-bg);
+        box-shadow: var(--logo-shadow);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .premium-logo-box::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent 70%);
+      }
+
+      .premium-logo-text {
+        color: var(--logo-text);
+        text-shadow: 0 0 10px var(--logo-glow);
       }
 
       body {
@@ -123,7 +164,15 @@
         opacity: 0.15;
       }
 
-      /* Custom High-End Scrollbar */
+      [data-theme='cosmic'] .orb {
+        opacity: 0.4;
+        filter: blur(120px);
+        animation: nebula 20s infinite alternate ease-in-out;
+      }
+
+      [data-theme='cosmic'] .orb-1 { background: #ff00ff; top: -10%; left: -10%; width: 60%; height: 60%; }
+      [data-theme='cosmic'] .orb-2 { background: #00ffff; bottom: -10%; right: -10%; width: 50%; height: 50%; }
+
       ::-webkit-scrollbar { width: 6px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 20px; }
@@ -158,8 +207,8 @@
   </head>
   <body>
     <div class="kinetic-bg" id="kinetic-root">
-      <div class="orb w-[500px] h-[500px] bg-accent top-[-100px] left-[-100px] animate-pulse-slow"></div>
-      <div class="orb w-[400px] h-[400px] bg-indigo-500 bottom-[-50px] right-[-50px] animate-pulse-slow" style="animation-delay: -3s"></div>
+      <div class="orb orb-1 w-[500px] h-[500px] bg-accent top-[-100px] left-[-100px] animate-pulse-slow"></div>
+      <div class="orb orb-2 w-[400px] h-[400px] bg-indigo-500 bottom-[-50px] right-[-50px] animate-pulse-slow" style="animation-delay: -3s"></div>
     </div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Category, User, Task } from '../types';
 import { Icons, CategoryIconMap } from '../constants';
@@ -48,13 +47,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           0%, 100% { text-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color); opacity: 0.8; }
           50% { text-shadow: 0 0 25px var(--accent-color), 0 0 45px var(--accent-color); opacity: 1; }
         }
-        @keyframes heartBeat3D {
-          0% { transform: translateZ(20px) scale(1); }
-          15% { transform: translateZ(35px) scale(1.3); }
-          30% { transform: translateZ(20px) scale(1); }
-          45% { transform: translateZ(35px) scale(1.3); }
-          100% { transform: translateZ(20px) scale(1); }
-        }
         .signature-3d-wrap {
           perspective: 1200px;
         }
@@ -66,27 +58,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           animation: neonPulse 2.5s infinite ease-in-out;
           transform: translateZ(40px);
           color: var(--accent-color);
-        }
-        .pulse-heart-3d {
-          animation: heartBeat3D 1.8s infinite;
-          display: inline-block;
-          transform: translateZ(25px);
-        }
-        .shimmer-effect {
-          background: linear-gradient(
-            45deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.05) 45%,
-            rgba(255, 255, 255, 0.15) 50%,
-            rgba(255, 255, 255, 0.05) 55%,
-            transparent 100%
-          );
-          background-size: 200% 200%;
-          animation: shimmerAnim 4s infinite linear;
-        }
-        @keyframes shimmerAnim {
-          0% { background-position: -200% -200%; }
-          100% { background-position: 200% 200%; }
         }
       `}</style>
 
@@ -103,13 +74,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
       `}>
         <div className="h-full flex flex-col p-8">
+           {/* الشعار المحسن */}
            <div className="flex items-center gap-5 mb-14 group cursor-pointer" onClick={() => { onViewChange('tasks'); onClose(); }}>
-              <div className="w-14 h-14 rounded-[22px] bg-accent flex items-center justify-center shadow-[0_15px_35px_rgba(99,102,241,0.3)] transition-all duration-500 group-hover:rotate-12 group-hover:scale-110">
+              <div className="premium-logo-box w-14 h-14 rounded-[22px] flex items-center justify-center transition-all duration-500 group-hover:rotate-12 group-hover:scale-110">
                  <Icons.Sparkles className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-black tracking-tighter text-white">مهامي</h1>
-                <p className="text-[9px] font-black text-accent uppercase tracking-[0.4em]">Neural Core</p>
+                <h1 className="premium-logo-text text-2xl font-black tracking-tighter">مهامي</h1>
+                <p className="text-[9px] font-black text-accent uppercase tracking-[0.4em] mt-1">القوة الذكية</p>
               </div>
            </div>
 
@@ -177,28 +149,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                  <div 
                   ref={signatureRef}
                   className="signature-card-3d bg-white/[0.02] backdrop-blur-2xl border border-[var(--border-color)] p-5 rounded-[32px] shadow-2xl overflow-hidden relative group/sig cursor-default"
-                  style={{ 
-                    transform: `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
-                  }}
+                  style={{ transform: `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)` }}
                  >
-                    <div className="shimmer-effect absolute inset-0 opacity-40"></div>
-                    
                     <div className="flex flex-col items-center gap-3 relative z-10" style={{ transform: 'translateZ(30px)' }}>
-                       <div className="flex items-center gap-3 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">
-                          <span>صنع بكل</span>
-                          <span className="pulse-heart-3d text-rose-500 text-lg drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]">❤️</span>
-                          <span>من قبل</span>
+                       <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          <span>صنع بكل ❤️ من قبل</span>
                        </div>
-                       
                        <div className="w-12 h-[2px] bg-accent/30"></div>
-                       
-                       <div className="text-[15px] font-black tracking-[0.3em] neon-name uppercase text-center mt-1">
-                          MOSTAFA ABDO
-                       </div>
+                       <div className="text-[15px] font-black tracking-[0.3em] neon-name uppercase text-center mt-1">MOSTAFA ABDO</div>
                     </div>
                  </div>
               </div>
-           </div>
         </div>
       </aside>
     </>
