@@ -1,29 +1,34 @@
-
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
 /**
- * خدمات الذكاء الاصطناعي لإدارة المهام.
- * يتم إنشاء مثيل جديد من GoogleGenAI عند كل طلب لضمان استخدام أحدث مفتاح API.
+ * AI Services for Task Management using Google Gemini API.
  */
 
 export const getSystemBriefingAudio = async (username: string, tasks: any[]) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const pendingCount = tasks.filter(t => t.status !== 'COMPLETED').length;
-    let message = "";
     
+    // نركز التقرير على المهام النشطة فقط
+    const activeTasks = tasks.filter(t => t.status !== 'COMPLETED');
+    const pendingCount = activeTasks.length;
+    
+    let messageText = "";
     if (pendingCount === 0) {
-      message = `تحية طيبة يا ${username}. النظام في حالة استقرار تام. لا توجد عمليات معلقة حالياً.`;
+      messageText = `مرحباً ${username}. مصفوفة المهام فارغة حالياً، يومك هادئ ومستقر.`;
     } else {
-      const topTask = tasks.find(t => t.status !== 'COMPLETED')?.title;
-      message = `مرحباً ${username}. تم رصد ${pendingCount} مهام نشطة في النظام. الأولوية القصوى تتجه حالياً نحو: ${topTask}. لنبدأ التنفيذ.`;
+      const topTask = activeTasks[0]?.title || "مهمة غير محددة";
+      messageText = `أهلاً ${username}. لديك ${pendingCount} مهام نشطة. الأولوية الآن هي: ${topTask}.`;
     }
 
+    // تبسيط الطلب لتجنب خطأ 500 الداخلي في موديل TTS
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: message }] }],
+      contents: [{ 
+        parts: [{ 
+          text: `بصوت احترافي ومستقبلي وهادئ، قل للمستخدم: ${messageText}` 
+        }] 
+      }],
       config: {
-        systemInstruction: "أنت محلل الأداء (Performance Analyst). صوتك ذكي، عملي، واثق ومحترف جداً. تتحدث بلهجة عربية فصحى عصرية ومختصرة. تجنب الكلمات العاطفية المبالغ فيها وركز على 'التنفيذ'، 'الأولوية'، 'التحسين'، 'النتائج'.",
         responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
@@ -36,7 +41,7 @@ export const getSystemBriefingAudio = async (username: string, tasks: any[]) => 
     const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
     return part?.inlineData?.data || null;
   } catch (error: any) {
-    console.error("Gemini TTS Error:", error);
+    console.error("Gemini TTS Error Detail:", error);
     return null;
   }
 };
@@ -44,26 +49,26 @@ export const getSystemBriefingAudio = async (username: string, tasks: any[]) => 
 export const getSmartAdvice = async (tasks: any[]) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const pending = tasks.filter(t => t.status !== 'COMPLETED').map(t => t.title).slice(0, 3).join(', ');
+    const activePending = tasks.filter(t => t.status !== 'COMPLETED').map(t => t.title).slice(0, 3).join(', ');
     
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `قائمة المهام الحالية: [${pending || 'لا توجد مهام'}]. قدم نصيحة إدارية تقنية مقتضبة جداً (3-5 كلمات) باللغة العربية بأسلوب محترف ومستقبلي.`,
+      contents: `بناءً على المهام النشطة: [${activePending || 'لا توجد مهام نشطة'}]. قدم نصيحة إدارية تقنية واحدة مقتضبة جداً (أقل من 6 كلمات) لتحفيز المستخدم.`,
     });
     
-    return response.text?.trim() || "تحسين سير العمل هو الأولوية.";
+    return response.text?.trim() || "الإنتاجية تبدأ بخطوة صغيرة اليوم.";
   } catch (error: any) {
     console.error("Gemini Advice Error:", error);
-    return "النظام جاهز لاستقبال المهام.";
+    return "نظامك جاهز لتحقيق أهدافك.";
   }
 };
 
-export const getSmartSubtasks = async (taskTitle: string, taskDescription: string) => {
+export const getSmartSubtasks = async (taskTitle: string) => {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `قم بتفكيك المهمة التقنية التالية إلى 3 خطوات تنفيذية دقيقة ومختصرة: "${taskTitle}". الرد بصيغة JSON array strings حصراً.`,
+        contents: `فكك هذه المهمة إلى 3 خطوات عملية بسيطة: "${taskTitle}". أريد النتيجة بتنسيق JSON array فقط.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -73,13 +78,7 @@ export const getSmartSubtasks = async (taskTitle: string, taskDescription: strin
         }
       });
       
-      let rawText = response.text?.trim() || "[]";
-      if (rawText.includes("```json")) {
-        rawText = rawText.split("```json")[1].split("```")[0].trim();
-      } else if (rawText.includes("```")) {
-        rawText = rawText.split("```")[1].split("```")[0].trim();
-      }
-      
+      const rawText = response.text?.trim() || "[]";
       return JSON.parse(rawText) as string[];
     } catch (error: any) {
       console.error("Gemini Subtasks Error:", error);
