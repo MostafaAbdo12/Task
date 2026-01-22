@@ -27,20 +27,29 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
+    // Set variables for CSS parallax
     cardRef.current.style.setProperty('--mouse-x', `${x}px`);
     cardRef.current.style.setProperty('--mouse-y', `${y}px`);
+    
+    // Normalized values for easier math (-0.5 to 0.5)
+    const normX = (x / rect.width) - 0.5;
+    const normY = (y / rect.height) - 0.5;
+    cardRef.current.style.setProperty('--norm-x', `${normX}`);
+    cardRef.current.style.setProperty('--norm-y', `${normY}`);
 
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     const rotateX = ((y - centerY) / centerY) * -4;
     const rotateY = ((x - centerX) / centerX) * 4;
     
-    cardRef.current.style.transform = `perspective(1000px) translateY(-5px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    cardRef.current.style.transform = `perspective(1000px) translateY(-8px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
   };
 
   const handleMouseLeave = () => {
     if (!cardRef.current) return;
     cardRef.current.style.transform = `perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg)`;
+    cardRef.current.style.setProperty('--norm-x', `0`);
+    cardRef.current.style.setProperty('--norm-y', `0`);
   };
 
   const getPriorityTheme = (p: TaskPriority) => {
@@ -101,17 +110,42 @@ const TaskCard: React.FC<TaskCardProps> = ({
         background: `linear-gradient(165deg, rgba(15, 23, 42, 0.92) 0%, rgba(2, 6, 23, 0.98) 100%)`
       }}
       className={`
-        relative group transition-all duration-500 ease-out
+        relative group transition-all duration-700 ease-out
         rounded-[45px] border border-white/5 
-        backdrop-blur-[30px]
-        overflow-hidden flex flex-col p-7 min-h-[380px]
-        hover:border-white/10 hover:shadow-[0_30px_70px_-20px_rgba(0,0,0,0.8)]
+        backdrop-blur-[35px]
+        overflow-hidden flex flex-col p-7 min-h-[400px]
+        hover:border-white/10 hover:shadow-[0_45px_100px_-25px_rgba(0,0,0,0.9)]
         ${isCompleted ? 'grayscale-[0.6] opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}
       `}
     >
-      {/* Background Decorative Star */}
-      <div className="absolute -bottom-6 -left-6 w-40 h-40 text-white/5 pointer-events-none group-hover:text-white/10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-700 ease-in-out">
-        <Icons.Sparkles className="w-full h-full rotate-12" />
+      {/* Dynamic Parallax Nebulae - Layer 1 */}
+      <div 
+        className="absolute top-0 left-0 w-full h-full opacity-0 group-hover:opacity-10 transition-opacity duration-1000 pointer-events-none"
+        style={{
+          transform: `translate(calc(var(--norm-x) * 25px), calc(var(--norm-y) * 25px))`,
+          background: `radial-gradient(circle at 70% 30%, ${task.color}30, transparent 60%)`,
+          filter: 'blur(50px)'
+        }}
+      />
+
+      {/* Dynamic Parallax Nebulae - Layer 2 */}
+      <div 
+        className="absolute top-0 left-0 w-full h-full opacity-0 group-hover:opacity-[0.15] transition-opacity duration-700 pointer-events-none"
+        style={{
+          transform: `translate(calc(var(--norm-x) * -40px), calc(var(--norm-y) * -40px)) scale(1.1)`,
+          background: `radial-gradient(circle at 20% 80%, ${task.color}20, transparent 50%)`,
+          filter: 'blur(80px)'
+        }}
+      />
+
+      {/* Background Decorative Star with Parallax */}
+      <div 
+        className="absolute -bottom-6 -left-6 w-40 h-40 text-white/5 pointer-events-none group-hover:text-white/10 transition-all duration-700 ease-in-out"
+        style={{
+          transform: `translate(calc(var(--norm-x) * -15px), calc(var(--norm-y) * -15px)) rotate(12deg) scale(1.1)`
+        }}
+      >
+        <Icons.Sparkles className="w-full h-full" />
       </div>
 
       {/* Top Section */}
@@ -224,11 +258,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
         />
       </div>
 
-      {/* Interactive Mouse Glow */}
+      {/* Interactive Mouse Glow with Parallax Refinement */}
       <div 
         className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none z-0" 
         style={{ 
-          background: `radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${task.color}, transparent 80%)`,
+          background: `radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${task.color}, transparent 80%)`,
         }}
       ></div>
 

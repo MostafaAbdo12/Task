@@ -31,6 +31,20 @@ const App: React.FC = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [smartAdvice, setSmartAdvice] = useState('جارِ تحليل مسارك الإنتاجي...');
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Monitor scroll for glass effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const addToast = useCallback((message: string, type: 'success' | 'danger' | 'info' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -269,14 +283,14 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col min-w-0">
-        {/* REDESIGNED HEADER BAR */}
-        <header className="sticky top-4 z-[500] mb-12 animate-reveal">
-           <div className="glass-panel rounded-[50px] h-28 px-8 lg:px-12 flex items-center justify-between border-white/10 shadow-[0_35px_80px_-15px_rgba(0,0,0,0.6)] group/header relative overflow-hidden">
+        {/* REDESIGNED HEADER BAR WITH SCROLL INTERACTION */}
+        <header className="sticky top-4 z-[500] mb-12 animate-reveal transition-all duration-500">
+           <div className={`glass-panel rounded-[50px] h-28 px-8 lg:px-12 flex items-center justify-between border-white/10 shadow-[0_35px_80px_-15px_rgba(0,0,0,0.6)] group/header relative overflow-hidden ${isScrolled ? 'header-scrolled' : ''}`}>
               {/* Internal Accent Glow */}
-              <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-nebula-blue/30 to-transparent"></div>
+              <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-nebula-blue/30 to-transparent transition-opacity ${isScrolled ? 'opacity-100' : 'opacity-0'}`}></div>
               
               {/* Left Side: Navigation & Title */}
-              <div className="flex items-center gap-10 relative z-10">
+              <div className="flex items-center gap-10 relative z-10 nav-title transition-all duration-500 origin-right">
                 <button 
                   onClick={() => setIsSidebarOpen(true)} 
                   className="lg:hidden text-nebula-blue p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all active:scale-90 border border-white/5"
@@ -285,26 +299,28 @@ const App: React.FC = () => {
                 </button>
                 
                 <div className="flex flex-col text-right">
-                  <h2 className="text-4xl font-black tracking-tighter text-white glow-title uppercase drop-shadow-2xl">
+                  <h2 className="text-4xl font-black tracking-tighter text-white glow-title uppercase drop-shadow-2xl transition-all duration-500">
                     {currentView === 'tasks' ? 'المهـام' : currentView === 'settings' ? 'الإعدادات' : 'القطاعات'}
                   </h2>
-                  <div className="flex items-center justify-end gap-2.5 mt-1.5">
-                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">تشفير نشط للمزامنة</span>
-                     <div className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
-                     </div>
-                  </div>
+                  {!isScrolled && (
+                    <div className="flex items-center justify-end gap-2.5 mt-1.5 animate-in fade-in duration-700">
+                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">تشفير نشط للمزامنة</span>
+                       <div className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
+                       </div>
+                    </div>
+                  )}
                 </div>
               </div>
               
               {/* Center: Search Engine */}
-              <div className="flex-1 max-w-xl mx-12 hidden md:block relative group/search">
+              <div className={`flex-1 max-w-xl mx-12 hidden md:block relative group/search transition-all duration-500 ${isScrolled ? 'max-w-md' : ''}`}>
                 <input 
                   value={searchQuery} 
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="بحث سريع في السجلات الرقمية..." 
-                  className="w-full bg-black/30 border border-white/10 rounded-[28px] py-5 pr-14 pl-8 text-[15px] font-bold outline-none focus:border-nebula-blue/50 focus:bg-black/50 focus:w-[105%] -translate-x-0 focus:-translate-x-[2.5%] transition-all duration-500 text-white placeholder:text-slate-600 shadow-inner"
+                  className={`w-full bg-black/30 border border-white/10 rounded-[28px] py-5 pr-14 pl-8 text-[15px] font-bold outline-none focus:border-nebula-blue/50 focus:bg-black/50 transition-all duration-500 text-white placeholder:text-slate-600 shadow-inner ${isScrolled ? 'py-3.5' : ''}`}
                 />
                 <Icons.Search className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-500 group-focus-within/search:text-nebula-blue group-focus-within/search:scale-110 transition-all" />
                 {/* Search Focus Glow */}
@@ -315,13 +331,13 @@ const App: React.FC = () => {
               <div className="flex items-center gap-6 relative z-10">
                  <button 
                   onClick={() => { setEditingTask(null); setShowForm(true); }} 
-                  className="relative group/btn overflow-hidden px-10 py-5 rounded-[28px] bg-gradient-to-r from-nebula-purple to-nebula-blue text-white text-[13px] font-black shadow-[0_20px_40px_rgba(124,58,237,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center gap-3.5"
+                  className={`relative group/btn overflow-hidden px-10 rounded-[28px] bg-gradient-to-r from-nebula-purple to-nebula-blue text-white text-[13px] font-black shadow-[0_20px_40px_rgba(124,58,237,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center gap-3.5 ${isScrolled ? 'py-3.5 px-6' : 'py-5'}`}
                  >
                    {/* Shimmer Effect Inside Button */}
                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_2s_infinite] pointer-events-none"></div>
                    
                    <Icons.Plus className="w-5 h-5 transition-transform group-hover/btn:rotate-90 duration-500" />
-                   <span className="tracking-tight">مهمة جديدة</span>
+                   {!isScrolled && <span className="tracking-tight animate-in slide-in-from-left-4 duration-500">مهمة جديدة</span>}
                    
                    {/* Exterior Button Glow */}
                    <div className="absolute inset-0 rounded-[28px] shadow-[0_0_30px_rgba(124,58,237,0.4)] opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
