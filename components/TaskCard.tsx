@@ -27,11 +27,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Set variables for CSS parallax
     cardRef.current.style.setProperty('--mouse-x', `${x}px`);
     cardRef.current.style.setProperty('--mouse-y', `${y}px`);
     
-    // Normalized values for easier math (-0.5 to 0.5)
     const normX = (x / rect.width) - 0.5;
     const normY = (y / rect.height) - 0.5;
     cardRef.current.style.setProperty('--norm-x', `${normX}`);
@@ -85,15 +83,21 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const nextStatus = isCompleted ? TaskStatus.PENDING : TaskStatus.COMPLETED;
     
     if (nextStatus === TaskStatus.COMPLETED) {
-      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      
+      // Subtle Star-dust Confetti
       confetti({
-        particleCount: 60,
-        spread: 50,
+        particleCount: 45,
+        spread: 70,
         origin: { 
           x: (rect.left + rect.width / 2) / window.innerWidth, 
           y: (rect.top + rect.height / 2) / window.innerHeight 
         },
-        colors: [task.color, '#ffffff', '#3b82f6'],
+        colors: [task.color, '#ffffff', '#ffd700', '#3b82f6'],
+        scale: 0.8,
+        gravity: 1.2,
+        ticks: 200,
+        shapes: ['circle', 'square'],
       });
     }
     
@@ -115,7 +119,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         backdrop-blur-[35px]
         overflow-hidden flex flex-col p-7 min-h-[400px]
         hover:border-white/10 hover:shadow-[0_45px_100px_-25px_rgba(0,0,0,0.9)]
-        ${isCompleted ? 'grayscale-[0.6] opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}
+        ${isCompleted ? 'grayscale-[0.8] opacity-60 scale-[0.97]' : 'opacity-100 scale-100'}
       `}
     >
       {/* Dynamic Parallax Nebulae - Layer 1 */}
@@ -153,12 +157,18 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <button 
           onClick={handleComplete}
           className={`
-            w-14 h-14 rounded-[24px] border border-white/10 flex items-center justify-center transition-all duration-500 active:scale-90
-            ${isCompleted ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-white/5 hover:bg-white/10'}
+            w-14 h-14 rounded-[24px] border border-white/10 flex items-center justify-center transition-all duration-500 active:scale-75 relative group/check
+            ${isCompleted ? 'bg-emerald-500/20 border-emerald-500/40 shadow-[0_0_25px_rgba(16,185,129,0.2)]' : 'bg-white/5 hover:bg-white/10'}
           `}
         >
+          {isCompleted && (
+            <div className="absolute inset-0 rounded-[24px] animate-ping bg-emerald-500/20 pointer-events-none"></div>
+          )}
           <div 
-            className={`w-5 h-5 rounded-full transition-all duration-700 transform ${isCompleted ? 'bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.8)] scale-110' : 'bg-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.6)] animate-pulse'}`}
+            className={`w-5 h-5 rounded-full transition-all duration-700 transform 
+              ${isCompleted ? 'bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,1)] scale-125' : 'bg-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.6)] animate-pulse'}
+              group-hover/check:scale-110
+            `}
           />
         </button>
 
@@ -179,13 +189,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <h3 
           className={`
             text-2xl lg:text-3xl font-black leading-tight transition-all duration-500
-            ${isCompleted ? 'text-slate-600 line-through' : 'text-white'}
+            ${isCompleted ? 'text-slate-500 line-through italic' : 'text-white'}
           `}
         >
           {task.title}
         </h3>
         {task.description && (
-          <p className={`text-sm font-bold transition-all duration-500 line-clamp-2 ${isCompleted ? 'text-slate-700 opacity-40' : 'text-slate-400 opacity-70 group-hover:opacity-100'}`}>
+          <p className={`text-sm font-bold transition-all duration-500 line-clamp-2 ${isCompleted ? 'text-slate-700 opacity-30' : 'text-slate-400 opacity-70 group-hover:opacity-100'}`}>
             {task.description}
           </p>
         )}
@@ -196,7 +206,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <div className="flex items-center justify-end gap-5">
            {task.reminderAt && (
              <div className="bg-amber-500/5 backdrop-blur-xl border border-amber-500/10 px-4 py-2 rounded-full flex items-center gap-2 text-amber-500/80">
-               <Icons.AlarmClock className="w-4 h-4 animate-pulse" />
+               <Icons.AlarmClock className="w-4 h-4" />
                <span className="text-[11px] font-black">تنبيه نشط</span>
              </div>
            )}
@@ -209,7 +219,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <div className="flex justify-end">
           <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 px-6 py-2.5 rounded-3xl flex items-center gap-3 group-hover:bg-slate-800/80 transition-all duration-500">
              <div className="w-6 h-6 flex items-center justify-center transition-transform duration-700" style={{ color: task.color }}>
-               {task.icon && CategoryIconMap[task.icon] ? CategoryIconMap[task.icon] : CategoryIconMap['briefcase']}
+               {task.icon && CategoryIconMap[task.icon] ? CategoryIconMap[task.icon] : CategoryIconMap['star']}
              </div>
              <span className="text-sm font-black text-slate-200">{task.category}</span>
           </div>
