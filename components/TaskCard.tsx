@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import { Task, TaskStatus, TaskPriority } from '../types';
 import { Icons, PRIORITY_LABELS, CategoryIconMap } from '../constants';
 import confetti from 'canvas-confetti';
@@ -11,8 +11,6 @@ interface TaskCardProps {
   onCopy: (task: Task) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onTogglePin: (id: string) => void;
-  onToggleFavorite?: (id: string) => void;
-  onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   index: number;
 }
 
@@ -22,56 +20,42 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const isCompleted = task.status === TaskStatus.COMPLETED;
-  
-  // حساب تقدم المهام الفرعية
-  const subtasksStats = useMemo(() => {
-    if (!task.subTasks || task.subTasks.length === 0) return null;
-    const completed = task.subTasks.filter(st => st.isCompleted).length;
-    const total = task.subTasks.length;
-    return {
-      percent: Math.round((completed / total) * 100),
-      text: `${completed}/${total}`
-    };
-  }, [task.subTasks]);
 
-  // منطق التحريك ثلاثي الأبعاد والبارالاكس
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // إحداثيات الماوس للتوهج
     cardRef.current.style.setProperty('--mouse-x', `${x}px`);
     cardRef.current.style.setProperty('--mouse-y', `${y}px`);
 
-    // منطق الإمالة (Tilt)
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    const rotateX = ((y - centerY) / centerY) * -10; // أقصى ميل 10 درجات
-    const rotateY = ((x - centerX) / centerX) * 10;
+    const rotateX = ((y - centerY) / centerY) * -4;
+    const rotateY = ((x - centerX) / centerX) * 4;
     
-    cardRef.current.style.transform = `perspective(1000px) scale(1.05) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    cardRef.current.style.transform = `perspective(1000px) translateY(-5px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
   };
 
   const handleMouseLeave = () => {
     if (!cardRef.current) return;
-    cardRef.current.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`;
+    cardRef.current.style.transform = `perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg)`;
   };
 
   const getPriorityTheme = (p: TaskPriority) => {
     switch(p) {
       case TaskPriority.URGENT: return { 
-        bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20', glow: 'shadow-[0_0_25px_rgba(244,63,94,0.4)]' 
+        bg: 'bg-rose-950/40', text: 'text-rose-400', border: 'border-rose-500/20', glow: 'glow-urgent' 
       };
       case TaskPriority.HIGH: return { 
-        bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20', glow: 'shadow-[0_0_25px_rgba(249,115,22,0.4)]' 
+        bg: 'bg-orange-950/40', text: 'text-orange-400', border: 'border-orange-500/20', glow: '' 
       };
       case TaskPriority.MEDIUM: return { 
-        bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', glow: 'shadow-[0_0_25px_rgba(59,130,246,0.4)]' 
+        bg: 'bg-blue-950/40', text: 'text-blue-400', border: 'border-blue-500/20', glow: '' 
       };
       default: return { 
-        bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/20', glow: '' 
+        bg: 'bg-slate-900/40', text: 'text-slate-400', border: 'border-slate-500/10', glow: '' 
       };
     }
   };
@@ -79,10 +63,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const pTheme = getPriorityTheme(task.priority);
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return null;
-    return new Date(dateStr).toLocaleDateString('ar-EG', {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ar-EG', {
       day: 'numeric',
-      month: 'short'
+      month: 'long'
     });
   };
 
@@ -93,16 +78,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
     if (nextStatus === TaskStatus.COMPLETED) {
       const rect = (e.target as HTMLElement).getBoundingClientRect();
       confetti({
-        particleCount: 150,
-        spread: 90,
+        particleCount: 60,
+        spread: 50,
         origin: { 
           x: (rect.left + rect.width / 2) / window.innerWidth, 
           y: (rect.top + rect.height / 2) / window.innerHeight 
         },
-        colors: [task.color, '#7c3aed', '#3b82f6', '#ffffff'],
-        disableForReducedMotion: true,
-        scalar: 1.4,
-        gravity: 0.7
+        colors: [task.color, '#ffffff', '#3b82f6'],
       });
     }
     
@@ -114,184 +96,199 @@ const TaskCard: React.FC<TaskCardProps> = ({
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{ animationDelay: `${index * 100}ms` }}
+      style={{ 
+        animationDelay: `${index * 80}ms`,
+        background: `linear-gradient(165deg, rgba(15, 23, 42, 0.92) 0%, rgba(2, 6, 23, 0.98) 100%)`
+      }}
       className={`
-        nebula-card p-9 flex flex-col gap-7 relative group transition-all duration-300 ease-out
-        rounded-[45px] border border-white/10 
-        bg-gradient-to-br from-white/[0.1] via-white/[0.03] to-transparent
-        backdrop-blur-[45px] shadow-2xl
-        hover:border-white/40 hover:from-white/[0.15]
-        hover:shadow-[0_60px_120px_-30px_rgba(0,0,0,0.9)]
-        ${isCompleted ? 'opacity-60 saturate-[0.2] scale-[0.96]' : 'opacity-100'}
+        relative group transition-all duration-500 ease-out
+        rounded-[45px] border border-white/5 
+        backdrop-blur-[30px]
+        overflow-hidden flex flex-col p-7 min-h-[380px]
+        hover:border-white/10 hover:shadow-[0_30px_70px_-20px_rgba(0,0,0,0.8)]
+        ${isCompleted ? 'grayscale-[0.6] opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}
       `}
     >
-      {/* Dynamic Interaction Aura - 3D Glow */}
-      <div 
-        className="absolute inset-0 opacity-0 group-hover:opacity-50 transition-opacity duration-500 pointer-events-none rounded-[45px] z-0" 
-        style={{ 
-          background: `radial-gradient(500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${task.color}55, transparent 85%)`,
-        }}
-      ></div>
-
-      {/* Background Decorative Element with Parallax */}
-      <div className="absolute -bottom-6 -left-6 text-white/[0.03] group-hover:text-white/[0.08] transition-all duration-1000 z-0 pointer-events-none group-hover:-translate-y-8 group-hover:translate-x-8">
-        <Icons.Sparkles className="w-40 h-40 rotate-[25deg] transform-gpu" />
+      {/* Background Decorative Star */}
+      <div className="absolute -bottom-6 -left-6 w-40 h-40 text-white/5 pointer-events-none group-hover:text-white/10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-700 ease-in-out">
+        <Icons.Sparkles className="w-full h-full rotate-12" />
       </div>
 
-      {/* Header Info */}
-      <div className="flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3">
-           <div className={`px-6 py-2.5 rounded-2xl border text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl transition-all duration-500 group-hover:-translate-y-2 ${pTheme.bg} ${pTheme.text} ${pTheme.border} ${pTheme.glow}`}>
-             {PRIORITY_LABELS[task.priority]?.label}
-           </div>
-           {task.isPinned && (
-             <div className="bg-amber-500/20 text-amber-400 p-2.5 rounded-xl border border-amber-500/30 animate-pulse shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-               <Icons.Pin className="w-4.5 h-4.5" filled />
-             </div>
-           )}
-        </div>
-
+      {/* Top Section */}
+      <div className="flex items-start justify-between relative z-10 mb-4">
         <button 
           onClick={handleComplete}
           className={`
-            w-16 h-16 rounded-[24px] border-2 transition-all duration-500 flex items-center justify-center shrink-0 overflow-hidden relative shadow-2xl active:scale-90
-            ${isCompleted 
-              ? 'bg-emerald-500/20 border-emerald-500/70 text-emerald-400 shadow-[0_0_40px_rgba(16,185,129,0.6)]' 
-              : 'border-white/20 bg-white/5 hover:border-blue-400/50 hover:scale-110 hover:shadow-[0_0_30px_rgba(59,130,246,0.4)]'}
+            w-14 h-14 rounded-[24px] border border-white/10 flex items-center justify-center transition-all duration-500 active:scale-90
+            ${isCompleted ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-white/5 hover:bg-white/10'}
           `}
         >
-          {isCompleted ? (
-            <Icons.CheckCircle className="w-8 h-8 animate-in zoom-in spin-in-90 duration-500" />
-          ) : (
-            <div className="w-4 h-4 rounded-full bg-slate-600 transition-all duration-500 group-hover:bg-blue-400 group-hover:scale-150 shadow-[0_0_20px_rgba(59,130,246,1)]"></div>
-          )}
+          <div 
+            className={`w-5 h-5 rounded-full transition-all duration-700 transform ${isCompleted ? 'bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.8)] scale-110' : 'bg-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.6)] animate-pulse'}`}
+          />
         </button>
+
+        <div className="flex items-center gap-2.5">
+          {task.isPinned && (
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 animate-in zoom-in duration-300">
+              <Icons.Pin className="w-5 h-5" filled />
+            </div>
+          )}
+          <div className={`px-5 py-2 rounded-2xl border text-[11px] font-black uppercase tracking-[0.05em] ${pTheme.bg} ${pTheme.text} ${pTheme.border} ${pTheme.glow} transition-all duration-500`}>
+            {PRIORITY_LABELS[task.priority]?.label}
+          </div>
+        </div>
       </div>
 
-      {/* Title & Body Section */}
-      <div className="flex-1 space-y-5 relative z-10 px-2 transition-transform duration-500 group-hover:translate-x-3">
-        <div>
-          <h3 className={`text-2xl lg:text-3xl font-black tracking-tight leading-tight transition-all duration-700 ${isCompleted ? 'text-slate-500 line-through opacity-40' : 'text-white group-hover:text-blue-200'}`}>
-            {task.title}
-          </h3>
-          {task.description && (
-            <p className="text-[15px] text-slate-400 font-bold mt-4 leading-relaxed opacity-60 group-hover:opacity-100 transition-opacity line-clamp-3">
-              {task.description}
-            </p>
-          )}
-        </div>
-
-        {/* Subtasks Progress - Glassy Multi-layered Bar */}
-        {subtasksStats && (
-          <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-6 duration-700">
-             <div className="flex items-center justify-between text-[11px] font-black text-slate-500 uppercase tracking-widest px-1">
-               <span className="flex items-center gap-2.5 transition-colors group-hover:text-blue-400">
-                 <Icons.LayoutDashboard className="w-4 h-4" /> حالة الإنجاز التشغيلي
-               </span>
-               <span className="text-blue-400 font-black drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">{subtasksStats.text} ({subtasksStats.percent}%)</span>
-             </div>
-             <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400 rounded-full transition-all duration-1000 shadow-[0_0_20px_rgba(59,130,246,0.8)] relative"
-                  style={{ width: `${subtasksStats.percent}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent opacity-30"></div>
-                </div>
-             </div>
-          </div>
+      {/* Title & Description */}
+      <div className="flex-1 flex flex-col justify-center text-right space-y-3 relative z-10 mb-6 px-1 transition-transform duration-500 group-hover:-translate-x-1">
+        <h3 
+          className={`
+            text-2xl lg:text-3xl font-black leading-tight transition-all duration-500
+            ${isCompleted ? 'text-slate-600 line-through' : 'text-white'}
+          `}
+        >
+          {task.title}
+        </h3>
+        {task.description && (
+          <p className={`text-sm font-bold transition-all duration-500 line-clamp-2 ${isCompleted ? 'text-slate-700 opacity-40' : 'text-slate-400 opacity-70 group-hover:opacity-100'}`}>
+            {task.description}
+          </p>
         )}
       </div>
 
-      {/* Footer Meta & Interaction Icons */}
-      <div className="space-y-6 relative z-10 px-2 mt-2">
-         <div className="flex flex-wrap items-center gap-6 text-[12px] font-black text-slate-500 uppercase tracking-widest">
-            <div className="flex items-center gap-3 transition-all group-hover:text-white group-hover:translate-x-2">
-               <Icons.Calendar className="w-4.5 h-4.5 text-blue-500 group-hover:scale-125 transition-transform" />
-               <span>{formatDate(task.dueDate) || 'موعد مفتوح'}</span>
-            </div>
-            {task.reminderAt && (
-              <div className="flex items-center gap-3 text-amber-400 animate-pulse bg-amber-500/10 px-4 py-2 rounded-2xl border border-amber-500/20">
-                 <Icons.AlarmClock className="w-4.5 h-4.5" />
-                 <span>تنبيه نشط</span>
-              </div>
-            )}
-            <div className="flex-1"></div>
-            <div className="flex items-center gap-4 bg-white/5 px-5 py-2.5 rounded-[20px] border border-white/5 text-slate-300 transition-all hover:bg-white/15 hover:border-white/20 hover:scale-110">
-               <span className="text-[10px]">{task.category}</span>
-               <div className="w-5 h-5 text-blue-400 opacity-80 group-hover:scale-125 transition-transform group-hover:rotate-12">
-                  {task.icon && CategoryIconMap[task.icon] ? CategoryIconMap[task.icon] : CategoryIconMap['star']}
-               </div>
-            </div>
-         </div>
+      {/* Info Badges Area */}
+      <div className="flex flex-col gap-4 relative z-10 mb-6">
+        <div className="flex items-center justify-end gap-5">
+           {task.reminderAt && (
+             <div className="bg-amber-500/5 backdrop-blur-xl border border-amber-500/10 px-4 py-2 rounded-full flex items-center gap-2 text-amber-500/80">
+               <Icons.AlarmClock className="w-4 h-4 animate-pulse" />
+               <span className="text-[11px] font-black">تنبيه نشط</span>
+             </div>
+           )}
+           <div className="flex items-center gap-2 text-slate-300 font-black group-hover:text-blue-400 transition-colors duration-500">
+             <span className="text-sm">{formatDate(task.dueDate)}</span>
+             <Icons.Calendar className="w-5 h-5" />
+           </div>
+        </div>
 
-         {/* Action Bar - Advanced Hover Effects */}
-         <div className="flex items-center justify-between pt-6 border-t border-white/10">
-            <div className="flex items-center gap-3">
-               <button 
-                  onClick={() => onEdit(task)} 
-                  className="p-3.5 text-slate-500 hover:text-white transition-all icon-action-btn hover:rotate-[15deg] group/edit" 
-                  title="تعديل المهمة"
-               >
-                 <Icons.Edit className="w-5.5 h-5.5 group-hover/edit:drop-shadow-[0_0_12px_rgba(255,255,255,0.9)] transition-all" />
-               </button>
-               <button 
-                  onClick={() => onCopy(task)} 
-                  className="p-3.5 text-slate-500 hover:text-blue-400 transition-all icon-action-btn group/copy" 
-                  title="تكرار المهمة"
-               >
-                 <Icons.Copy className="w-5.5 h-5.5 group-hover/copy:translate-x-1 group-hover/copy:-translate-y-1 group-hover/copy:drop-shadow-[0_0_12px_rgba(59,130,246,0.8)] transition-all" />
-               </button>
-               <button 
-                  onClick={() => onEdit(task)} 
-                  className="p-3.5 text-slate-500 hover:text-amber-400 transition-all icon-action-btn group/bell" 
-                  title="إعداد التنبيه"
-               >
-                 <Icons.AlarmClock className="w-5.5 h-5.5 group-hover/bell:animate-bounce group-hover/bell:drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]" />
-               </button>
-               <button 
-                  onClick={() => onTogglePin(task.id)} 
-                  className={`p-3.5 transition-all icon-action-btn ${task.isPinned ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'text-slate-500 hover:text-amber-300'} group/pin`} 
-                  title="تثبيت المهمة"
-               >
-                 <Icons.Pin className={`w-5.5 h-5.5 transition-transform group-hover/pin:scale-125 ${task.isPinned ? 'rotate-[20deg]' : ''}`} filled={task.isPinned} />
-               </button>
-            </div>
-            <button 
-              onClick={() => setIsDeleting(true)} 
-              className="p-3.5 text-slate-500 hover:text-rose-500 transition-all icon-action-btn group/trash" 
-              title="حذف نهائي"
-            >
-              <Icons.Trash className="w-5.5 h-5.5 group-hover/trash:animate-[shake_0.6s_infinite] group-hover/trash:drop-shadow-[0_0_12px_rgba(244,63,94,0.8)]" />
-            </button>
-         </div>
+        <div className="flex justify-end">
+          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 px-6 py-2.5 rounded-3xl flex items-center gap-3 group-hover:bg-slate-800/80 transition-all duration-500">
+             <div className="w-6 h-6 flex items-center justify-center transition-transform duration-700" style={{ color: task.color }}>
+               {task.icon && CategoryIconMap[task.icon] ? CategoryIconMap[task.icon] : CategoryIconMap['briefcase']}
+             </div>
+             <span className="text-sm font-black text-slate-200">{task.category}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Confirmation UI */}
+      {/* Divider */}
+      <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6 relative z-10"></div>
+
+      {/* Bottom Action Bar */}
+      <div className="flex items-center justify-center gap-6 relative z-10">
+        <ActionButton 
+          onClick={() => setIsDeleting(true)} 
+          icon={<Icons.Trash className="w-5 h-5" />} 
+          hoverClass="hover:text-rose-500 hover:bg-rose-500/10" 
+          glowColor="rgba(244, 63, 94, 0.4)"
+          title="حذف" 
+        />
+        <ActionButton 
+          onClick={() => onTogglePin(task.id)} 
+          icon={<Icons.Pin className="w-5 h-5" filled={task.isPinned} />} 
+          active={task.isPinned}
+          hoverClass="hover:text-amber-400 hover:bg-amber-400/10"
+          glowColor="rgba(251, 191, 36, 0.4)"
+          title="تثبيت" 
+        />
+        <ActionButton 
+          icon={<Icons.AlarmClock className="w-5 h-5" />} 
+          hoverClass="hover:text-blue-400 hover:bg-blue-400/10"
+          glowColor="rgba(96, 165, 250, 0.4)"
+          title="تنبيه" 
+        />
+        <ActionButton 
+          onClick={() => onCopy(task)}
+          icon={<Icons.Copy className="w-5 h-5" />} 
+          hoverClass="hover:text-white hover:bg-white/10"
+          glowColor="rgba(255, 255, 255, 0.2)"
+          title="تكرار" 
+        />
+        <ActionButton 
+          onClick={() => onEdit(task)} 
+          icon={<Icons.Edit className="w-5 h-5" />} 
+          hoverClass="hover:text-nebula-blue hover:bg-nebula-blue/10"
+          glowColor="rgba(59, 130, 246, 0.4)"
+          title="تعديل" 
+        />
+      </div>
+
+      {/* Interactive Mouse Glow */}
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none z-0" 
+        style={{ 
+          background: `radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${task.color}, transparent 80%)`,
+        }}
+      ></div>
+
+      {/* Deletion Modal */}
       {isDeleting && (
-        <div className="absolute inset-0 z-[100] bg-slate-950/99 backdrop-blur-[60px] rounded-[45px] flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in duration-300 border border-rose-500/30 shadow-[0_0_150px_rgba(244,63,94,0.25)]">
-          <div className="w-28 h-28 bg-rose-500/10 text-rose-500 rounded-[40px] flex items-center justify-center mb-8 border border-rose-500/25 shadow-[0_0_80px_rgba(244,63,94,0.5)] animate-pulse">
-             <Icons.Trash className="w-14 h-14" />
+        <div className="absolute inset-0 z-[100] bg-slate-950/98 backdrop-blur-2xl flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-300">
+          <div className="w-20 h-20 bg-rose-500/20 text-rose-500 rounded-[28px] flex items-center justify-center mb-6 animate-bounce">
+             <Icons.Trash className="w-10 h-10" />
           </div>
-          <h4 className="text-3xl font-black text-white mb-4 tracking-tighter">حذف المهمة؟</h4>
-          <p className="text-slate-500 text-[14px] font-bold mb-12 opacity-80 leading-relaxed max-w-[280px]">هذا الإجراء سيؤدي إلى مسح البيانات بشكل نهائي من السحابة ولا يمكن التراجع عنه.</p>
-          <div className="flex gap-5 w-full max-w-[340px]">
-            <button onClick={() => onDelete(task.id)} className="flex-1 py-5 bg-rose-600 hover:bg-rose-50 text-white hover:text-rose-600 text-[13px] font-black rounded-[28px] transition-all shadow-2xl active:scale-95 border border-rose-500/20">تأكيد الحذف</button>
-            <button onClick={() => setIsDeleting(false)} className="flex-1 py-5 bg-white/5 text-slate-400 text-[13px] font-black rounded-[28px] hover:bg-white/10 transition-all active:scale-95 border border-white/10">تراجع</button>
+          <p className="text-xl font-black text-white mb-8">حذف المهمة نهائياً؟</p>
+          <div className="flex gap-3 w-full">
+            <button 
+              onClick={() => onDelete(task.id)} 
+              className="flex-1 py-4 bg-rose-600 text-white font-black rounded-2xl shadow-xl hover:brightness-110 active:scale-95 transition-all"
+            >
+              نعم
+            </button>
+            <button 
+              onClick={() => setIsDeleting(false)} 
+              className="flex-1 py-4 bg-white/10 text-white font-black rounded-2xl hover:bg-white/20 active:scale-95 transition-all"
+            >
+              إلغاء
+            </button>
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes shake {
-          0%, 100% { transform: rotate(0deg); }
-          20% { transform: rotate(-12deg); }
-          40% { transform: rotate(12deg); }
-          60% { transform: rotate(-12deg); }
-          80% { transform: rotate(12deg); }
-        }
-      `}</style>
     </div>
   );
 };
+
+interface ActionButtonProps {
+  onClick?: () => void;
+  icon: React.ReactNode;
+  hoverClass: string;
+  glowColor?: string;
+  title: string;
+  active?: boolean;
+}
+
+const ActionButton: React.FC<ActionButtonProps> = ({ onClick, icon, hoverClass, glowColor, title, active }) => (
+  <button 
+    onClick={onClick}
+    className={`
+      p-3.5 text-slate-500 transition-all duration-300 rounded-2xl active:scale-75 relative group/btn
+      ${hoverClass}
+      ${active ? 'scale-110 text-amber-400 bg-amber-400/10 shadow-[0_0_20px_rgba(251,191,36,0.3)] ring-1 ring-amber-400/20' : ''}
+    `}
+    title={title}
+  >
+    <div className="relative z-10 transition-all duration-500 cubic-bezier(0.175, 0.885, 0.32, 1.275) group-hover/btn:scale-125 group-hover/btn:rotate-6 group-hover/btn:brightness-125">
+      {icon}
+    </div>
+    <div 
+      className="absolute inset-0 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-all duration-500 pointer-events-none blur-xl"
+      style={{ backgroundColor: glowColor || 'currentColor' }}
+    ></div>
+    <div 
+      className="absolute inset-0 rounded-2xl opacity-0 group-hover/btn:opacity-20 transition-all duration-300 pointer-events-none border border-current"
+    ></div>
+  </button>
+);
 
 export default TaskCard;

@@ -132,7 +132,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
                 type="button" 
                 onClick={handleMagicFill}
                 disabled={isMagicLoading || !title.trim()}
-                className="text-nebula-purple text-[10px] font-black flex items-center gap-2 hover:brightness-125 disabled:opacity-30 transition-all bg-nebula-purple/10 px-4 py-1.5 rounded-full border border-nebula-purple/20"
+                className="text-nebula-purple text-[10px] font-black flex items-center gap-2 hover:brightness-125 disabled:opacity-30 transition-all bg-nebula-purple/10 px-4 py-1.5 rounded-full border border-nebula-purple/20 shadow-glow"
               >
                 <Icons.Sparkles className="w-3.5 h-3.5" />
                 <span>الذكاء الاصطناعي</span>
@@ -150,13 +150,13 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
             <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] px-2">وصف المهمة</label>
             <textarea 
               value={description} onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-3xl p-8 text-sm font-bold text-white outline-none focus:border-nebula-purple min-h-[140px] transition-all leading-relaxed placeholder:text-slate-700"
+              className="w-full bg-white/5 border border-white/10 rounded-3xl p-8 text-sm font-bold text-white outline-none focus:border-nebula-purple min-h-[140px] transition-all leading-relaxed placeholder:text-slate-700 shadow-inner"
               placeholder="هل هناك تفاصيل إضافية تود تدوينها؟"
             />
           </div>
 
           {/* Subtasks Interactive Lab */}
-          <div className="bg-white/5 border border-white/5 rounded-[32px] p-8 space-y-6 relative overflow-hidden group">
+          <div className="bg-white/5 border border-white/5 rounded-[32px] p-8 space-y-6 relative overflow-hidden group shadow-inner">
             <div className="absolute top-0 right-0 w-2 h-full bg-nebula-blue/20"></div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -205,7 +205,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest px-2">مستوى الأولوية</label>
               <select 
                 value={priority} onChange={e => setPriority(e.target.value as TaskPriority)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-xs font-black text-white outline-none appearance-none hover:bg-white/10 transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-xs font-black text-white outline-none appearance-none hover:bg-white/10 transition-all cursor-pointer"
               >
                 {Object.keys(TaskPriority).map(p => (
                   <option key={p} value={p} className="bg-slate-900">{PRIORITY_LABELS[p].label}</option>
@@ -215,19 +215,29 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
 
             <div className="space-y-3">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest px-2">قطاع المهمة</label>
-              <select 
-                value={category} onChange={e => setCategory(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-xs font-black text-white outline-none appearance-none hover:bg-white/10 transition-all"
-              >
-                {categories.map(c => <option key={c.id} value={c.name} className="bg-slate-900">{c.name}</option>)}
-              </select>
+              <div className="flex gap-2">
+                <select 
+                  value={category} onChange={e => setCategory(e.target.value)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-xs font-black text-white outline-none appearance-none hover:bg-white/10 transition-all cursor-pointer"
+                >
+                  {categories.map(c => <option key={c.id} value={c.name} className="bg-slate-900">{c.name}</option>)}
+                </select>
+                <button 
+                  type="button"
+                  onClick={onManageCategories}
+                  className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl text-nebula-blue hover:bg-nebula-blue/20 hover:scale-110 transition-all"
+                  title="إدارة القطاعات"
+                >
+                   <Icons.Settings className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="space-y-3">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest px-2">الموعد النهائي</label>
               <input 
                 type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-xs font-black text-white outline-none hover:bg-white/10 transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-xs font-black text-white outline-none hover:bg-white/10 transition-all cursor-pointer"
               />
             </div>
 
@@ -235,7 +245,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest px-2">وقت التنبيه</label>
               <input 
                 type="datetime-local" value={reminderAt} onChange={e => setReminderAt(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-xs font-black text-white outline-none hover:bg-white/10 transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-xs font-black text-white outline-none hover:bg-white/10 transition-all cursor-pointer"
               />
             </div>
           </div>
@@ -245,7 +255,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onAdd, onUpdate, onClose, onManageC
           <button type="button" onClick={onClose} className="flex-1 py-5 rounded-2xl border border-white/10 text-slate-400 text-xs font-black hover:bg-white/5 transition-all">إلغاء الأمر</button>
           <button 
             onClick={handleSubmit}
-            className="flex-[2] py-5 rounded-2xl bg-gradient-to-r from-nebula-purple to-nebula-blue text-white text-xs font-black shadow-xl shadow-nebula-purple/30 hover:scale-[1.02] transition-all flex items-center justify-center gap-4"
+            className="flex-[2] py-5 rounded-2xl bg-gradient-to-r from-nebula-purple to-nebula-blue text-white text-xs font-black shadow-glow hover:scale-[1.02] transition-all flex items-center justify-center gap-4"
           >
             <span>{initialTask ? 'تحديث السجلات' : 'تفعيل المهمة الآن'}</span>
             <Icons.CheckCircle className="w-5 h-5" />

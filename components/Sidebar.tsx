@@ -18,168 +18,123 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
-  isOpen, onClose, categories, tasks, selectedCategory, onCategorySelect, 
-  currentView, onViewChange, user, onLogout, onManageCategories
+  isOpen, onClose, categories, selectedCategory, onCategorySelect, 
+  currentView, onViewChange, user, onLogout 
 }) => {
-  const getCategoryCount = (name: string) => tasks.filter(t => t.category === name).length;
-
   return (
     <>
       <div 
-        className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-md lg:hidden transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm lg:hidden transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
         onClick={onClose}
       ></div>
-
+      
       <aside className={`
-        fixed lg:sticky top-4 right-4 z-[110] 
-        w-[280px] h-[calc(100vh-32px)] glass-panel
-        rounded-[32px] transition-all duration-700 cubic-bezier(0.23, 1, 0.32, 1)
-        ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%+16px)] lg:translate-x-0'}
-        flex flex-col overflow-hidden border-white/5 shadow-2xl
+        fixed lg:sticky top-0 right-0 z-[110] 
+        w-[280px] h-[calc(100vh-32px)] my-4 mx-4
+        transition-all duration-700 cubic-bezier(0.2, 0.8, 0.2, 1)
+        glass-panel rounded-[40px] flex flex-col overflow-hidden border-white/[0.05]
+        ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%+32px)] lg:translate-x-0'}
       `}>
-        {/* Futuristic Brand */}
-        <div className="p-10">
-          <div 
-            className="flex flex-col items-center gap-4 text-center group cursor-pointer" 
-            onClick={() => { onViewChange('tasks'); onCategorySelect('الكل'); onClose(); }}
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-nebula-purple to-nebula-blue rounded-2xl flex items-center justify-center text-white shadow-2xl floating group-hover:rotate-12 transition-transform">
-              <Icons.Sparkles className="w-8 h-8" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tighter glow-title">مهامي</h1>
-              <p className="text-[10px] text-nebula-blue font-bold uppercase tracking-[0.4em]">الإنتاجية الذكية</p>
-            </div>
-          </div>
+        {/* Identity Box with Glowing Title */}
+        <div className="p-8 flex flex-col items-center gap-4">
+           <div className="w-16 h-16 bg-gradient-to-br from-nebula-purple to-nebula-blue rounded-[24px] flex items-center justify-center text-white shadow-2xl relative group">
+              <Icons.Sparkles className="w-8 h-8 animate-pulse" />
+              <div className="absolute inset-0 bg-white/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity"></div>
+           </div>
+           <div className="text-center">
+             <h1 className="text-3xl font-black text-white tracking-tighter glow-title">مهامي</h1>
+             <p className="text-[8px] text-slate-500 font-black uppercase tracking-[0.4em]">إصدار المحترفين</p>
+           </div>
         </div>
 
-        {/* Navigation Section */}
-        <div className="flex-1 px-6 overflow-y-auto no-scrollbar space-y-10">
-          <div>
-            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">الوصول السريع</p>
-            <div className="space-y-2">
+        {/* Navigation bar with Options */}
+        <div className="flex-1 px-4 overflow-y-auto no-scrollbar space-y-8">
+           <div className="space-y-1">
+              <p className="px-4 text-[9px] font-black text-slate-600 uppercase tracking-widest mb-3">التنقل السريع</p>
               <NavItem 
                 active={currentView === 'tasks' && selectedCategory === 'الكل'} 
                 onClick={() => { onViewChange('tasks'); onCategorySelect('الكل'); onClose(); }}
-                icon={<Icons.LayoutDashboard className="w-5 h-5" />}
-                label="الرئيسية"
-                color="#7c3aed"
+                icon={<Icons.LayoutDashboard className="w-5 h-5" />} label="جميع المهام" color="#7c3aed"
               />
               <NavItem 
                 active={currentView === 'categories'} 
                 onClick={() => { onViewChange('categories'); onClose(); }}
-                icon={<Icons.Folder className="w-5 h-5" />}
-                label="إدارة القطاعات"
-                color="#3b82f6"
+                icon={<Icons.Folder className="w-5 h-5" />} label="إدارة القطاعات" color="#3b82f6"
               />
               <NavItem 
                 active={currentView === 'settings'} 
                 onClick={() => { onViewChange('settings'); onClose(); }}
-                icon={<Icons.Settings className="w-5 h-5" />}
-                label="الإعدادات"
-                color="#db2777"
+                icon={<Icons.Settings className="w-5 h-5" />} label="الإعدادات" color="#db2777"
               />
-            </div>
-          </div>
+           </div>
 
-          <div>
-            <div className="flex items-center justify-between px-4 mb-4">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">القطاعات</p>
-              <button onClick={() => { onViewChange('categories'); onClose(); }} className="text-nebula-blue hover:scale-125 transition-transform">
-                <Icons.Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-2 pb-10">
+           <div className="space-y-1 pb-10">
+              <div className="flex items-center justify-between px-4 mb-3">
+                 <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">التصنيفات</p>
+                 <span className="text-[10px] text-slate-700 font-bold">{categories.length}</span>
+              </div>
               {categories.map(cat => (
                 <NavItem 
                   key={cat.id}
                   active={currentView === 'tasks' && selectedCategory === cat.name}
                   onClick={() => { onCategorySelect(cat.name); onViewChange('tasks'); onClose(); }}
-                  icon={<div className="w-5 h-5 flex items-center justify-center" style={{ color: cat.color }}>{cat.icon && CategoryIconMap[cat.icon]}</div>}
-                  label={cat.name}
-                  count={getCategoryCount(cat.name)}
-                  color={cat.color}
+                  icon={<div className="w-5 h-5" style={{ color: cat.color }}>{cat.icon && CategoryIconMap[cat.icon] ? CategoryIconMap[cat.icon] : CategoryIconMap['star']}</div>}
+                  label={cat.name} color={cat.color}
                 />
               ))}
-            </div>
-          </div>
+           </div>
         </div>
 
-        {/* User Profile Station */}
-        <div className="p-6 bg-white/5 mt-auto border-t border-white/5">
-          <div className="flex items-center gap-4 p-4 rounded-[28px] bg-white/5 border border-white/5 transition-all group hover:bg-white/10">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-nebula-purple to-nebula-pink text-white flex items-center justify-center font-black text-xl shadow-lg transform group-hover:rotate-6 transition-transform">
-              {user.username.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0 text-right">
-              <p className="text-sm font-black truncate glow-username uppercase tracking-tight">{user.username}</p>
-              <p className="text-[8px] text-emerald-400 font-bold uppercase tracking-widest mt-0.5">وضع الاتصال</p>
-            </div>
-            <button 
-              onClick={onLogout} 
-              className="p-2.5 text-slate-500 hover:text-rose-500 transition-colors"
-              title="تسجيل خروج"
-            >
-              <Icons.LogOut className="w-5 h-5" />
-            </button>
-          </div>
+        {/* User Module with Glowing Text */}
+        <div className="p-6 bg-white/[0.02] border-t border-white/[0.05]">
+           <div 
+            onClick={() => { onViewChange('settings'); onClose(); }}
+            className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all cursor-pointer overflow-hidden relative"
+           >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-nebula-purple to-nebula-blue text-white flex items-center justify-center font-black relative overflow-hidden shadow-lg border border-white/10">
+                {user.avatar ? (
+                  <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  user.username.charAt(0).toUpperCase()
+                )}
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-black text-white truncate uppercase tracking-tight glow-text group-hover:brightness-125 transition-all">{user.username}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></div>
+                   <span className="text-[7px] font-black text-emerald-500 uppercase tracking-widest">متصل</span>
+                </div>
+              </div>
+              
+              <button 
+                onClick={(e) => { e.stopPropagation(); onLogout(); }} 
+                className="p-2 text-slate-500 hover:text-rose-400 transition-colors z-10 active:scale-90"
+                title="خروج"
+              >
+                <Icons.LogOut className="w-4 h-4" />
+              </button>
+           </div>
         </div>
       </aside>
     </>
   );
 };
 
-const NavItem = ({ active, onClick, icon, label, count, color }: any) => {
-  const glowStyle = active ? {
-    boxShadow: `inset 15px 0 30px -10px ${color}33, 0 0 15px ${color}22`,
-    borderColor: color,
-    borderRightWidth: '4px'
-  } : {};
-
-  return (
-    <button 
-      onClick={onClick}
-      style={glowStyle}
-      className={`
-        w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-500 relative group overflow-hidden
-        ${active 
-          ? 'bg-white/5 text-white border-white/10' 
-          : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent'}
-        border
-      `}
-    >
-      {/* Light Flare Effect for Active Item */}
-      {active && (
-        <div 
-          className="absolute right-0 top-0 w-1 h-full animate-pulse"
-          style={{ backgroundColor: color, boxShadow: `0 0 15px 2px ${color}` }}
-        ></div>
-      )}
-      
-      <span className={`shrink-0 transition-all duration-500 ${active ? 'scale-125 rotate-[5deg]' : 'group-hover:scale-110'}`}>
-        {icon}
-      </span>
-      
-      <span className={`flex-1 text-right transition-colors duration-300 ${active ? 'font-black' : ''}`}>
-        {label}
-      </span>
-
-      {count !== undefined && (
-        <span 
-          className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all duration-500
-            ${active ? 'bg-white/10 text-white' : 'bg-white/5 text-slate-500'}`}
-          style={active ? { color: color } : {}}
-        >
-          {count}
-        </span>
-      )}
-      
-      {/* Subtle background glow on hover for non-active items */}
-      {!active && (
-        <div className="absolute inset-0 bg-gradient-to-l from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-      )}
-    </button>
-  );
-};
+const NavItem = ({ active, onClick, icon, label, color }: any) => (
+  <button 
+    onClick={onClick}
+    className={`
+      w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[12px] font-black transition-all duration-300 relative group overflow-hidden
+      ${active ? 'bg-white/10 text-white shadow-inner' : 'text-slate-500 hover:text-white hover:bg-white/5'}
+    `}
+  >
+    <div className={`shrink-0 transition-all ${active ? 'scale-110 drop-shadow-[0_0_10px_currentColor]' : ''}`} style={{ color: active ? color : undefined }}>{icon}</div>
+    <span className="flex-1 text-right relative z-10">{label}</span>
+    {active && <div className="absolute right-0 top-1/4 bottom-1/4 w-1 rounded-l-full shadow-[0_0_15px_white]" style={{ backgroundColor: color }}></div>}
+  </button>
+);
 
 export default Sidebar;

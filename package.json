@@ -2,7 +2,7 @@
 {
   "name": "enjaz-task-manager",
   "private": true,
-  "version": "1.0.0",
+  "version": "10.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

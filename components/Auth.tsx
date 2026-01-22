@@ -85,7 +85,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center font-sans overflow-hidden relative selection:bg-blue-500/30">
+    <div className="min-h-screen w-full flex items-center justify-center overflow-hidden relative selection:bg-blue-500/30">
       <style>{`
         .auth-glass-container {
           background: rgba(15, 23, 42, 0.3);
@@ -125,9 +125,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           transform: translateY(-4px) scale(1.02);
           box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.6);
         }
-        .btn-magnetic:active {
-          transform: translateY(0) scale(0.98);
-        }
       `}</style>
 
       {/* Signature Credits */}
@@ -145,15 +142,13 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         className={`w-full max-w-[540px] p-6 z-10 transition-all duration-1000 cubic-bezier(0.23, 1, 0.32, 1) ${mounted ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-20 scale-95'}`}
       >
         <div className="auth-glass-container rounded-[50px] p-10 md:p-16 relative overflow-hidden group">
-          
-          {/* Top Glow Accent */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
 
           <header className="mb-14 text-center relative z-10">
-             <div className="premium-logo-box w-24 h-24 rounded-[30px] flex items-center justify-center mx-auto mb-10 transition-all duration-700 group-hover:rotate-[15deg] group-hover:scale-110 shadow-2xl">
+             <div className="w-24 h-24 rounded-[30px] bg-blue-600 flex items-center justify-center mx-auto mb-10 transition-all duration-700 group-hover:rotate-[15deg] group-hover:scale-110 shadow-2xl">
                <Icons.Sparkles className="w-12 h-12 text-white animate-pulse" />
              </div>
-             <h2 className="premium-logo-text text-5xl lg:text-6xl font-black text-white tracking-tighter mb-4 drop-shadow-lg">مهامي</h2>
+             <h2 className="text-5xl lg:text-6xl font-black text-white tracking-tighter mb-4 drop-shadow-lg">مهامي</h2>
              <div className="inline-flex items-center gap-3 bg-blue-500/10 px-6 py-2.5 rounded-full border border-blue-500/20">
                <span className="relative flex h-2 w-2">
                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -190,7 +185,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                     className="w-full input-futuristic rounded-[25px] py-6 px-10 text-white font-bold outline-none placeholder:text-white/10 text-right pr-16"
                     placeholder="name@example.com"
                   />
-                  <Icons.Bell className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-500" />
+                  <Icons.Mail className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-500" />
                 </div>
               </div>
             )}
