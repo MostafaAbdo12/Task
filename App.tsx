@@ -90,6 +90,12 @@ const App: React.FC = () => {
       .sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1));
   }, [tasks, selectedCategory, searchQuery]);
 
+  const handleTaskAdd = (data: any) => {
+    const newTask = { ...data, id: Date.now().toString() };
+    setTasks([newTask, ...tasks]);
+    addToast("تمت إضافة مهمة جديدة بنجاح", "success");
+  };
+
   const handleTaskDelete = (id: string) => {
     setTasks(tasks.filter(x => x.id !== id));
     addToast("تم حذف المهمة نهائياً من سجلاتك", "danger");
@@ -123,6 +129,12 @@ const App: React.FC = () => {
   if (isInitialLoading) return <div className="h-screen flex items-center justify-center bg-[#020617]"><div className="w-12 h-12 border-4 border-nebula-purple border-t-transparent rounded-full animate-spin shadow-glow"></div></div>;
   if (!currentUser) return <Auth onLogin={setCurrentUser} />;
 
+  // حساب المحيط الدقيق للدائرة: محيط الدائرة = 2 * ط * نصف القطر
+  // نصف القطر المستخدم هنا هو 40 في إطار 100
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference - (stats.progress / 100) * circumference;
+
   const renderView = () => {
     switch (currentView) {
       case 'settings':
@@ -137,6 +149,7 @@ const App: React.FC = () => {
               addToast("تم تحديث بيانات القطاع", "success");
             }}
             onDelete={handleCategoryDelete}
+            onAddTask={handleTaskAdd}
           />
         );
       default:
@@ -150,37 +163,81 @@ const App: React.FC = () => {
               <StatCard label="قيد الانتظار" count={stats.pending} icon={<Icons.AlarmClock className="w-6 h-6" />} color="from-rose-600 to-pink-500" glow="rgba(225, 29, 72, 0.3)" />
             </div>
 
-            {/* Futuristic Progress Bar Dashboard */}
-            <div className="glass-panel border-white/5 rounded-[40px] p-8 mb-10 relative overflow-hidden group">
-               <div className="flex flex-col md:flex-row items-center gap-8">
-                  <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/5" />
-                      <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={364} strokeDashoffset={364 - (364 * stats.progress) / 100} strokeLinecap="round" className="text-nebula-purple transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" />
+            {/* Redesigned Circular Progress - Precision Fix */}
+            <div className="glass-panel border-white/5 rounded-[50px] p-10 mb-12 relative overflow-hidden group shadow-2xl">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-nebula-purple/5 blur-[100px] pointer-events-none"></div>
+               
+               <div className="flex flex-col lg:flex-row items-center gap-12 relative z-10">
+                  {/* Precise SVG Circular Progress */}
+                  <div className="relative w-44 h-44 lg:w-48 lg:h-48 flex items-center justify-center shrink-0">
+                    <svg 
+                      viewBox="0 0 100 100" 
+                      className="w-full h-full transform -rotate-90 filter drop-shadow-[0_0_15px_rgba(124,58,237,0.2)]"
+                    >
+                      {/* Background Track */}
+                      <circle 
+                        cx="50" cy="50" r={radius} 
+                        stroke="rgba(255,255,255,0.03)" 
+                        strokeWidth="8" 
+                        fill="transparent" 
+                      />
+                      {/* Main Progress Stroke */}
+                      <circle 
+                        cx="50" cy="50" r={radius} 
+                        stroke="url(#progressGradient)" 
+                        strokeWidth="8" 
+                        fill="transparent" 
+                        strokeDasharray={circumference} 
+                        strokeDashoffset={dashOffset} 
+                        strokeLinecap="round" 
+                        className="transition-all duration-1000 ease-out"
+                      />
+                      
+                      <defs>
+                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#7c3aed" />
+                          <stop offset="50%" stopColor="#3b82f6" />
+                          <stop offset="100%" stopColor="#db2777" />
+                        </linearGradient>
+                      </defs>
                     </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                       <span className="text-3xl font-black text-white">{stats.progress}%</span>
-                       <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">إنجاز</span>
+
+                    {/* Centered Stats Content */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                       <span className="text-5xl font-black text-white glow-title leading-none">{stats.progress}%</span>
+                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mt-3">إنجاز كلي</span>
                     </div>
                   </div>
 
-                  <div className="flex-1 w-full">
-                    <div className="flex items-center justify-between mb-4">
-                       <h4 className="text-lg font-black text-white tracking-tight">معدل التقدم العام</h4>
-                       <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] bg-emerald-400/10 px-3 py-1 rounded-full">
-                          <div className="w-1 h-1 rounded-full bg-emerald-400 animate-ping"></div>
-                          نشط
+                  {/* Insight and Advice Section */}
+                  <div className="flex-1 w-full text-center lg:text-right">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-8">
+                       <div>
+                         <h4 className="text-2xl font-black text-white tracking-tight mb-2">مستوى الكفاءة التشغيلية</h4>
+                         <p className="text-slate-400 text-xs font-bold opacity-60">تحليل الأداء اللحظي بناءً على قاعدة البيانات</p>
+                       </div>
+                       <div className="flex items-center gap-3 bg-emerald-500/10 px-5 py-2 rounded-full border border-emerald-500/20 shadow-inner">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                          <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">تزامن نشط</span>
                        </div>
                     </div>
-                    <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-1 relative">
-                       <div 
-                         className="h-full bg-gradient-to-r from-nebula-blue via-nebula-purple to-nebula-pink rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(124,58,237,0.5)]"
-                         style={{ width: `${stats.progress}%` }}
-                       ></div>
+                    
+                    {/* Linear Progress Bar Details */}
+                    <div className="relative mb-8">
+                      <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner">
+                         <div 
+                           className="h-full bg-gradient-to-r from-nebula-purple to-nebula-blue rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                           style={{ width: `${stats.progress}%` }}
+                         ></div>
+                      </div>
                     </div>
-                    <p className="mt-4 text-sm text-slate-400 font-medium italic opacity-80 leading-relaxed">
-                      " {smartAdvice} "
-                    </p>
+
+                    <div className="bg-white/5 border border-white/5 p-6 rounded-[30px] relative overflow-hidden group/advice">
+                       <Icons.Sparkles className="absolute -left-2 -bottom-2 w-16 h-16 text-white/5 rotate-12 transition-transform group-hover/advice:scale-125 group-hover/advice:rotate-45" />
+                       <p className="text-sm lg:text-base text-slate-300 font-bold italic leading-relaxed relative z-10">
+                         "{smartAdvice}"
+                       </p>
+                    </div>
                   </div>
                </div>
             </div>
@@ -269,11 +326,7 @@ const App: React.FC = () => {
 
       {showForm && (
         <TaskForm 
-          onAdd={data => {
-            setTasks([{...data, id: Date.now().toString()} , ...tasks]); 
-            setShowForm(false);
-            addToast("تمت إضافة مهمة جديدة بنجاح", "success");
-          }} 
+          onAdd={handleTaskAdd} 
           onUpdate={task => {
             setTasks(tasks.map(t => t.id === task.id ? task : t)); 
             setShowForm(false);

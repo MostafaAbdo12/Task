@@ -63,18 +63,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => { onViewChange('tasks'); onCategorySelect('الكل'); onClose(); }}
                 icon={<Icons.LayoutDashboard className="w-5 h-5" />}
                 label="الرئيسية"
+                color="#7c3aed"
               />
               <NavItem 
                 active={currentView === 'categories'} 
                 onClick={() => { onViewChange('categories'); onClose(); }}
                 icon={<Icons.Folder className="w-5 h-5" />}
                 label="إدارة القطاعات"
+                color="#3b82f6"
               />
               <NavItem 
                 active={currentView === 'settings'} 
                 onClick={() => { onViewChange('settings'); onClose(); }}
                 icon={<Icons.Settings className="w-5 h-5" />}
                 label="الإعدادات"
+                color="#db2777"
               />
             </div>
           </div>
@@ -95,6 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   icon={<div className="w-5 h-5 flex items-center justify-center" style={{ color: cat.color }}>{cat.icon && CategoryIconMap[cat.icon]}</div>}
                   label={cat.name}
                   count={getCategoryCount(cat.name)}
+                  color={cat.color}
                 />
               ))}
             </div>
@@ -125,22 +129,57 @@ const Sidebar: React.FC<SidebarProps> = ({
   );
 };
 
-const NavItem = ({ active, onClick, icon, label, count }: any) => (
-  <button 
-    onClick={onClick}
-    className={`
-      w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-300
-      ${active 
-        ? 'bg-gradient-to-r from-nebula-purple/20 to-transparent text-white border-r-2 border-nebula-purple shadow-[inset_10px_0_20px_rgba(124,58,237,0.1)]' 
-        : 'text-slate-400 hover:text-white hover:bg-white/5'}
-    `}
-  >
-    <span className={`shrink-0 transition-transform duration-500 ${active ? 'scale-110' : ''}`}>{icon}</span>
-    <span className="flex-1 text-right">{label}</span>
-    {count !== undefined && (
-      <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${active ? 'bg-nebula-purple text-white' : 'bg-white/5 text-slate-500'}`}>{count}</span>
-    )}
-  </button>
-);
+const NavItem = ({ active, onClick, icon, label, count, color }: any) => {
+  const glowStyle = active ? {
+    boxShadow: `inset 15px 0 30px -10px ${color}33, 0 0 15px ${color}22`,
+    borderColor: color,
+    borderRightWidth: '4px'
+  } : {};
+
+  return (
+    <button 
+      onClick={onClick}
+      style={glowStyle}
+      className={`
+        w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-500 relative group overflow-hidden
+        ${active 
+          ? 'bg-white/5 text-white border-white/10' 
+          : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent'}
+        border
+      `}
+    >
+      {/* Light Flare Effect for Active Item */}
+      {active && (
+        <div 
+          className="absolute right-0 top-0 w-1 h-full animate-pulse"
+          style={{ backgroundColor: color, boxShadow: `0 0 15px 2px ${color}` }}
+        ></div>
+      )}
+      
+      <span className={`shrink-0 transition-all duration-500 ${active ? 'scale-125 rotate-[5deg]' : 'group-hover:scale-110'}`}>
+        {icon}
+      </span>
+      
+      <span className={`flex-1 text-right transition-colors duration-300 ${active ? 'font-black' : ''}`}>
+        {label}
+      </span>
+
+      {count !== undefined && (
+        <span 
+          className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all duration-500
+            ${active ? 'bg-white/10 text-white' : 'bg-white/5 text-slate-500'}`}
+          style={active ? { color: color } : {}}
+        >
+          {count}
+        </span>
+      )}
+      
+      {/* Subtle background glow on hover for non-active items */}
+      {!active && (
+        <div className="absolute inset-0 bg-gradient-to-l from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      )}
+    </button>
+  );
+};
 
 export default Sidebar;

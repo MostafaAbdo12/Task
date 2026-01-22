@@ -85,15 +85,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#020617] font-sans overflow-hidden relative selection:bg-blue-500/30">
+    <div className="min-h-screen w-full flex items-center justify-center font-sans overflow-hidden relative selection:bg-blue-500/30">
       <style>{`
-        @keyframes orbit {
-          from { transform: rotate(0deg) translateX(150px) rotate(0deg); }
-          to   { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
-        }
-        .orbit-element {
-          animation: orbit 20s infinite linear;
-        }
         .auth-glass-container {
           background: rgba(15, 23, 42, 0.3);
           backdrop-filter: blur(40px) saturate(180%);
@@ -136,18 +129,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           transform: translateY(0) scale(0.98);
         }
       `}</style>
-
-      {/* Deep Space Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] animate-pulse-slow"></div>
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
-        
-        {/* Decorative Floating Elements */}
-        <div className="absolute top-20 left-20 w-1 h-1 bg-white rounded-full animate-ping"></div>
-        <div className="absolute top-40 right-40 w-1 h-1 bg-blue-400 rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-20 left-1/2 w-1 h-1 bg-purple-400 rounded-full animate-ping" style={{ animationDelay: '2s' }}></div>
-      </div>
 
       {/* Signature Credits */}
       <div className="fixed bottom-10 left-1/2 -translate-x-1/2 lg:left-auto lg:right-10 lg:translate-x-0 z-50">
