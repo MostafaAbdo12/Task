@@ -67,7 +67,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ categories, onA
               </div>
               <div>
                 <h3 className="text-3xl font-black text-white tracking-tight glow-title">
-                  {editingId ? 'تحديث القطاع' : 'توليد قطاع جديد'}
+                  {editingId ? 'تحديث التصنيف' : 'توليد تصنيف جديد'}
                 </h3>
                 <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] mt-1">تخصيص الهوية التصنيفية</p>
               </div>
@@ -75,7 +75,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ categories, onA
 
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2 block">اسم القطاع</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2 block">اسم التصنيف</label>
                 <input 
                   autoFocus required value={name} onChange={(e) => setName(e.target.value)}
                   placeholder="مثال: العمل، المنزل..."
@@ -118,7 +118,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ categories, onA
                   className="flex-1 py-6 bg-gradient-to-r from-nebula-purple to-nebula-blue text-white rounded-3xl font-black text-lg shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4"
                 >
                   {editingId ? <Icons.Edit className="w-6 h-6" /> : <Icons.Plus className="w-6 h-6" />}
-                  <span>{editingId ? 'حفظ التغييرات' : 'تفعيل القطاع'}</span>
+                  <span>{editingId ? 'حفظ التغييرات' : 'تفعيل المهام'}</span>
                 </button>
                 {editingId && (
                   <button 
@@ -148,7 +148,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ categories, onA
       {/* Categories Grid */}
       <section className="space-y-10">
         <h4 className="text-[12px] font-black text-white uppercase tracking-[0.4em] px-10 flex items-center gap-4">
-           القطاعات الحالية
+           المهام الحالية
            <div className="h-[1px] flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
         </h4>
 
@@ -184,7 +184,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ categories, onA
              <div className="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-rose-500/20">
                 <Icons.Trash className="w-10 h-10" />
              </div>
-             <h4 className="text-2xl font-black text-white mb-4">حذف القطاع</h4>
+             <h4 className="text-2xl font-black text-white mb-4">حذف المهام</h4>
              <p className="text-slate-400 text-sm font-bold leading-relaxed mb-10">ماذا تريد أن تفعل بالمهام المرتبطة بهذا القطاع؟</p>
              <div className="space-y-4">
                 <button onClick={() => confirmDelete('reassign')} className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white font-black transition-all">نقل المهام إلى "أخرى"</button>

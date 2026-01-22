@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Task, Category, User, TaskStatus } from './types';
 import { Icons } from './constants';
 import TaskCard from './components/TaskCard';
@@ -33,14 +33,9 @@ const App: React.FC = () => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Monitor scroll for glass effect
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -99,7 +94,13 @@ const App: React.FC = () => {
     else if (progress > 50) statusLabel = "تقدم ممتاز";
     else if (progress > 0) statusLabel = "جاري التنفيذ";
 
-    return { total, completed, pinned, pending, progress, statusLabel };
+    // Calculate task count per category for the form
+    const categoryCounts: Record<string, number> = {};
+    tasks.forEach(task => {
+      categoryCounts[task.category] = (categoryCounts[task.category] || 0) + 1;
+    });
+
+    return { total, completed, pinned, pending, progress, statusLabel, categoryCounts };
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
@@ -218,7 +219,7 @@ const App: React.FC = () => {
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
                           </div>
                        </div>
-                       <div className="flex justify-between mt-4 px-1">
+                       <div className="justify-between mt-4 px-1 hidden md:flex">
                           <p className="text-[11px] font-black text-slate-400">
                              تم إكمال <span className="text-emerald-400 text-sm">{stats.completed}</span> سجل من أصل <span className="text-white text-sm">{stats.total}</span>
                           </p>
@@ -229,11 +230,44 @@ const App: React.FC = () => {
                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-20">
-              <StatCard label="إجمالي المهام" count={stats.total} icon={<Icons.LayoutDashboard />} color="from-nebula-blue to-indigo-600" glow="shadow-nebula-blue/20" index={0} />
-              <StatCard label="المكتملة" count={stats.completed} icon={<Icons.CheckCircle />} color="from-emerald-500 to-teal-600" glow="shadow-emerald-500/20" index={1} />
-              <StatCard label="المثبتة" count={stats.pinned} icon={<Icons.Pin />} color="from-amber-500 to-orange-600" glow="shadow-amber-500/20" index={2} />
-              <StatCard label="المتبقية" count={stats.pending} icon={<Icons.AlarmClock />} color="from-rose-500 to-pink-600" glow="shadow-rose-500/20" index={3} />
+            {/* UPGRADED STATS CARDS SECTION */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+              <StatCard 
+                label="إجمالي المهام" 
+                count={stats.total} 
+                icon={<Icons.LayoutDashboard />} 
+                color="from-blue-600 to-blue-400" 
+                accentColor="#3b82f6"
+                index={0} 
+                iconAnim="group-hover:rotate-12"
+              />
+              <StatCard 
+                label="المكتملة" 
+                count={stats.completed} 
+                icon={<Icons.CheckCircle />} 
+                color="from-emerald-500 to-teal-400" 
+                accentColor="#10b981"
+                index={1} 
+                iconAnim="group-hover:scale-110"
+              />
+              <StatCard 
+                label="المثبتة" 
+                count={stats.pinned} 
+                icon={<Icons.Pin />} 
+                color="from-orange-500 to-amber-400" 
+                accentColor="#f59e0b"
+                index={2} 
+                iconAnim="group-hover:translate-y-[-5px]"
+              />
+              <StatCard 
+                label="المتبقية" 
+                count={stats.pending} 
+                icon={<Icons.AlarmClock />} 
+                color="from-rose-500 to-pink-400" 
+                accentColor="#f43f5e"
+                index={3} 
+                iconAnim="group-hover:rotate-[-15deg]"
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 pb-40">
@@ -283,7 +317,6 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col min-w-0">
-        {/* REDESIGNED HEADER BAR WITH IMPROVED SCROLL & BLUR AESTHETICS */}
         <header 
           className={`sticky z-[500] transition-all duration-700 ease-in-out ${isScrolled ? 'top-0 mb-8' : 'top-4 mb-12'}`}
         >
@@ -292,10 +325,7 @@ const App: React.FC = () => {
                ${isScrolled ? 'header-scrolled w-full mx-0' : 'rounded-[50px] h-28 px-8 lg:px-12 w-full'}
              `}
            >
-              {/* Internal Accent Glow */}
               <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-nebula-blue/30 to-transparent transition-opacity ${isScrolled ? 'opacity-100' : 'opacity-0'}`}></div>
-              
-              {/* Left Side: Navigation & Title */}
               <div className="flex items-center gap-10 relative z-10 nav-title-group transition-all duration-500 origin-right">
                 <button 
                   onClick={() => setIsSidebarOpen(true)} 
@@ -303,24 +333,12 @@ const App: React.FC = () => {
                 >
                   <Icons.LayoutDashboard className={`${isScrolled ? 'w-6 h-6' : 'w-7 h-7'}`} />
                 </button>
-                
                 <div className="flex flex-col text-right">
                   <h2 className={`font-black tracking-tighter text-white glow-title uppercase drop-shadow-2xl transition-all duration-500 ${isScrolled ? 'text-2xl' : 'text-4xl'}`}>
                     {currentView === 'tasks' ? 'المهـام' : currentView === 'settings' ? 'الإعدادات' : 'القطاعات'}
                   </h2>
-                  {!isScrolled && (
-                    <div className="flex items-center justify-end gap-2.5 mt-1.5 animate-in fade-in duration-700">
-                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">تشفير نشط للمزامنة</span>
-                       <div className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
-                       </div>
-                    </div>
-                  )}
                 </div>
               </div>
-              
-              {/* Center: Search Engine */}
               <div className={`flex-1 mx-12 hidden md:block relative group/search search-engine-group transition-all duration-500 ${isScrolled ? 'max-w-md mx-6' : 'max-w-xl'}`}>
                 <input 
                   value={searchQuery} 
@@ -329,29 +347,18 @@ const App: React.FC = () => {
                   className={`w-full bg-black/30 border border-white/10 rounded-[28px] pr-14 pl-8 text-[15px] font-bold outline-none focus:border-nebula-blue/50 focus:bg-black/50 transition-all duration-500 text-white placeholder:text-slate-600 shadow-inner ${isScrolled ? 'py-3' : 'py-5'}`}
                 />
                 <Icons.Search className={`absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/search:text-nebula-blue group-focus-within/search:scale-110 transition-all ${isScrolled ? 'w-5 h-5' : 'w-6 h-6'}`} />
-                {/* Search Focus Glow */}
-                <div className="absolute inset-0 rounded-[28px] bg-nebula-blue/5 blur-xl opacity-0 group-focus-within/search:opacity-100 transition-opacity pointer-events-none"></div>
               </div>
-
-              {/* Right Side: Primary Action */}
               <div className="flex items-center gap-6 relative z-10">
                  <button 
                   onClick={() => { setEditingTask(null); setShowForm(true); }} 
                   className={`relative group/btn overflow-hidden rounded-[28px] bg-gradient-to-r from-nebula-purple to-nebula-blue text-white font-black shadow-[0_20px_40px_rgba(124,58,237,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center gap-3.5 ${isScrolled ? 'py-3 px-6 text-[11px]' : 'py-5 px-10 text-[13px]'}`}
                  >
-                   {/* Shimmer Effect Inside Button */}
-                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_2s_infinite] pointer-events-none"></div>
-                   
                    <Icons.Plus className={`${isScrolled ? 'w-4 h-4' : 'w-5 h-5'} transition-transform group-hover/btn:rotate-90 duration-500`} />
                    <span className="tracking-tight">مهمة جديدة</span>
-                   
-                   {/* Exterior Button Glow */}
-                   <div className="absolute inset-0 rounded-[28px] shadow-[0_0_30px_rgba(124,58,237,0.4)] opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
                  </button>
               </div>
            </div>
         </header>
-
         <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
           <div className="max-w-7xl mx-auto px-2 lg:px-6">
             {renderView()}
@@ -369,12 +376,12 @@ const App: React.FC = () => {
           }} 
           onClose={() => setShowForm(false)} 
           categories={categories} 
+          taskCounts={stats.categoryCounts}
           initialTask={editingTask} 
           onManageCategories={() => { setShowForm(false); setCurrentView('categories'); }} 
         />
       )}
 
-      {/* Global Toast System */}
       <div className="fixed bottom-12 left-12 flex flex-col gap-5 z-[2000]">
         {toasts.map(toast => (
           <div 
@@ -398,36 +405,103 @@ const App: React.FC = () => {
   );
 };
 
-// REDESIGNED StatCard Component
-const StatCard = ({ label, count, icon, color, glow, index }: any) => (
-  <div 
-    className="glass-panel p-8 lg:p-10 flex items-center justify-between group relative overflow-hidden rounded-[55px] animate-reveal shadow-2xl border-white/5 hover:border-white/10 transition-all duration-500 hover:-translate-y-2" 
-    style={{ 
-        animationDelay: `${index * 150}ms`,
-        transformStyle: 'preserve-3d'
-    }}
-  >
-    <div className={`absolute -right-12 -bottom-12 w-40 h-40 bg-gradient-to-tr ${color} opacity-0 group-hover:opacity-10 rounded-full blur-3xl transition-opacity duration-1000`}></div>
-    
-    <div className="flex flex-col text-right relative z-10">
-      <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] mb-3 group-hover:text-slate-300 transition-colors">{label}</p>
-      <div className="flex items-center gap-3">
-        <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${color} shadow-[0_0_10px_currentColor] animate-pulse`}></div>
-        <h5 className="text-4xl lg:text-5xl font-black text-white glow-text drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] tracking-tighter">
-          {count}
-        </h5>
-      </div>
-    </div>
+// STATCARD COMPONENT - RE-ENGINEERED FOR GIANT, BOLD ICONS
+const StatCard = ({ label, count, icon, color, accentColor, index, iconAnim }: any) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [displayCount, setDisplayCount] = useState(0);
 
-    <div className={`w-20 h-20 lg:w-24 lg:h-24 rounded-[35px] bg-gradient-to-tr ${color} ${glow} flex items-center justify-center text-white shrink-0 shadow-2xl transition-all duration-700 group-hover:rotate-[15deg] group-hover:scale-110 relative overflow-hidden`}>
-      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-      <div className="w-10 h-10 lg:w-12 lg:h-12 relative z-10 group-hover:animate-bounce">
-        {icon}
+  useEffect(() => {
+    let start = 0;
+    const end = parseInt(count);
+    if (end === 0) { setDisplayCount(0); return; }
+    if (start === end) { setDisplayCount(end); return; }
+    let duration = 1200;
+    let stepTime = Math.abs(Math.floor(duration / end));
+    let timer = setInterval(() => {
+      start += 1;
+      setDisplayCount(start);
+      if (start === end) clearInterval(timer);
+    }, stepTime);
+    return () => clearInterval(timer);
+  }, [count]);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * -12;
+    const rotateY = ((x - centerX) / centerX) * 12;
+    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
+    cardRef.current.style.setProperty('--x', `${x}px`);
+    cardRef.current.style.setProperty('--y', `${y}px`);
+  };
+
+  const handleMouseLeave = () => {
+    if (!cardRef.current) return;
+    cardRef.current.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+  };
+
+  return (
+    <div 
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="group relative bg-[#0a1020] border border-white/5 rounded-[45px] p-8 flex items-center justify-between transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] cursor-default overflow-hidden"
+      style={{ transformStyle: 'preserve-3d' }}
+    >
+      {/* Interaction Light */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ background: `radial-gradient(circle at var(--x) var(--y), ${accentColor}20, transparent 65%)` }}
+      ></div>
+
+      {/* GIANT ICON CONTAINER - PILL SHAPE MATCHING IMAGE */}
+      <div 
+        className={`relative w-28 h-28 lg:w-32 lg:h-32 rounded-[42px] bg-gradient-to-tr ${color} flex items-center justify-center text-white shadow-2xl transition-all duration-700 overflow-hidden group-hover:shadow-[0_0_40px_${accentColor}40]`}
+        style={{ transform: 'translateZ(40px)' }}
+      >
+        {/* Pulsing Aura */}
+        <div className={`absolute inset-0 bg-white/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-[1s]`}></div>
+        
+        {/* THE ICON - NOW SCALED UP TO 70% OF THE CONTAINER SIZE */}
+        <div className={`w-[60%] h-[60%] flex items-center justify-center relative z-10 transition-all duration-700 ease-out ${iconAnim}`}>
+          {React.cloneElement(icon as React.ReactElement, { 
+            strokeWidth: 3, 
+            className: "w-full h-full drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]" 
+          })}
+        </div>
+
+        {/* Specular Highlight */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[1.2s] pointer-events-none"></div>
       </div>
+
+      {/* DATA SECTION */}
+      <div className="flex flex-col text-right items-end flex-1 mr-8" style={{ transform: 'translateZ(60px)' }}>
+        <p className="text-[14px] font-black text-slate-500 uppercase tracking-[0.25em] mb-3 group-hover:text-slate-300 transition-colors">
+          {label}
+        </p>
+        
+        <div className="flex items-center gap-4">
+          <h5 className="text-6xl lg:text-7xl font-black text-white tracking-tighter tabular-nums drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+            {displayCount}
+          </h5>
+          {/* Status Glow Dot */}
+          <div 
+            className="w-3 h-3 rounded-full mt-4 animate-pulse"
+            style={{ 
+              backgroundColor: accentColor, 
+              boxShadow: `0 0 15px ${accentColor}, 0 0 35px ${accentColor}80` 
+            }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Decorative Border */}
+      <div className="absolute inset-px rounded-[44px] border border-white/[0.04] pointer-events-none group-hover:border-white/[0.08] transition-colors"></div>
     </div>
-    
-    <div className="absolute inset-px rounded-[54px] border border-white/5 pointer-events-none"></div>
-  </div>
-);
+  );
+};
 
 export default App;

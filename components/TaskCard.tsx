@@ -85,7 +85,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
     if (nextStatus === TaskStatus.COMPLETED) {
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       
-      // Subtle Star-dust Confetti
       confetti({
         particleCount: 45,
         spread: 70,
@@ -122,7 +121,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         ${isCompleted ? 'grayscale-[0.8] opacity-60 scale-[0.97]' : 'opacity-100 scale-100'}
       `}
     >
-      {/* Dynamic Parallax Nebulae - Layer 1 */}
+      {/* Dynamic Parallax Nebulae */}
       <div 
         className="absolute top-0 left-0 w-full h-full opacity-0 group-hover:opacity-10 transition-opacity duration-1000 pointer-events-none"
         style={{
@@ -132,17 +131,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         }}
       />
 
-      {/* Dynamic Parallax Nebulae - Layer 2 */}
-      <div 
-        className="absolute top-0 left-0 w-full h-full opacity-0 group-hover:opacity-[0.15] transition-opacity duration-700 pointer-events-none"
-        style={{
-          transform: `translate(calc(var(--norm-x) * -40px), calc(var(--norm-y) * -40px)) scale(1.1)`,
-          background: `radial-gradient(circle at 20% 80%, ${task.color}20, transparent 50%)`,
-          filter: 'blur(80px)'
-        }}
-      />
-
-      {/* Background Decorative Star with Parallax */}
+      {/* Decorative Star with Parallax */}
       <div 
         className="absolute -bottom-6 -left-6 w-40 h-40 text-white/5 pointer-events-none group-hover:text-white/10 transition-all duration-700 ease-in-out"
         style={{
@@ -152,13 +141,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <Icons.Sparkles className="w-full h-full" />
       </div>
 
-      {/* Top Section */}
+      {/* Top Section: Status Toggle & Priority */}
       <div className="flex items-start justify-between relative z-10 mb-4">
         <button 
           onClick={handleComplete}
           className={`
             w-14 h-14 rounded-[24px] border border-white/10 flex items-center justify-center transition-all duration-500 active:scale-75 relative group/check
-            ${isCompleted ? 'bg-emerald-500/20 border-emerald-500/40 shadow-[0_0_25px_rgba(16,185,129,0.2)]' : 'bg-white/5 hover:bg-white/10'}
+            ${isCompleted ? 'bg-emerald-500/20 border-emerald-500/40 shadow-[0_0_25px_rgba(16,185,129,0.3)] ring-2 ring-emerald-400/20' : 'bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]'}
           `}
         >
           {isCompleted && (
@@ -166,15 +155,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
           )}
           <div 
             className={`w-5 h-5 rounded-full transition-all duration-700 transform 
-              ${isCompleted ? 'bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,1)] scale-125' : 'bg-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.6)] animate-pulse'}
-              group-hover/check:scale-110
+              ${isCompleted ? 'bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,1)] scale-125' : 'bg-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.6)] animate-pulse'}
+              group-hover/check:scale-[1.35] group-hover/check:brightness-125
             `}
           />
         </button>
 
         <div className="flex items-center gap-2.5">
           {task.isPinned && (
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 animate-in zoom-in duration-300">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 animate-in zoom-in duration-300 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
               <Icons.Pin className="w-5 h-5" filled />
             </div>
           )}
@@ -206,7 +195,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <div className="flex items-center justify-end gap-5">
            {task.reminderAt && (
              <div className="bg-amber-500/5 backdrop-blur-xl border border-amber-500/10 px-4 py-2 rounded-full flex items-center gap-2 text-amber-500/80">
-               <Icons.AlarmClock className="w-4 h-4" />
+               <Icons.AlarmClock className="w-4 h-4 animate-pulse" />
                <span className="text-[11px] font-black">تنبيه نشط</span>
              </div>
            )}
@@ -229,46 +218,51 @@ const TaskCard: React.FC<TaskCardProps> = ({
       {/* Divider */}
       <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6 relative z-10"></div>
 
-      {/* Bottom Action Bar */}
-      <div className="flex items-center justify-center gap-6 relative z-10">
+      {/* Bottom Action Bar: Refined with Micro-animations */}
+      <div className="flex items-center justify-center gap-4 relative z-10 py-1 bg-white/5 rounded-3xl border border-white/5 backdrop-blur-md">
         <ActionButton 
           onClick={() => setIsDeleting(true)} 
           icon={<Icons.Trash className="w-5 h-5" />} 
-          hoverClass="hover:text-rose-500 hover:bg-rose-500/10" 
+          hoverClass="hover:text-rose-500 hover:bg-rose-500/20" 
           glowColor="rgba(244, 63, 94, 0.4)"
           title="حذف" 
+          hoverAnimation="group-hover/btn:scale-125 group-hover/btn:-rotate-12 group-hover/btn:drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]"
         />
         <ActionButton 
           onClick={() => onTogglePin(task.id)} 
           icon={<Icons.Pin className="w-5 h-5" filled={task.isPinned} />} 
           active={task.isPinned}
-          hoverClass="hover:text-amber-400 hover:bg-amber-400/10"
+          hoverClass="hover:text-amber-400 hover:bg-amber-400/20"
           glowColor="rgba(251, 191, 36, 0.4)"
           title="تثبيت" 
+          hoverAnimation="group-hover/btn:translate-y-[-4px] group-hover/btn:scale-110 group-hover/btn:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]"
         />
         <ActionButton 
           icon={<Icons.AlarmClock className="w-5 h-5" />} 
-          hoverClass="hover:text-blue-400 hover:bg-blue-400/10"
+          hoverClass="hover:text-blue-400 hover:bg-blue-400/20"
           glowColor="rgba(96, 165, 250, 0.4)"
           title="تنبيه" 
+          hoverAnimation="group-hover/btn:rotate-[360deg] group-hover/btn:scale-125 duration-700"
         />
         <ActionButton 
           onClick={() => onCopy(task)}
           icon={<Icons.Copy className="w-5 h-5" />} 
-          hoverClass="hover:text-white hover:bg-white/10"
-          glowColor="rgba(255, 255, 255, 0.2)"
+          hoverClass="hover:text-white hover:bg-white/20"
+          glowColor="rgba(255, 255, 255, 0.3)"
           title="تكرار" 
+          hoverAnimation="group-hover/btn:translate-x-[-2px] group-hover/btn:translate-y-[-2px] group-hover/btn:scale-125 group-hover/btn:drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
         />
         <ActionButton 
           onClick={() => onEdit(task)} 
           icon={<Icons.Edit className="w-5 h-5" />} 
-          hoverClass="hover:text-nebula-blue hover:bg-nebula-blue/10"
+          hoverClass="hover:text-nebula-blue hover:bg-nebula-blue/20"
           glowColor="rgba(59, 130, 246, 0.4)"
           title="تعديل" 
+          hoverAnimation="group-hover/btn:scale-125 group-hover/btn:rotate-12 group-hover/btn:drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]"
         />
       </div>
 
-      {/* Interactive Mouse Glow with Parallax Refinement */}
+      {/* Mouse Interaction Glow */}
       <div 
         className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none z-0" 
         style={{ 
@@ -310,27 +304,32 @@ interface ActionButtonProps {
   glowColor?: string;
   title: string;
   active?: boolean;
+  hoverAnimation?: string;
 }
 
-const ActionButton: React.FC<ActionButtonProps> = ({ onClick, icon, hoverClass, glowColor, title, active }) => (
+const ActionButton: React.FC<ActionButtonProps> = ({ onClick, icon, hoverClass, glowColor, title, active, hoverAnimation }) => (
   <button 
     onClick={onClick}
     className={`
       p-3.5 text-slate-500 transition-all duration-300 rounded-2xl active:scale-75 relative group/btn
       ${hoverClass}
-      ${active ? 'scale-110 text-amber-400 bg-amber-400/10 shadow-[0_0_20px_rgba(251,191,36,0.3)] ring-1 ring-amber-400/20' : ''}
+      ${active ? 'scale-110 text-amber-400 bg-amber-400/20 shadow-[0_0_20px_rgba(251,191,36,0.3)] ring-1 ring-amber-400/30' : ''}
     `}
     title={title}
   >
-    <div className="relative z-10 transition-all duration-500 cubic-bezier(0.175, 0.885, 0.32, 1.275) group-hover/btn:scale-125 group-hover/btn:rotate-6 group-hover/btn:brightness-125">
+    <div className={`relative z-10 transition-all duration-500 cubic-bezier(0.175, 0.885, 0.32, 1.275) ${hoverAnimation || 'group-hover/btn:scale-125 group-hover/btn:brightness-125'}`}>
       {icon}
     </div>
+    
+    {/* Inner Glow Backdrop */}
     <div 
-      className="absolute inset-0 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-all duration-500 pointer-events-none blur-xl"
+      className="absolute inset-0 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-all duration-500 pointer-events-none blur-xl scale-75 group-hover/btn:scale-110"
       style={{ backgroundColor: glowColor || 'currentColor' }}
     ></div>
+    
+    {/* Border Glow Pulse */}
     <div 
-      className="absolute inset-0 rounded-2xl opacity-0 group-hover/btn:opacity-20 transition-all duration-300 pointer-events-none border border-current"
+      className="absolute inset-0 rounded-2xl opacity-0 group-hover/btn:opacity-30 transition-all duration-300 pointer-events-none border border-current shadow-[inset_0_0_10px_currentColor]"
     ></div>
   </button>
 );
