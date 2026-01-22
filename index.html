@@ -143,18 +143,27 @@
         transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
       }
 
-      /* Dynamic Header Scroll States */
+      /* Enhanced Header Scrolled States */
       .header-scrolled {
-        height: 5.5rem !important;
-        background: rgba(15, 23, 42, 0.85) !important;
-        backdrop-filter: blur(60px) saturate(200%) !important;
-        border-color: rgba(59, 130, 246, 0.2) !important;
-        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(59, 130, 246, 0.1) !important;
-        transform: translateY(-5px);
+        height: 5rem !important; /* Shorter height */
+        background: rgba(15, 23, 42, 0.7) !important; /* More transparent for better blend */
+        backdrop-filter: blur(80px) saturate(220%) !important; /* Stronger blur to block overlap mess */
+        border-radius: 0 0 45px 45px !important; /* Flat top when scrolled to top-0 */
+        border-top-width: 0 !important;
+        border-color: rgba(59, 130, 246, 0.15) !important;
+        box-shadow: 0 15px 50px -10px rgba(0, 0, 0, 0.9), 0 0 30px rgba(59, 130, 246, 0.05) !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
       }
 
-      .header-scrolled .nav-title {
-        transform: scale(0.9);
+      .header-scrolled .nav-title-group {
+        transform: scale(0.85);
+        opacity: 0.8;
+      }
+
+      .header-scrolled .search-engine-group {
+        max-width: 32rem !important;
+        transform: scale(0.95);
       }
 
       .no-scrollbar::-webkit-scrollbar { display: none; }
