@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Task, Category, User, TaskStatus } from './types';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Task, Category, User, TaskStatus, TaskPriority } from './types';
 import { Icons } from './constants';
 import TaskCard from './components/TaskCard';
 import TaskForm from './components/TaskForm';
@@ -11,11 +10,7 @@ import CategoryManagement from './components/CategoryManagement';
 import { storageService } from './services/storageService';
 import { getSmartAdvice } from './services/geminiService';
 
-interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'danger' | 'info';
-}
+type SortOption = 'newest' | 'dueDate' | 'priority';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => storageService.getSession());
@@ -23,381 +18,294 @@ const App: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [currentView, setCurrentView] = useState<'tasks' | 'settings' | 'categories'>('tasks');
-  
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [smartAdvice, setSmartAdvice] = useState('جارِ تحليل مسارك الإنتاجي...');
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const [smartAdvice, setSmartAdvice] = useState('تحليل المهام...');
+  const [toasts, setToasts] = useState<any[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const addToast = useCallback((message: string, type: 'success' | 'danger' | 'info' = 'info') => {
-    const id = Math.random().toString(36).substring(2, 9);
+    const id = Date.now().toString();
     setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4000);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   }, []);
 
   useEffect(() => {
-    const initData = async () => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
       if (currentUser) {
-        try {
-          const [t, c] = await Promise.all([
-            storageService.getUserTasks(currentUser.username),
-            storageService.getUserCategories(currentUser.username)
-          ]);
-          setTasks(t);
-          setCategories(c);
-          setSmartAdvice(await getSmartAdvice(t));
-        } finally {
-          setIsInitialLoading(false);
-        }
+        const [t, c] = await Promise.all([
+          storageService.getUserTasks(currentUser.username),
+          storageService.getUserCategories(currentUser.username)
+        ]);
+        setTasks(t);
+        setCategories(c);
+        getSmartAdvice(t).then(setSmartAdvice).catch(() => {});
+        setIsInitialLoading(false);
       } else {
         setIsInitialLoading(false);
       }
     };
-    initData();
+    init();
   }, [currentUser]);
 
   useEffect(() => {
     if (currentUser) {
       storageService.saveUserCategories(currentUser.username, categories);
-    }
-  }, [categories, currentUser]);
-
-  useEffect(() => {
-    if (currentUser) {
       storageService.saveUserTasks(currentUser.username, tasks);
     }
-  }, [tasks, currentUser]);
+  }, [tasks, categories, currentUser]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === TaskStatus.COMPLETED).length;
-    const pinned = tasks.filter(t => t.isPinned).length;
     const pending = tasks.filter(t => t.status !== TaskStatus.COMPLETED).length;
     const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
-    let statusLabel = "تحليل الأداء: مستقر";
-    if (progress > 80) statusLabel = "أداء استثنائي!";
-    else if (progress > 50) statusLabel = "تقدم ممتاز";
-    else if (progress > 0) statusLabel = "جاري التنفيذ";
-
-    // Calculate task count per category for the form
-    const categoryCounts: Record<string, number> = {};
-    tasks.forEach(task => {
-      categoryCounts[task.category] = (categoryCounts[task.category] || 0) + 1;
-    });
-
-    return { total, completed, pinned, pending, progress, statusLabel, categoryCounts };
+    return { total, completed, pending, progress };
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
+    const priorityWeight = { [TaskPriority.URGENT]: 4, [TaskPriority.HIGH]: 3, [TaskPriority.MEDIUM]: 2, [TaskPriority.LOW]: 1 };
+
     return tasks
       .filter(t => (selectedCategory === 'الكل' || t.category === selectedCategory))
-      .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
-      .sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1));
-  }, [tasks, selectedCategory, searchQuery]);
+      .filter(t => 
+        t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        t.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
 
-  const handleTaskAdd = (data: any) => {
-    const newTask = { ...data, id: Date.now().toString() };
-    setTasks([newTask, ...tasks]);
-    addToast("تمت إضافة المهمة بنجاح", "success");
-    setShowForm(false);
-  };
-
-  const handleTaskDelete = (id: string) => {
-    setTasks(tasks.filter(x => x.id !== id));
-    addToast("تم حذف المهمة من السجلات", "danger");
-  };
-
-  const handleTaskCopy = (task: Task) => {
-    const newTask = {...task, id: Date.now().toString(), createdAt: new Date().toISOString(), status: TaskStatus.PENDING};
-    setTasks([newTask, ...tasks]);
-    addToast("تم استنساخ المهمة", "success");
-  };
-
-  const handleStatusChange = (id: string, s: TaskStatus) => {
-    setTasks(tasks.map(x => x.id === id ? {...x, status: s, updatedAt: new Date().toISOString()} : x));
-    if (s === TaskStatus.COMPLETED) {
-      addToast("مهمة مكتملة! أحسنت العمل", "success");
-    }
-  };
+        if (sortBy === 'newest') {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        } else if (sortBy === 'dueDate') {
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        } else if (sortBy === 'priority') {
+          return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
+        }
+        return 0;
+      });
+  }, [tasks, selectedCategory, searchQuery, sortBy]);
 
   if (isInitialLoading) return (
-    <div className="h-screen flex items-center justify-center bg-[#020617]">
-      <div className="w-16 h-16 border-4 border-nebula-purple/20 border-t-nebula-purple rounded-full animate-spin"></div>
+    <div className="h-screen w-full flex items-center justify-center bg-slate-950">
+       <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
     </div>
   );
-  
+
   if (!currentUser) return <Auth onLogin={setCurrentUser} />;
 
-  const renderView = () => {
-    switch (currentView) {
-      case 'settings':
-        return <div className="animate-reveal"><Settings user={currentUser} onUpdate={setCurrentUser} showToast={addToast} /></div>;
-      case 'categories':
-        return (
-          <div className="animate-reveal">
-            <CategoryManagement 
-              categories={categories} 
-              onAdd={cat => { setCategories([...categories, cat]); addToast("تمت إضافة الفئة", "success"); }}
-              onUpdate={cat => {
-                setCategories(categories.map(c => c.id === cat.id ? cat : c));
-                addToast("تم تحديث الفئة", "success");
-              }}
-              onDelete={(id, action) => {
-                const cat = categories.find(c => c.id === id);
-                if (!cat) return;
-                if (action === 'delete_tasks') {
-                  setTasks(tasks.filter(t => t.category !== cat.name));
-                } else {
-                  setTasks(tasks.map(t => t.category === cat.name ? { ...t, category: 'أخرى' } : t));
-                }
-                setCategories(categories.filter(c => c.id !== id));
-                addToast("تم حذف الفئة", "info");
-              }}
-            />
-          </div>
-        );
-      default:
-        return (
-          <div className="animate-reveal">
-            {/* Progress Dashboard */}
-            <div className="glass-panel border-white/5 rounded-[50px] p-10 lg:p-14 mb-14 relative overflow-hidden group shadow-2xl">
-               <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-nebula-purple/5 to-transparent pointer-events-none"></div>
-               
-               <div className="flex flex-col lg:flex-row items-center gap-12 relative z-10">
-                  <div className="w-full lg:w-80 shrink-0">
-                    <div className="bg-white/5 backdrop-blur-3xl p-8 rounded-[40px] border border-white/10 relative overflow-hidden group/card hover:bg-white/[0.08] transition-all">
-                       <div className="flex items-center gap-4 mb-6">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-nebula-purple to-nebula-blue flex items-center justify-center text-white shadow-lg animate-pulse-soft">
-                             <Icons.Sparkles className="w-7 h-7" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">رؤية ذكية</p>
-                            <h5 className="text-white font-black text-sm">نصيحة اليوم</h5>
-                          </div>
-                       </div>
-                       <p className="text-slate-200 text-sm font-bold leading-relaxed italic">"{smartAdvice}"</p>
-                       <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/5 rounded-full blur-2xl"></div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 w-full space-y-8">
-                    <div className="flex items-center justify-between">
-                       <div className="space-y-1">
-                         <div className="flex items-center gap-3">
-                            <Icons.LayoutDashboard className="w-7 h-7 text-nebula-blue" />
-                            <h4 className="text-3xl font-black text-white glow-title">معدل الإنجاز اليومي</h4>
-                         </div>
-                         <p className="text-[11px] text-slate-500 font-bold uppercase tracking-[0.3em]">{stats.statusLabel}</p>
-                       </div>
-                       <div className="flex flex-col items-end">
-                         <span className="text-5xl font-black text-nebula-blue glow-text tracking-tighter">{stats.progress}%</span>
-                         <p className="text-[10px] text-slate-600 font-black mt-1 uppercase tracking-widest">نسبة الكفاءة</p>
-                       </div>
-                    </div>
-
-                    <div className="relative pt-4">
-                       <div className="h-6 w-full bg-black/40 rounded-full overflow-hidden border border-white/10 p-1 relative shadow-inner">
-                          <div 
-                           className="h-full rounded-full bg-gradient-to-r from-nebula-purple via-nebula-blue to-cyan-400 transition-all duration-[1.5s] cubic-bezier(0.23, 1, 0.32, 1) shadow-[0_0_20px_rgba(59,130,246,0.5)] relative overflow-hidden" 
-                           style={{ width: `${stats.progress}%` }}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
-                          </div>
-                       </div>
-                       <div className="justify-between mt-4 px-1 hidden md:flex">
-                          <p className="text-[11px] font-black text-slate-400">
-                             تم إكمال <span className="text-emerald-400 text-sm">{stats.completed}</span> سجل من أصل <span className="text-white text-sm">{stats.total}</span>
-                          </p>
-                          <p className="text-[11px] font-black text-slate-600 uppercase tracking-widest">المتبقي: {stats.pending}</p>
-                       </div>
-                    </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* UPGRADED STATS CARDS SECTION */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
-              <StatCard 
-                label="إجمالي المهام" 
-                count={stats.total} 
-                icon={<Icons.LayoutDashboard />} 
-                color="from-blue-600 to-blue-400" 
-                accentColor="#3b82f6"
-                index={0} 
-                iconAnim="group-hover:rotate-12"
-              />
-              <StatCard 
-                label="المكتملة" 
-                count={stats.completed} 
-                icon={<Icons.CheckCircle />} 
-                color="from-emerald-500 to-teal-400" 
-                accentColor="#10b981"
-                index={1} 
-                iconAnim="group-hover:scale-110"
-              />
-              <StatCard 
-                label="المثبتة" 
-                count={stats.pinned} 
-                icon={<Icons.Pin />} 
-                color="from-orange-500 to-amber-400" 
-                accentColor="#f59e0b"
-                index={2} 
-                iconAnim="group-hover:translate-y-[-5px]"
-              />
-              <StatCard 
-                label="المتبقية" 
-                count={stats.pending} 
-                icon={<Icons.AlarmClock />} 
-                color="from-rose-500 to-pink-400" 
-                accentColor="#f43f5e"
-                index={3} 
-                iconAnim="group-hover:rotate-[-15deg]"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 pb-40">
-              {filteredTasks.length > 0 ? filteredTasks.map((t, i) => (
-                <div key={t.id} className="animate-reveal" style={{ animationDelay: `${i * 100}ms` }}>
-                  <TaskCard 
-                    task={t} index={i}
-                    onDelete={handleTaskDelete}
-                    onEdit={x => { setEditingTask(x); setShowForm(true); }}
-                    onCopy={handleTaskCopy}
-                    onStatusChange={handleStatusChange}
-                    onTogglePin={id => {
-                      setTasks(tasks.map(x => x.id === id ? {...x, isPinned: !x.isPinned} : x));
-                      addToast("تم تحديث حالة التثبيت", "info");
-                    }}
-                  />
-                </div>
-              )) : (
-                <div className="col-span-full py-48 flex flex-col items-center justify-center text-center">
-                   <div className="w-40 h-40 bg-white/5 rounded-[50px] flex items-center justify-center text-slate-800 mb-10 border border-white/5">
-                      <Icons.LayoutDashboard className="w-16 h-16 opacity-10" />
-                   </div>
-                   <h3 className="text-3xl font-black text-slate-600 tracking-widest uppercase">السجل خالٍ حالياً</h3>
-                   <p className="text-slate-700 text-lg font-bold">ابدأ بإضافة مهمة جديدة لتنشيط مصفوفة الإنتاجية</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-    }
-  };
-
   return (
-    <div className="flex min-h-screen p-4 lg:p-6 gap-6 relative">
+    <div className="flex h-screen bg-[#020617] overflow-hidden text-slate-200">
       <Sidebar 
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
-        categories={categories} 
-        tasks={tasks}
+        isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} 
+        categories={categories} tasks={tasks}
         selectedCategory={selectedCategory}
-        onCategorySelect={(cat) => { setSelectedCategory(cat); setCurrentView('tasks'); }}
-        currentView={currentView}
-        onViewChange={setCurrentView}
+        onCategorySelect={setSelectedCategory}
+        currentView={currentView} onViewChange={setCurrentView}
         user={currentUser}
         onLogout={() => { storageService.clearSession(); setCurrentUser(null); }}
-        onManageCategories={() => setCurrentView('categories')}
+        onManageCategories={() => { setCurrentView('categories'); setIsSidebarOpen(false); }}
       />
 
-      <main className="flex-1 flex flex-col min-w-0">
-        <header 
-          className={`sticky z-[500] transition-all duration-700 ease-in-out ${isScrolled ? 'top-0 mb-8' : 'top-4 mb-12'}`}
-        >
-           <div 
-             className={`glass-panel border-white/10 shadow-[0_35px_80px_-15px_rgba(0,0,0,0.6)] group/header relative overflow-hidden transition-all duration-700 flex items-center justify-between
-               ${isScrolled ? 'header-scrolled w-full mx-0' : 'rounded-[50px] h-28 px-8 lg:px-12 w-full'}
-             `}
-           >
-              <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-nebula-blue/30 to-transparent transition-opacity ${isScrolled ? 'opacity-100' : 'opacity-0'}`}></div>
-              <div className="flex items-center gap-10 relative z-10 nav-title-group transition-all duration-500 origin-right">
-                <button 
-                  onClick={() => setIsSidebarOpen(true)} 
-                  className={`text-nebula-blue bg-white/5 hover:bg-white/10 rounded-2xl transition-all active:scale-90 border border-white/5 lg:hidden ${isScrolled ? 'p-3' : 'p-4'}`}
-                >
-                  <Icons.LayoutDashboard className={`${isScrolled ? 'w-6 h-6' : 'w-7 h-7'}`} />
-                </button>
-                <div className="flex flex-col text-right">
-                  <h2 className={`font-black tracking-tighter text-white glow-title uppercase drop-shadow-2xl transition-all duration-500 ${isScrolled ? 'text-2xl' : 'text-4xl'}`}>
-                    {currentView === 'tasks' ? 'المهـام' : currentView === 'settings' ? 'الإعدادات' : 'القطاعات'}
-                  </h2>
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Advanced Command Center Header */}
+        <header className="h-28 bg-slate-950/40 backdrop-blur-3xl border-b border-white/[0.05] px-10 flex items-center justify-between shrink-0 relative z-[60]">
+           {/* Section 1: Dashboard Context & Live Clock */}
+           <div className="flex items-center gap-8">
+              <button 
+                onClick={() => setIsSidebarOpen(true)} 
+                className="lg:hidden p-3.5 bg-white/5 text-slate-400 hover:text-white rounded-[1.25rem] border border-white/5 transition-all active:scale-95 shadow-xl"
+              >
+                <Icons.LayoutDashboard className="w-6 h-6" />
+              </button>
+              
+              <div className="flex flex-col">
+                <div className="flex items-center gap-3 mb-1.5">
+                   <div className={`w-2.5 h-2.5 rounded-full ${stats.progress > 70 ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]' : 'bg-primary shadow-[0_0_12px_rgba(99,102,241,0.6)]'} animate-pulse`}></div>
+                   <h1 className="text-2xl font-black text-white tracking-tight">
+                     {currentView === 'tasks' ? (selectedCategory === 'الكل' ? 'المركز الرئيسي' : selectedCategory) : 'تخصيص النظام'}
+                   </h1>
+                </div>
+                <div className="flex items-center gap-4">
+                   <div className="flex items-center gap-2 bg-white/5 px-3 py-1 rounded-lg border border-white/5">
+                      <Icons.Calendar className="w-3 h-3 text-slate-500" />
+                      <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                        {currentTime.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      </span>
+                   </div>
+                   <div className="flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-lg border border-primary/20">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></div>
+                      <span className="text-[10px] text-primary font-black uppercase tracking-widest">
+                        {currentTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </span>
+                   </div>
                 </div>
               </div>
-              <div className={`flex-1 mx-12 hidden md:block relative group/search search-engine-group transition-all duration-500 ${isScrolled ? 'max-w-md mx-6' : 'max-w-xl'}`}>
-                <input 
-                  value={searchQuery} 
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="بحث سريع في السجلات الرقمية..." 
-                  className={`w-full bg-black/30 border border-white/10 rounded-[28px] pr-14 pl-8 text-[15px] font-bold outline-none focus:border-nebula-blue/50 focus:bg-black/50 transition-all duration-500 text-white placeholder:text-slate-600 shadow-inner ${isScrolled ? 'py-3' : 'py-5'}`}
-                />
-                <Icons.Search className={`absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/search:text-nebula-blue group-focus-within/search:scale-110 transition-all ${isScrolled ? 'w-5 h-5' : 'w-6 h-6'}`} />
-              </div>
-              <div className="flex items-center gap-6 relative z-10">
-                 <button 
-                  onClick={() => { setEditingTask(null); setShowForm(true); }} 
-                  className={`relative group/btn overflow-hidden rounded-[28px] bg-gradient-to-r from-nebula-purple to-nebula-blue text-white font-black shadow-[0_20px_40px_rgba(124,58,237,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center gap-3.5 ${isScrolled ? 'py-3 px-6 text-[11px]' : 'py-5 px-10 text-[13px]'}`}
-                 >
-                   <Icons.Plus className={`${isScrolled ? 'w-4 h-4' : 'w-5 h-5'} transition-transform group-hover/btn:rotate-90 duration-500`} />
-                   <span className="tracking-tight">مهمة جديدة</span>
-                 </button>
+           </div>
+
+           {/* Section 2: Command Palette Search */}
+           <div className="hidden lg:flex items-center gap-4 flex-1 max-w-2xl mx-16">
+              <div className="relative w-full group">
+                 {/* Decorative background glow */}
+                 <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-blue-500/20 to-purple-500/20 rounded-[1.5rem] blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
+                 
+                 <div className="relative flex items-center bg-slate-900/60 border border-white/10 rounded-[1.5rem] px-5 py-4 focus-within:border-primary/50 focus-within:bg-slate-900/80 transition-all duration-300">
+                    <Icons.Search className="text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors" />
+                    <input 
+                      value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="ابدأ البحث أو اكتب أمراً..." 
+                      className="flex-1 bg-transparent px-4 text-sm font-bold text-white placeholder:text-slate-600 outline-none"
+                    />
+                    <div className="flex items-center gap-1.5 opacity-40 group-focus-within:opacity-100 transition-opacity">
+                       <kbd className="px-2 py-1 rounded-md border border-white/10 text-[10px] font-black text-slate-500 bg-white/5">Ctrl</kbd>
+                       <kbd className="px-2 py-1 rounded-md border border-white/10 text-[10px] font-black text-slate-500 bg-white/5">K</kbd>
+                    </div>
+                 </div>
               </div>
            </div>
+
+           {/* Section 3: Meta Actions & Profile */}
+           <div className="flex items-center gap-5">
+              {/* Notifications / System Status */}
+              <div className="hidden md:flex items-center gap-5 px-6 py-3 bg-white/[0.03] border border-white/[0.05] rounded-[1.5rem] hover:bg-white/[0.06] transition-all cursor-pointer group">
+                 <div className="flex flex-col text-right">
+                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">System Health</span>
+                   <span className="text-[11px] font-black text-emerald-400 group-hover:text-white transition-colors">مستقر بنسبة 99%</span>
+                 </div>
+                 <div className="relative">
+                    <Icons.Bell className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
+                    <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 border-2 border-slate-950 rounded-full"></div>
+                 </div>
+              </div>
+
+              {/* Primary Action Button */}
+              <button 
+                onClick={() => { setEditingTask(null); setShowForm(true); }} 
+                className="group relative bg-primary hover:bg-indigo-500 text-white pl-8 pr-6 py-4 rounded-[1.5rem] text-xs font-black uppercase tracking-[0.3em] flex items-center gap-4 transition-all shadow-2xl shadow-primary/30 hover:-translate-y-1 active:scale-95 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-180 transition-transform duration-500">
+                  <Icons.Plus className="w-4 h-4" />
+                </div>
+                <span className="hidden sm:inline">مهمة جديدة</span>
+              </button>
+           </div>
         </header>
-        <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
-          <div className="max-w-7xl mx-auto px-2 lg:px-6">
-            {renderView()}
-          </div>
+
+        <div className="flex-1 overflow-y-auto p-8 lg:p-12 space-y-12 no-scrollbar bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.05),transparent_40%)]">
+           {currentView === 'tasks' && (
+             <div className="max-w-7xl mx-auto space-y-12 animate-slide-up">
+                
+                {/* Visual Intelligence Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                   <StatItem label="إجمالي السجلات" value={stats.total} icon={<Icons.Database className="w-5 h-5" />} color="text-indigo-400" />
+                   <StatItem label="أهداف معلقة" value={stats.pending} icon={<Icons.Calendar className="w-5 h-5" />} color="text-amber-400" />
+                   
+                   <div className="glass-card p-6 rounded-[2rem] flex flex-col justify-center border-white/[0.05] group hover:border-primary/20 transition-all bg-white/[0.02]">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">معيار الترتيب</span>
+                        <div className="p-1.5 bg-white/5 rounded-lg text-slate-600 group-hover:text-primary transition-colors">
+                           <Icons.Chevron className="w-3 h-3" />
+                        </div>
+                      </div>
+                      <select 
+                        value={sortBy} 
+                        onChange={(e) => setSortBy(e.target.value as SortOption)}
+                        className="bg-transparent text-xs font-black text-white outline-none cursor-pointer hover:text-primary transition-colors appearance-none"
+                      >
+                        <option value="newest" className="bg-slate-900">سجل الأحداث</option>
+                        <option value="dueDate" className="bg-slate-900">الموعد النهائي</option>
+                        <option value="priority" className="bg-slate-900">قوة التأثير</option>
+                      </select>
+                   </div>
+
+                   <div className="glass-card p-6 rounded-[2rem] flex flex-col justify-center border-white/[0.05] relative overflow-hidden bg-white/[0.02]">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">كفاءة الإنجاز</span>
+                        <span className="text-sm font-black text-primary drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]">{stats.progress}%</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/[0.05]">
+                        <div className="h-full bg-primary rounded-full shadow-[0_0_15px_rgba(99,102,241,0.8)] transition-all duration-1000 ease-out" style={{ width: `${stats.progress}%` }}></div>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Smart Guidance Section */}
+                <div className="group relative bg-gradient-to-r from-primary/10 via-white/[0.03] to-transparent border border-white/[0.08] rounded-[2.5rem] p-8 flex items-center gap-8 overflow-hidden transition-all hover:bg-white/[0.05]">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+                   <div className="relative p-5 bg-primary/20 rounded-[1.5rem] text-primary shadow-2xl shadow-primary/30 group-hover:scale-110 transition-transform duration-500">
+                      <Icons.Sparkles className="w-8 h-8 animate-pulse" />
+                   </div>
+                   <div className="flex flex-col relative z-10">
+                      <span className="text-[10px] font-black text-primary uppercase tracking-[0.5em] mb-2">إرشادات الذكاء الاصطناعي</span>
+                      <p className="text-lg font-bold text-white/90 leading-relaxed italic tracking-tight">"{smartAdvice}"</p>
+                   </div>
+                </div>
+
+                {/* Tasks Responsive Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                   {filteredTasks.map((t, i) => (
+                     <TaskCard 
+                      key={t.id} task={t} index={i}
+                      onDelete={id => { setTasks(tasks.filter(x => x.id !== id)); addToast("تم نقل السجل إلى الأرشيف", "info"); }}
+                      onEdit={x => { setEditingTask(x); setShowForm(true); }}
+                      onCopy={task => { setTasks([{...task, id: Date.now().toString(), createdAt: new Date().toISOString()}, ...tasks]); addToast("تم تكرار المهمة بنجاح", "success"); }}
+                      onStatusChange={(id, s) => setTasks(tasks.map(x => x.id === id ? {...x, status: s} : x))}
+                      onTogglePin={id => setTasks(tasks.map(x => x.id === id ? {...x, isPinned: !x.isPinned} : x))}
+                      onToggleFavorite={id => setTasks(tasks.map(x => x.id === id ? {...x, isFavorite: !x.isFavorite} : x))}
+                     />
+                   ))}
+                </div>
+
+                {filteredTasks.length === 0 && (
+                   <div className="flex flex-col items-center justify-center py-40 opacity-30 animate-pulse">
+                      <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-8 border border-white/10">
+                         <Icons.Search className="w-10 h-10 text-slate-500" />
+                      </div>
+                      <p className="text-3xl font-black tracking-[0.2em] uppercase text-white/50">لا يوجد بيانات</p>
+                      <span className="text-sm font-bold text-slate-600 mt-4">نظامك نظيف حالياً، ابدأ بإضافة مهامك الأولى</span>
+                   </div>
+                )}
+             </div>
+           )}
+
+           {currentView === 'settings' && <Settings user={currentUser} onUpdate={setCurrentUser} showToast={addToast} bgIntensity="medium" onBgIntensityChange={() => {}} />}
+           {currentView === 'categories' && <CategoryManagement categories={categories} onAdd={c => setCategories([...categories, c])} onUpdate={c => setCategories(categories.map(x => x.id === c.id ? c : x))} onDelete={id => setCategories(categories.filter(x => x.id !== id))} />}
         </div>
       </main>
 
       {showForm && (
         <TaskForm 
-          onAdd={handleTaskAdd} 
-          onUpdate={task => {
-            setTasks(tasks.map(t => t.id === task.id ? task : t)); 
-            setShowForm(false);
-            addToast("تم تحديث البيانات بنجاح", "success");
-          }} 
-          onClose={() => setShowForm(false)} 
-          categories={categories} 
-          taskCounts={stats.categoryCounts}
-          initialTask={editingTask} 
-          onManageCategories={() => { setShowForm(false); setCurrentView('categories'); }} 
+          onAdd={t => { setTasks([{...t, id: Date.now().toString(), createdAt: new Date().toISOString()}, ...tasks]); setShowForm(false); addToast("تمت جدولة الهدف بنجاح", "success"); }}
+          onUpdate={t => { setTasks(tasks.map(x => x.id === t.id ? t : x)); setShowForm(false); addToast("تم تحديث قاعدة البيانات", "info"); }}
+          onClose={() => setShowForm(false)} categories={categories} initialTask={editingTask}
+          onManageCategories={() => { setShowForm(false); setCurrentView('categories'); }}
+          taskCounts={tasks.reduce((acc, t) => ({...acc, [t.category]: (acc[t.category] || 0) + 1}), {})}
         />
       )}
 
-      <div className="fixed bottom-12 left-12 flex flex-col gap-5 z-[2000]">
-        {toasts.map(toast => (
-          <div 
-            key={toast.id}
-            className={`toast-animate flex items-center gap-6 px-8 py-5 rounded-[35px] glass-panel border shadow-2xl backdrop-blur-3xl
-              ${toast.type === 'success' ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-400' : 
-                toast.type === 'danger' ? 'border-rose-500/40 bg-rose-500/5 text-rose-400' : 
-                'border-nebula-blue/40 bg-nebula-blue/5 text-nebula-blue'}
-            `}
-          >
-            <div className="w-12 h-12 rounded-[20px] flex items-center justify-center bg-white/5">
-              {toast.type === 'success' ? <Icons.CheckCircle className="w-6 h-6" /> :
-               toast.type === 'danger' ? <Icons.Trash className="w-6 h-6" /> :
-               <Icons.Sparkles className="w-6 h-6" />}
-            </div>
-            <p className="text-base font-black tracking-tight">{toast.message}</p>
+      {/* Modern HUD Notification System */}
+      <div className="fixed bottom-12 left-12 flex flex-col gap-4 z-[2000]">
+        {toasts.map(t => (
+          <div key={t.id} className="bg-slate-900/95 backdrop-blur-3xl border border-white/10 p-5 rounded-[1.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] flex items-center gap-5 animate-slide-up border-l-4 border-l-primary">
+             <div className={`w-3.5 h-3.5 rounded-full ${t.type === 'success' ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.6)]' : t.type === 'danger' ? 'bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.6)]' : 'bg-primary shadow-[0_0_15px_rgba(99,102,241,0.6)]'}`}></div>
+             <div className="flex flex-col">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-1">System Message</span>
+                <span className="text-sm font-black text-white/90 tracking-tight">{t.message}</span>
+             </div>
+             <button className="mr-4 p-1.5 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setToasts(toasts.filter(x => x.id !== t.id))}>
+               <Icons.X className="w-4 h-4 text-slate-500" />
+             </button>
           </div>
         ))}
       </div>
@@ -405,103 +313,16 @@ const App: React.FC = () => {
   );
 };
 
-// STATCARD COMPONENT - RE-ENGINEERED FOR GIANT, BOLD ICONS
-const StatCard = ({ label, count, icon, color, accentColor, index, iconAnim }: any) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [displayCount, setDisplayCount] = useState(0);
-
-  useEffect(() => {
-    let start = 0;
-    const end = parseInt(count);
-    if (end === 0) { setDisplayCount(0); return; }
-    if (start === end) { setDisplayCount(end); return; }
-    let duration = 1200;
-    let stepTime = Math.abs(Math.floor(duration / end));
-    let timer = setInterval(() => {
-      start += 1;
-      setDisplayCount(start);
-      if (start === end) clearInterval(timer);
-    }, stepTime);
-    return () => clearInterval(timer);
-  }, [count]);
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const rotateX = ((y - centerY) / centerY) * -12;
-    const rotateY = ((x - centerX) / centerX) * 12;
-    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
-    cardRef.current.style.setProperty('--x', `${x}px`);
-    cardRef.current.style.setProperty('--y', `${y}px`);
-  };
-
-  const handleMouseLeave = () => {
-    if (!cardRef.current) return;
-    cardRef.current.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
-  };
-
-  return (
-    <div 
-      ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="group relative bg-[#0a1020] border border-white/5 rounded-[45px] p-8 flex items-center justify-between transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] cursor-default overflow-hidden"
-      style={{ transformStyle: 'preserve-3d' }}
-    >
-      {/* Interaction Light */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{ background: `radial-gradient(circle at var(--x) var(--y), ${accentColor}20, transparent 65%)` }}
-      ></div>
-
-      {/* GIANT ICON CONTAINER - PILL SHAPE MATCHING IMAGE */}
-      <div 
-        className={`relative w-28 h-28 lg:w-32 lg:h-32 rounded-[42px] bg-gradient-to-tr ${color} flex items-center justify-center text-white shadow-2xl transition-all duration-700 overflow-hidden group-hover:shadow-[0_0_40px_${accentColor}40]`}
-        style={{ transform: 'translateZ(40px)' }}
-      >
-        {/* Pulsing Aura */}
-        <div className={`absolute inset-0 bg-white/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-[1s]`}></div>
-        
-        {/* THE ICON - NOW SCALED UP TO 70% OF THE CONTAINER SIZE */}
-        <div className={`w-[60%] h-[60%] flex items-center justify-center relative z-10 transition-all duration-700 ease-out ${iconAnim}`}>
-          {React.cloneElement(icon as React.ReactElement, { 
-            strokeWidth: 3, 
-            className: "w-full h-full drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]" 
-          })}
-        </div>
-
-        {/* Specular Highlight */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[1.2s] pointer-events-none"></div>
-      </div>
-
-      {/* DATA SECTION */}
-      <div className="flex flex-col text-right items-end flex-1 mr-8" style={{ transform: 'translateZ(60px)' }}>
-        <p className="text-[14px] font-black text-slate-500 uppercase tracking-[0.25em] mb-3 group-hover:text-slate-300 transition-colors">
-          {label}
-        </p>
-        
-        <div className="flex items-center gap-4">
-          <h5 className="text-6xl lg:text-7xl font-black text-white tracking-tighter tabular-nums drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
-            {displayCount}
-          </h5>
-          {/* Status Glow Dot */}
-          <div 
-            className="w-3 h-3 rounded-full mt-4 animate-pulse"
-            style={{ 
-              backgroundColor: accentColor, 
-              boxShadow: `0 0 15px ${accentColor}, 0 0 35px ${accentColor}80` 
-            }}
-          ></div>
-        </div>
-      </div>
-
-      {/* Decorative Border */}
-      <div className="absolute inset-px rounded-[44px] border border-white/[0.04] pointer-events-none group-hover:border-white/[0.08] transition-colors"></div>
+const StatItem = ({ label, value, icon, color }: any) => (
+  <div className="glass-card p-7 rounded-[2rem] flex items-center gap-7 border-white/[0.05] group hover:border-primary/20 transition-all bg-white/[0.02] shadow-xl">
+    <div className={`w-16 h-16 bg-white/5 ${color} rounded-[1.25rem] flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+      {icon}
     </div>
-  );
-};
+    <div className="flex flex-col">
+      <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-1">{label}</span>
+      <span className="text-3xl font-black text-white tracking-tight">{value < 10 && value > 0 ? '0' + value : value}</span>
+    </div>
+  </div>
+);
 
 export default App;

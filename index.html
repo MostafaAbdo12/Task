@@ -1,185 +1,76 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#020617" id="theme-meta" />
-    <title>مهامي | المنصة الاحترافية لإدارة المهام</title>
+    <title>إنجاز | إدارة المهام الاحترافية</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <script>
       window.process = window.process || { env: {} };
-      document.documentElement.setAttribute('data-theme', 'night');
     </script>
     
     <style>
-      @font-face {
-        font-family: 'TheYearofHandicrafts-Medium';
-        src: local('TheYearofHandicrafts-Medium');
-        font-weight: normal;
-        font-style: normal;
+      :root {
+        --primary: #6366f1;
+        --primary-glow: rgba(99, 102, 241, 0.15);
+        --bg-deep: #020617;
+        --card-bg: rgba(15, 23, 42, 0.6);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --text-dim: #94a3b8;
       }
 
       * {
-        font-family: 'TheYearofHandicrafts-Medium', 'Cairo', sans-serif !important;
+        font-family: 'IBM Plex Sans Arabic', sans-serif !important;
         -webkit-font-smoothing: antialiased;
-        text-rendering: optimizeLegibility;
       }
 
       body {
         margin: 0;
-        background-color: #020617;
+        background-color: var(--bg-deep);
         color: white;
-        overflow-x: hidden;
-        scroll-behavior: smooth;
+        overflow: hidden;
+        height: 100vh;
       }
 
-      /* Cosmic Background Engine */
-      .cosmic-container {
+      /* خلفية متدرجة احترافية هادئة */
+      .bg-mesh {
         position: fixed;
         inset: 0;
         z-index: -1;
-        background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
-        overflow: hidden;
-      }
-
-      .stars-overlay {
-        position: absolute;
-        inset: -100%;
         background-image: 
-          radial-gradient(1.5px 1.5px at 20px 30px, #ffffff, transparent),
-          radial-gradient(2px 2px at 100px 150px, #ffffff, transparent),
-          radial-gradient(1px 1px at 200px 400px, #ffffff, transparent);
-        background-size: 600px 600px;
-        opacity: 0.15;
-        animation: rotate-stars 200s linear infinite;
+          radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+          radial-gradient(at 100% 100%, rgba(30, 64, 175, 0.1) 0px, transparent 50%);
+        background-color: var(--bg-deep);
       }
 
-      /* Nebula Clouds */
-      .nebula {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(160px);
-        opacity: 0.12;
-        mix-blend-mode: screen;
-        pointer-events: none;
+      .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border-color);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      .nebula-purple {
-        width: 80vw;
-        height: 80vw;
-        background: radial-gradient(circle, #7c3aed, transparent 70%);
-        top: -20%;
-        left: -10%;
-        animation: drift 40s infinite alternate ease-in-out;
+      .glass-card:hover {
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
       }
 
-      .nebula-blue {
-        width: 70vw;
-        height: 70vw;
-        background: radial-gradient(circle, #3b82f6, transparent 70%);
-        bottom: -10%;
-        right: -10%;
-        animation: drift 50s infinite alternate-reverse ease-in-out;
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
       }
 
-      .nebula-pink {
-        width: 60vw;
-        height: 60vw;
-        background: radial-gradient(circle, #db2777, transparent 70%);
-        top: 30%;
-        left: 20%;
-        animation: drift 35s infinite alternate ease-in-out;
-        opacity: 0.08;
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
       }
-
-      @keyframes drift {
-        0% { transform: translate(0, 0) scale(1); }
-        50% { transform: translate(4%, 3%) scale(1.1); }
-        100% { transform: translate(-2%, 2%) scale(1); }
-      }
-
-      @keyframes rotate-stars {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-
-      .glow-title {
-        background: linear-gradient(-45deg, #7c3aed, #3b82f6, #06b6d4, #db2777, #7c3aed);
-        background-size: 300% 300%;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: flow-gradient 6s ease-in-out infinite;
-        filter: drop-shadow(0 0 15px rgba(124, 58, 237, 0.4));
-      }
-
-      .glow-text {
-        background: linear-gradient(90deg, #ffffff, #a855f7, #3b82f6, #ffffff);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shine 4s linear infinite;
-      }
-
-      @keyframes flow-gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-
-      @keyframes shine {
-        to { background-position: 200% center; }
-      }
-
-      @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-      }
-
-      .glass-panel {
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(40px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-      }
-
-      /* Enhanced Header Scrolled States */
-      .header-scrolled {
-        height: 5rem !important; /* Shorter height */
-        background: rgba(15, 23, 42, 0.7) !important; /* More transparent for better blend */
-        backdrop-filter: blur(80px) saturate(220%) !important; /* Stronger blur to block overlap mess */
-        border-radius: 0 0 45px 45px !important; /* Flat top when scrolled to top-0 */
-        border-top-width: 0 !important;
-        border-color: rgba(59, 130, 246, 0.15) !important;
-        box-shadow: 0 15px 50px -10px rgba(0, 0, 0, 0.9), 0 0 30px rgba(59, 130, 246, 0.05) !important;
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
-      }
-
-      .header-scrolled .nav-title-group {
-        transform: scale(0.85);
-        opacity: 0.8;
-      }
-
-      .header-scrolled .search-engine-group {
-        max-width: 32rem !important;
-        transform: scale(0.95);
-      }
-
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-      @keyframes reveal-up {
-        from { opacity: 0; transform: translateY(30px) scale(0.98); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
-      }
-      .animate-reveal { animation: reveal-up 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
-
-      @keyframes pulse-soft {
-        0%, 100% { transform: scale(1); opacity: 0.8; }
-        50% { transform: scale(1.05); opacity: 1; }
-      }
-      .animate-pulse-soft { animation: pulse-soft 3s infinite ease-in-out; }
+      .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
     </style>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -187,18 +78,17 @@
       tailwind.config = {
         theme: {
           extend: {
-            fontFamily: {
-              sans: ['TheYearofHandicrafts-Medium', 'Cairo', 'sans-serif'],
-            },
             colors: {
-              'nebula-purple': '#7c3aed',
-              'nebula-blue': '#3b82f6',
-              'nebula-pink': '#db2777',
-              'nebula-dark': '#020617',
+              primary: '#6366f1',
+              slate: {
+                950: '#020617',
+                900: '#0f172a',
+                800: '#1e293b',
+              }
             }
           }
         }
-      };
+      }
     </script>
     <script type="importmap">
     {
@@ -215,12 +105,7 @@
     </script>
   </head>
   <body>
-    <div class="cosmic-container">
-      <div class="stars-overlay"></div>
-      <div class="nebula nebula-purple"></div>
-      <div class="nebula nebula-blue"></div>
-      <div class="nebula nebula-pink"></div>
-    </div>
+    <div class="bg-mesh"></div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

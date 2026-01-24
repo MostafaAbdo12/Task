@@ -8,9 +8,10 @@ interface SettingsProps {
   user: User;
   onUpdate: (updatedUser: User) => void;
   showToast: (msg: string, type: 'success' | 'danger' | 'info') => void;
+  bgIntensity: 'low' | 'medium' | 'high' | 'dynamic';
+  onBgIntensityChange: (intensity: 'low' | 'medium' | 'high' | 'dynamic') => void;
 }
 
-// قائمة بالأفتارات المقترحة (باستخدام مكتبة DiceBear للحصول على أشكال عصرية ومتنوعة)
 const AVATAR_OPTIONS = [
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=ffdfbf',
@@ -22,7 +23,7 @@ const AVATAR_OPTIONS = [
   'https://api.dicebear.com/7.x/bottts/svg?seed=Robo2&backgroundColor=c0aede',
 ];
 
-const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
+const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast, bgIntensity, onBgIntensityChange }) => {
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email || '');
   const [phone, setPhone] = useState(user.phone || '');
@@ -86,30 +87,28 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar pb-32 pt-4 px-2 lg:px-6 animate-fade-up">
-      <div className="max-w-6xl mx-auto space-y-16">
+    <div className="flex-1 overflow-y-auto no-scrollbar pb-32 pt-4 px-2 lg:px-6 animate-reveal">
+      <div className="max-w-6xl mx-auto space-y-12">
         
-        {/* Module Header: Profile Identity */}
+        {/* Module Header */}
         <section className="relative group">
-          <div className="h-72 w-full rounded-[50px] bg-gradient-to-br from-[#0f172a] via-[#020617] to-[#1e293b] overflow-hidden relative border border-white/5 shadow-2xl">
+          <div className="h-64 w-full rounded-[50px] bg-gradient-to-br from-[#0f172a] via-[#020617] to-[#1e293b] overflow-hidden relative border border-white/5 shadow-2xl transition-all">
             <div className="absolute inset-0">
                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10"></div>
-               <div className="absolute -top-20 -left-20 w-80 h-80 bg-nebula-purple/10 rounded-full blur-[100px] animate-pulse"></div>
             </div>
             
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10">
-              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-2xl px-5 py-2 rounded-full border border-white/10 mb-6 group-hover:scale-105 transition-transform">
-                 <Icons.Sparkles className="w-4 h-4 text-nebula-blue" />
+              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-2xl px-5 py-2 rounded-full border border-white/10 mb-4">
+                 <Icons.Settings className="w-4 h-4 text-nebula-blue" />
                  <span className="text-[9px] font-black text-white/70 uppercase tracking-[0.4em]">مركز إدارة الهوية الرقمية</span>
               </div>
-              <h2 className="text-5xl font-black text-white glow-title mb-2">إعدادات الحساب</h2>
-              <p className="text-slate-500 text-xs font-bold italic opacity-80">خصص ظهورك الرقمي في المجرة</p>
+              <h2 className="text-4xl font-black text-white glow-title">إعدادات الحساب</h2>
             </div>
           </div>
 
           <div className="relative -mt-20 flex justify-center z-20">
-            <div className="p-1.5 bg-gradient-to-tr from-nebula-purple via-nebula-blue to-nebula-pink rounded-[45px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 hover:rotate-3">
-              <div className="relative w-40 h-40 lg:w-48 lg:h-48 rounded-[40px] overflow-hidden bg-[#020617] border-4 border-[#020617] group/avatar">
+            <div className="p-1.5 bg-gradient-to-tr from-nebula-purple via-nebula-blue to-nebula-pink rounded-[45px] shadow-2xl">
+              <div className="relative w-40 h-40 lg:w-44 lg:h-44 rounded-[40px] overflow-hidden bg-[#020617] border-4 border-[#020617] group/avatar">
                  {avatar ? (
                     <img src={avatar} alt="Profile" className="w-full h-full object-cover transition-transform duration-700 group-hover/avatar:scale-110" />
                   ) : (
@@ -121,7 +120,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
                     onClick={() => fileInputRef.current?.click()}
                     className="absolute inset-0 bg-nebula-dark/80 opacity-0 group-hover/avatar:opacity-100 transition-all flex flex-col items-center justify-center cursor-pointer backdrop-blur-sm"
                   >
-                    <Icons.FileUp className="w-8 h-8 text-white animate-bounce" />
+                    <Icons.FileUp className="w-8 h-8 text-white" />
                     <span className="text-[9px] font-black text-white uppercase mt-2 tracking-widest">تحميل مخصص</span>
                   </div>
               </div>
@@ -130,48 +129,54 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
           </div>
         </section>
 
-        {/* Avatar Matrix Selection Section */}
-        <section className="glass-panel p-10 lg:p-12 rounded-[50px] border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-nebula-blue via-transparent to-transparent"></div>
+        {/* Dynamic Background Settings */}
+        <section className="glass-panel p-10 lg:p-12 rounded-[50px] border-white/5 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-nebula-blue to-transparent"></div>
           <div className="flex items-center gap-5 mb-10">
             <div className="w-12 h-12 rounded-2xl bg-nebula-blue/10 flex items-center justify-center text-nebula-blue">
-              <Icons.Sparkles className="w-6 h-6" />
+              <Icons.Sun className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-xl font-black text-white">مصفوفة الهوية الرمزية</h4>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">اختر أفتاراً يعكس كفاءتك المهنية</p>
+              <h4 className="text-xl font-black text-white">تخصيص البيئة الكونية</h4>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">اضبط كثافة السدم والنجوم</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-6">
-            {AVATAR_OPTIONS.map((url, idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            {[
+              { id: 'low', label: 'هادئ', desc: 'كثافة بصرية منخفضة' },
+              { id: 'medium', label: 'متوازن', desc: 'المظهر الافتراضي' },
+              { id: 'high', label: 'غامر', desc: 'تفاصيل كونية عميقة' },
+              { id: 'dynamic', label: 'تلقائي', desc: 'يتغير مع الوقت' }
+            ].map((option) => (
               <button
-                key={idx}
+                key={option.id}
                 type="button"
-                onClick={() => { setAvatar(url); showToast("تم اختيار الأفتار بنجاح", "success"); }}
+                onClick={() => {
+                  onBgIntensityChange(option.id as any);
+                  showToast(`تم ضبط الكثافة إلى: ${option.label}`, 'info');
+                }}
                 className={`
-                  relative aspect-square rounded-[28px] overflow-hidden border-2 transition-all duration-500 hover:scale-110 active:scale-95
-                  ${avatar === url ? 'border-nebula-blue shadow-[0_0_20px_rgba(59,130,246,0.4)] ring-4 ring-nebula-blue/20' : 'border-white/5 hover:border-white/20'}
+                  p-6 rounded-[35px] border-2 text-right transition-all duration-500 flex flex-col gap-2 relative overflow-hidden
+                  ${bgIntensity === option.id 
+                    ? 'bg-nebula-blue/20 border-nebula-blue shadow-lg scale-105' 
+                    : 'bg-white/5 border-white/5 hover:border-white/10'}
                 `}
               >
-                <img src={url} alt={`Avatar ${idx}`} className="w-full h-full object-cover" />
-                {avatar === url && (
-                  <div className="absolute inset-0 bg-nebula-blue/10 flex items-center justify-center backdrop-blur-[1px]">
-                    <div className="bg-white rounded-full p-1 text-nebula-blue">
-                      <Icons.CheckCircle className="w-4 h-4" />
-                    </div>
-                  </div>
-                )}
+                <span className={`text-lg font-black ${bgIntensity === option.id ? 'text-white' : 'text-slate-400'}`}>{option.label}</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{option.desc}</span>
+                {bgIntensity === option.id && <div className="absolute top-0 left-0 w-full h-1 bg-nebula-blue animate-pulse"></div>}
               </button>
             ))}
           </div>
         </section>
 
-        <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+        {/* Profile Details Form */}
+        <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
            <div className="lg:col-span-7 space-y-8">
-              <div className="glass-panel p-10 lg:p-12 rounded-[50px] border-white/5 relative overflow-hidden">
-                 <div className="flex items-center gap-5 mb-12 border-b border-white/5 pb-8">
-                    <div className="w-14 h-14 rounded-2xl bg-nebula-purple/10 flex items-center justify-center text-nebula-purple shadow-inner">
+              <div className="glass-panel p-10 lg:p-12 rounded-[50px] border-white/5 shadow-xl">
+                 <div className="flex items-center gap-5 mb-10 border-b border-white/5 pb-8">
+                    <div className="w-14 h-14 rounded-2xl bg-nebula-purple/10 flex items-center justify-center text-nebula-purple">
                        <Icons.User className="w-7 h-7" />
                     </div>
                     <div>
@@ -185,7 +190,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">الاسم الرقمي</label>
                        <input 
                          value={username} onChange={e => setUsername(e.target.value)}
-                         className="w-full bg-white/5 border border-white/5 rounded-3xl py-5 px-8 text-sm font-bold text-white outline-none focus:border-nebula-purple transition-all shadow-inner"
+                         className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 px-8 text-sm font-bold text-white outline-none focus:border-nebula-purple transition-all"
                          placeholder="اسم المستخدم"
                        />
                     </div>
@@ -193,7 +198,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">الاتصال السحابي</label>
                        <input 
                          type="email" value={email} onChange={e => setEmail(e.target.value)}
-                         className="w-full bg-white/5 border border-white/5 rounded-3xl py-5 px-8 text-sm font-bold text-white outline-none focus:border-nebula-purple transition-all shadow-inner"
+                         className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 px-8 text-sm font-bold text-white outline-none focus:border-nebula-purple transition-all"
                          placeholder="user@nebula.com"
                        />
                     </div>
@@ -201,7 +206,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">قناة التواصل الهاتفي</label>
                        <input 
                          value={phone} onChange={e => setPhone(e.target.value)}
-                         className="w-full bg-white/5 border border-white/5 rounded-3xl py-5 px-8 text-sm font-bold text-white outline-none focus:border-nebula-purple transition-all shadow-inner"
+                         className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 px-8 text-sm font-bold text-white outline-none focus:border-nebula-purple transition-all"
                          placeholder="+966 00 000 0000"
                        />
                     </div>
@@ -210,9 +215,9 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
            </div>
 
            <div className="lg:col-span-5 space-y-8">
-              <div className="glass-panel p-10 lg:p-12 rounded-[50px] border-white/5 relative overflow-hidden">
-                 <div className="flex items-center gap-5 mb-12 border-b border-white/5 pb-8">
-                    <div className="w-14 h-14 rounded-2xl bg-nebula-pink/10 flex items-center justify-center text-nebula-pink shadow-inner">
+              <div className="glass-panel p-10 lg:p-12 rounded-[50px] border-white/5 shadow-xl">
+                 <div className="flex items-center gap-5 mb-10 border-b border-white/5 pb-8">
+                    <div className="w-14 h-14 rounded-2xl bg-nebula-pink/10 flex items-center justify-center text-nebula-pink">
                        <Icons.Shield className="w-7 h-7" />
                     </div>
                     <div>
@@ -221,20 +226,20 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
                     </div>
                  </div>
 
-                 <div className="space-y-8">
+                 <div className="space-y-6">
                     <div className="space-y-3">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">شفرة جديدة</label>
                        <input 
                          type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                         className="w-full bg-white/5 border border-white/5 rounded-3xl py-5 px-8 text-sm font-bold text-white outline-none focus:border-nebula-purple transition-all shadow-inner"
+                         className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 px-8 text-sm font-bold text-white outline-none focus:border-nebula-purple transition-all"
                          placeholder="شفرة جديدة (اختياري)"
                        />
                     </div>
-                    <div className="p-8 rounded-[40px] bg-[#020617]/50 border border-white/5 space-y-6">
+                    <div className="p-8 rounded-[40px] bg-[#020617]/50 border border-white/5 space-y-4">
                         <label className="text-[9px] font-black text-nebula-purple uppercase tracking-[0.3em] block">التحقق الإلزامي</label>
                         <input 
                           required type="password" value={password} onChange={e => setPassword(e.target.value)}
-                          className="w-full bg-white/10 border border-white/10 rounded-[30px] py-5 px-8 text-lg font-bold text-white outline-none focus:bg-white focus:text-slate-900 transition-all text-center shadow-2xl"
+                          className="w-full bg-white/10 border border-white/10 rounded-[30px] py-5 px-8 text-lg font-bold text-white outline-none focus:bg-white focus:text-slate-900 transition-all text-center"
                           placeholder="الشفرة الحالية"
                         />
                     </div>
@@ -243,13 +248,13 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate, showToast }) => {
 
               <button 
                 type="submit" disabled={isUpdating}
-                className="w-full py-7 bg-gradient-to-r from-nebula-purple via-nebula-blue to-nebula-purple bg-[length:200%_auto] hover:bg-right text-white font-black text-xl rounded-[40px] shadow-[0_30px_60px_-15px_rgba(124,58,237,0.4)] transition-all active:scale-[0.96] hover:scale-[1.02] flex items-center justify-center gap-6 group disabled:opacity-50"
+                className="w-full py-7 bg-gradient-to-r from-nebula-purple via-nebula-blue to-nebula-purple bg-[length:200%_auto] hover:bg-right text-white font-black text-xl rounded-[40px] shadow-lg transition-all active:scale-[0.96] flex items-center justify-center gap-6 disabled:opacity-50"
               >
                  {isUpdating ? (
                     <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
                  ) : (
                     <>
-                      <span>اعتماد المزامنة</span>
+                      <span>حفظ التغييرات</span>
                       <Icons.CheckCircle className="w-7 h-7" />
                     </>
                  )}
